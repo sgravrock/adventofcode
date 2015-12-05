@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+import sys
+
+instructions = sys.stdin.read()
+nup = len([x for x in instructions if x == '('])
+ndown = len([x for x in instructions if x == ')'])
+print len(instructions)
+print ndown
+print nup
+floor = nup - ndown
+print floor
