@@ -5,7 +5,6 @@
 #include <openssl/md5.h>
 
 static int match(const char *prefix, int n);
-static void dump(const unsigned char *md);
 
 int main(int argc, char **argv)
 {
@@ -38,12 +37,4 @@ static int match(const char *prefix, int n) {
 	}
 
 	return strncmp(checkbuf, "00000", 5) == 0;
-}
-
-static void dump(const unsigned char *md) {
-	for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		//unsigned int x = md[i] << 8 | md[i+1];
-		//printf("%d", x);
-		printf("%02x", (unsigned int)md[i]);
-	}
 }
