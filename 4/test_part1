@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+die() {
+	echo $@
+	exit 1
+}
+
+[ `./part1 abcdef` = "609043" ] || die Wrong for abcdef
+[ `./part1 pqrstuv` = "1048970" ] || die Wrong for pqrstuv
+echo ok
