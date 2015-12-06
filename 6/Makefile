@@ -1,3 +1,3 @@
 CXXFLAGS+= -Wall -w -ansi -pedantic -O2
 
-all: part1
+all: part1 part2
