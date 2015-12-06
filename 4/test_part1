@@ -5,6 +5,6 @@ die() {
 	exit 1
 }
 
-[ `./findnum abcdef` = "609043" ] || die Wrong for abcdef
-[ `./findnum pqrstuv` = "1048970" ] || die Wrong for pqrstuv
+[ `./findnum abcdef 5` = "609043" ] || die Wrong for abcdef
+[ `./findnum pqrstuv 5` = "1048970" ] || die Wrong for pqrstuv
 echo ok
