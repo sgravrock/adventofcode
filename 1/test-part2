@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+testit() {
+	actual=`./part2 "$1"`
+	if [ "$actual" != "$2" ]; then
+		echo "Wrong output for $1"
+		exit 1
+	fi
+}
+
+testit ')' 1
+testit '()())' 5
+
+echo ok
