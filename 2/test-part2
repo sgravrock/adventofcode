@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+testit() {
+	actual=`./part2 "$1"`
+	if [ "$actual" != "$2" ]; then
+		echo "Wrong output for $1"
+		exit 1
+	fi
+}
+
+testit '2x3x4' 34
+testit '1x1x10' 14
+echo ok
