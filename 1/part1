@@ -1,0 +1,5 @@
+#!/bin/bash -e
+
+ups=`echo -n "$1" | sed 's/)//g' | wc -c`
+downs=`echo -n "$1" | sed 's/(//g' | wc -c`
+echo $(($ups - $downs))
