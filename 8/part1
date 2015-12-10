@@ -1,0 +1,8 @@
+#!/usr/bin/python
+import sys
+import ast
+
+lines = [line for line in sys.stdin.read().split("\n") if line != ""]
+unescaped = sum([len(s) for s in lines])
+escaped = sum([len(ast.literal_eval(s)) for s in lines])
+print unescaped - escaped
