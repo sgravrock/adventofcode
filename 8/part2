@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+unescaped=`cat $1 | tr -d '\n' | wc -c`
+escaped=$(cat $1 | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/^/"/' -e 's/$/"/g' | tr -d '\n' | wc -c)
+echo $(($escaped-unescaped))
