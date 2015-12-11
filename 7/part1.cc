@@ -6,8 +6,8 @@
 using namespace std;
 
 istream &readline(vector<string> &cmd);
-bool maybe_run(const vector<string> &cmd);
 uint16_t argval(string arg, const map<string, uint16_t> &lines);
+bool maybe_run(const vector<string> &cmd, map<string, uint16_t> &lines);
 
 int main(void) {
 	vector<string> command;
@@ -24,39 +24,8 @@ int main(void) {
 		command = commands.front();
 		commands.pop();
 
-		try {
-			if (command[1] == "->") {
-				lines[command[2]] = argval(command[0], lines);
-			} else if (command[1] == "AND" && command[3] == "->") {
-				lines[command[4]] = argval(command[0], lines) & argval(command[2], lines);
-			} else if (command[1] == "OR" && command[3] == "->") {
-				lines[command[4]] = argval(command[0], lines) | argval(command[2], lines);
-			} else if (command[1] == "LSHIFT" && command[3] == "->") {
-				lines[command[4]] = argval(command[0], lines) << argval(command[2], lines);
-			} else if (command[1] == "RSHIFT" && command[3] == "->") {
-				lines[command[4]] = argval(command[0], lines) >> argval(command[2], lines);
-			} else if (command[0] == "NOT" && command[2] == "->") {
-				lines[command[3]] = ~argval(command[1], lines);
-			} else {
-				cout << "nope" << endl;
-				for (auto s: command) {
-					cout << s << " ";
-				}
-	
-				cout << endl;
-				return 1;
-			}
-		} catch (const out_of_range &e) {
+		if (!maybe_run(command, lines)) {
 			commands.push(command); // wait until its args are available
-		} catch (const exception &e) {
-			cout << e.what() << endl;
-			cout << "While processing command: ";
-			for (auto s: command) {
-				cout << s << " ";
-			}
-	
-			cout << endl;
-			return 1;
 		}
 	}
 
@@ -88,5 +57,44 @@ uint16_t argval(string arg, const map<string, uint16_t> &lines) {
 		return stoi(arg);
 	} catch (const invalid_argument &e) {
 		return lines.at(arg);
+	}
+}
+
+bool maybe_run(const vector<string> &cmd, map<string, uint16_t> &lines) {
+	try {
+		if (cmd[1] == "->") {
+			lines[cmd[2]] = argval(cmd[0], lines);
+		} else if (cmd[1] == "AND" && cmd[3] == "->") {
+			lines[cmd[4]] = argval(cmd[0], lines) & argval(cmd[2], lines);
+		} else if (cmd[1] == "OR" && cmd[3] == "->") {
+			lines[cmd[4]] = argval(cmd[0], lines) | argval(cmd[2], lines);
+		} else if (cmd[1] == "LSHIFT" && cmd[3] == "->") {
+			lines[cmd[4]] = argval(cmd[0], lines) << argval(cmd[2], lines);
+		} else if (cmd[1] == "RSHIFT" && cmd[3] == "->") {
+			lines[cmd[4]] = argval(cmd[0], lines) >> argval(cmd[2], lines);
+		} else if (cmd[0] == "NOT" && cmd[2] == "->") {
+			lines[cmd[3]] = ~argval(cmd[1], lines);
+		} else {
+			cout << "nope" << endl;
+			for (auto s: cmd) {
+				cout << s << " ";
+			}
+
+			cout << endl;
+			exit(1);
+		}
+
+		return true;
+	} catch (const out_of_range &e) {
+		return false;
+	} catch (const exception &e) {
+		cout << e.what() << endl;
+		cout << "While processing cmd: ";
+		for (auto s: cmd) {
+			cout << s << " ";
+		}
+
+		cout << endl;
+		exit(1);
 	}
 }
