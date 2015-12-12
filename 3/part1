@@ -1,0 +1,27 @@
+#!/bin/sh
+
+x=0
+y=0
+
+visit() {
+	echo "${x},$y"
+	
+	echo $1 | sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$' | while read line; do
+		if [ "$line" = ">" ]; then
+			x=$(($x+1))
+		elif [ "$line" = "<" ]; then
+			x=$(($x-1))
+		elif [ "$line" = "^" ]; then
+			y=$(($y-1))
+		elif [ "$line" = "v" ]; then
+			y=$(($y+1))
+		else
+			echo "Unrecognized: $line" 1>&2
+			exit 1
+		fi
+	
+		echo "${x},$y"
+	done
+}	 
+
+visit $1 | sort | uniq | wc -l | awk '{print $1}'

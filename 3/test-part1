@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+die() {
+	echo $@ 1>&2
+	exit 1
+}
+
+testit() {
+	actual=`./part1 $1`
+	[ "$actual" = "$2" ] || die Wrong output for $1 : expected \"$2\
+	but got \"$actual\"
+}
+
+testit ">" 2
+testit "^>v<" 4
+testit "^v^v^v^v^v" 2
