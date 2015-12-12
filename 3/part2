@@ -1,0 +1,42 @@
+#!/bin/bash
+
+
+visit() {
+	santax=0
+	santay=0
+	robox=0
+	roboy=0
+	which=santa
+
+	echo "0,0"
+
+	echo $1 | sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$' | while read line; do
+		eval "x=\$${which}x"
+		eval "y=\$${which}y"
+	
+		if [ "$line" = ">" ]; then
+			x=$(($x+1))
+		elif [ "$line" = "<" ]; then
+			x=$(($x-1))
+		elif [ "$line" = "^" ]; then
+			y=$(($y-1))
+		elif [ "$line" = "v" ]; then
+			y=$(($y+1))
+		else
+			echo "Unrecognized: $line" 1>&2
+			exit 1
+		fi
+	
+		echo "${x},$y"
+		eval "${which}x=$x"
+		eval "${which}y=$y"
+
+		if [ "$which" = "santa" ]; then
+			which="robo"
+		else
+			which="santa"
+		fi
+	done
+}	 
+
+visit $1 | sort | uniq | wc -l | awk '{print $1}'
