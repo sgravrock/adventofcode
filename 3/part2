@@ -11,29 +11,16 @@ visit() {
 	echo "0,0"
 
 	echo $1 | sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$' | while read line; do
-		eval "x=\$${which}x"
-		eval "y=\$${which}y"
-	
-		if [ "$line" = ">" ]; then
-			x=$(($x+1))
-		elif [ "$line" = "<" ]; then
-			x=$(($x-1))
-		elif [ "$line" = "^" ]; then
-			y=$(($y-1))
-		elif [ "$line" = "v" ]; then
-			y=$(($y+1))
-		else
-			echo "Unrecognized: $line" 1>&2
-			exit 1
-		fi
-	
-		echo "${x},$y"
-		eval "${which}x=$x"
-		eval "${which}y=$y"
+		var=`echo $line | sed -e "s/[<>]/${which}x/" -e "s/[v\^]/${which}y/"`
+		op=`echo $line | sed -e 's/[<\^]/+/' -e 's/[>v]/-/'`
+		cmd=`echo 'var=$(($varop1))' | sed -e "s/var/$var/g" -e "s/op/$op/g"`
+		eval $cmd
 
 		if [ "$which" = "santa" ]; then
+			echo "$santax,$santay"
 			which="robo"
 		else
+			echo "$robox,$roboy"
 			which="santa"
 		fi
 	done
