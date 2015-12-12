@@ -17,9 +17,3 @@ def finish_segment(accum, nextval):
 	accum[0] = nextval
 	accum[1] = 1
 	return accum
-
-if __name__ == "__main__":
-	s = "3113322113"
-	for i in xrange(0, 40):
-		s = compress_badly(s)
-	print len(s)
