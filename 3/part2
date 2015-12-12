@@ -1,29 +1,21 @@
-#!/bin/bash
+#!/bin/sh
 
+lineify() {
+	sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$'
+}
 
-visit() {
-	santax=0
-	santay=0
-	robox=0
-	roboy=0
-	which=santa
+transform() {
+	echo 'echo $x,$y'
+	sed -r -e 's/([<>])/x=$(($x\1/' -e 's/([v^])/y=$(($y\1/' -e 's/[<^]/-/' -e 's/[>v]/+/' -e 's/$/1)); echo $x,$y/'
+}
 
-	echo "0,0"
+makescript() {
+	echo x=0
+	echo y=0
+	lineify | transform 
+}
 
-	echo $1 | sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$' | while read line; do
-		var=`echo $line | sed -e "s/[<>]/${which}x/" -e "s/[v\^]/${which}y/"`
-		op=`echo $line | sed -e 's/[<\^]/+/' -e 's/[>v]/-/'`
-		cmd=`echo 'var=$(($varop1))' | sed -e "s/var/$var/g" -e "s/op/$op/g"`
-		eval $cmd
-
-		if [ "$which" = "santa" ]; then
-			echo "$santax,$santay"
-			which="robo"
-		else
-			echo "$robox,$roboy"
-			which="santa"
-		fi
-	done
-}	 
-
-visit $1 | sort | uniq | wc -l | awk '{print $1}'
+(
+	echo $1 | sed -r 's/(.)./\1/g' | makescript 
+	echo $1 | sed -r 's/.(.)/\1/g' | makescript
+) | sh | sort | uniq | wc -l | awk '{print $1}'
