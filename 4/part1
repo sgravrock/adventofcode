@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+x=0
+prefix=$1
+os=`uname`
+
+while true; do
+	if [ $os = Darwin ]; then
+		hash=`md5 -qs $prefix$x`
+	else
+		hash=`md5 -s $prefix$x | awk '{print $4}'`
+	fi
+	echo "testing $x"
+
+	if echo $hash | grep '^00000' > /dev/null; then
+		echo $x
+		exit
+	fi
+
+	x=$(($x+1))
+done
