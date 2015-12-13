@@ -1,70 +1,44 @@
-#!/bin/sh -e
+#!/usr/bin/awk -f
 
-prep() {
-	i=0
-	
-	while [ $i -lt 1000 ]; do
-		j=0
-		s=""
-		while [ $j -lt 1000 ]; do
-			s="${s}0"
-			j=$(($j+1))
-		done
-		echo $s >> "$statepath"
-		i=$(($i+1))
-	done
+BEGIN {
+	count = 0
 }
 
-transform() {
-	while read line; do
-		start=`echo $line | awk '{print $3}'`
-		end=`echo $line | awk '{print $5}'`
-
-		if echo $line | grep '^turn on' > /dev/null; then
-			turnon $start $end
-		elif echo $line | grep '^turn off' > /dev/null; then
-			turnoff $start $end
-		elif echo $line | grep '^toggle' > /dev/null; then
-			start=`echo $line | awk '{print $2}'`
-			end=`echo $line | awk '{print $4}'`
-			toggle $start $end
-		else
-			echo "Don't understand $line" 1>&2
-			exit 1
-		fi
-	done
+/^turn on / {
+	split($3, topleft, ",")
+	split($5, bottomright, ",")
+	manipulate(topleft, bottomright, "on")
 }
 
-# 1 s/\(.\{5\}\)./\1x/
-# 1 s/\(.\{6\}\)0/\11/
-# 1 s/\(.\{6\}\)1/\10/
-
-turnon() {
+/^turn off / {
+	split($3, topleft, ",")
+	split($5, bottomright, ",")
+	manipulate(topleft, bottomright, "off")
 }
 
-turnoff() {
+/^toggle / {
+	split($2, topleft, ",")
+	split($4, bottomright, ",")
+	manipulate(topleft, bottomright, "toggle")
 }
 
-toggle() {
-	xs=`echo $1 | cut -d , -f 1`
-	ys=`echo $1 | cut -d , -f 2`
-	xe=`echo $2 | cut -d , -f 1`
-	ye=`echo $2 | cut -d , -f 2`
-	y=$ys
-
-	while [ $y -le $ye ]; do
-		x=$xs
-		while [ $x -le $xe ]; do
-			echo "$y s/\(.\{$x\}\)0/\1X/"
-			echo "$y s/\(.\{$x\}\)1/\10/"
-			echo "$y s/\(.\{$x\}\)X/\11/"
-			x=$(($x+1))
-		done
-		y=$(($y+1))
-	done
+END {
+	print count
 }
 
-statepath=`mktemp -t part1`
-prep $statepath
-echo $statepath
-transform | ed $statepath
+function manipulate(topleft, bottomright, op) {
+	for (x = topleft[1]; x <= bottomright[1]; x++) {
+		for (y = topleft[2]; y <= bottomright[2]; y++) {
+			k = x "," y
+
+			if (op == "on" || (op == "toggle" && !lights[k])) {
+				newval = 1
+			} else  {
+				newval = 0
+			}
+
+			count += (newval - lights[k])
+			lights[k] = newval
+		}
+	}
+}
