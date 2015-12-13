@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+die() {
+	echo $@ 1>&2
+	exit 1
+}
+
+input="turn on 0,0 through 0,0"
+output=`echo $input | ./part2`
+[ "$output" = 1 ] || die "Wrong for $input : $output"
+input="toggle 0,0 through 999,999"
+output=`echo $input | ./part2`
+[ "$output" = 2000000 ] || die "Wrong for $input : $output"
+
+echo ok
+
