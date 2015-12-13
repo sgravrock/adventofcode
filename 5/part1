@@ -1,0 +1,4 @@
+#!/bin/sh
+
+egrep '(.)\1' | grep '[aeiou].*[aeiou].*[aeiou]' | egrep -v 'ab|cd|pq|xy' | wc -l | awk '{print $1}'
+
