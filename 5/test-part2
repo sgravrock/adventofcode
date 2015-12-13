@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+die() {
+	echo $@ 1>&2
+	exit 1
+}
+
+testit() {
+	actual=`echo $1 | ./part2`
+	[ "$actual" = "$2" ] || die Wrong output for $1 : expected \"$2\" but got \"$actual\"
+}
+
+testit qjhvhtzxzqqjkmpb 1
+testit xxyxx 1
+testit uurcxstgmygtbstg 0
+testit ieodomkazucvgmuy 0
