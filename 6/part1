@@ -1,8 +1,7 @@
 #!/usr/bin/awk -f
 
-BEGIN {
-	count = 0
-}
+BEGIN { count = 0 }
+END { print count }
 
 /^turn on / {
 	split($3, topleft, ",")
@@ -22,21 +21,11 @@ BEGIN {
 	manipulate(topleft, bottomright, "toggle")
 }
 
-END {
-	print count
-}
-
 function manipulate(topleft, bottomright, op) {
 	for (x = topleft[1]; x <= bottomright[1]; x++) {
 		for (y = topleft[2]; y <= bottomright[2]; y++) {
 			k = x "," y
-
-			if (op == "on" || (op == "toggle" && !lights[k])) {
-				newval = 1
-			} else  {
-				newval = 0
-			}
-
+			newval = op == "on" || (op == "toggle" && !lights[k])
 			count += (newval - lights[k])
 			lights[k] = newval
 		}
