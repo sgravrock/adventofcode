@@ -1,0 +1,31 @@
+#!/bin/sh
+
+isdone() {
+	! sed 's/ ->.*$//' $tempfile | egrep -v '^[0-9]+$' > /dev/null
+}
+
+tempfile=`mktemp -t part1`
+cat - > $tempfile
+
+while ! isdone; do
+	# Partition into constant expressions and everything else.
+	# The iterate script can only substitute constants that are set
+	# before they're used.
+	constfile=`mktemp -t part1`
+	exprfile=`mktemp -t part1`
+	egrep '^[0-9]+ ->' $tempfile > $constfile
+	egrep -v '^[0-9]+ ->' $tempfile > $exprfile
+
+	tempfile2=`mktemp -t part1`
+	cat $constfile $exprfile | gawk -f iterate.awk > $tempfile2
+
+	if cmp $tempfile $tempfile2 > /dev/null; then
+		echo "Latest pass didn't change anything" 1>&2
+		echo "Leaving the current state in $tempfile" 1>&2
+		exit 1
+	fi
+	mv $tempfile2 $tempfile
+done
+
+cat $tempfile |  awk '{print $3 ": " $1}' | sort
+rm $tempfile
