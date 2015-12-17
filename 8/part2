@@ -1,0 +1,12 @@
+#!/bin/bash
+
+total=0
+
+while read -r line; do
+	u=$(echo -E -n "$line" | wc -c | awk '{print $1}')
+	e=$(echo -E -n "$line" | sed -r -e 's/(["\\])/\\\1/g' | sed 's/^/"/' | sed 's/$/"/' | wc -c | awk '{print $1}')
+	delta=$(($e - $u))
+	total=$(($total + $e - $u))
+done
+
+echo $total
