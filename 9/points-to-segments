@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Converts a list of points (taken as arguments) to a corresponding list
+# of segments.
+
+
+src=''
+
+for arg in $@; do
+	if [ ! -z $src ]; then
+		echo "$src $arg"
+	fi
+
+	src=$arg
+done
