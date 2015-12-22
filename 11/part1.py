@@ -17,7 +17,7 @@ def has_straight(p):
 
 def is_straight(p, start):
 	for i in xrange(start + 1, start + 3):
-		if p[i] != nextchar(p[i-1]):
+		if p[i - 1] == 'z' or p[i] != nextchar(p[i-1]):
 			return False
 	return True
 

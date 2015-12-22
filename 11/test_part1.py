@@ -9,7 +9,7 @@ class TestPart1(unittest.TestCase):
 		self.assertTrue(part1.has_straight("abc"))
 		self.assertFalse(part1.has_straight("abd"))
 		self.assertFalse(part1.has_straight("qbc"))
-		self.assertTrue(part1.has_straight("zab"))
+		self.assertFalse(part1.has_straight("yza"))
 
 	def test_good_chars(self):
 		self.assertTrue(part1.all_good_chars("hjkmmn"))
