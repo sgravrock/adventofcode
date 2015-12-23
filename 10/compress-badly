@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Put each run of one or more identical digits on its own line
+text=$1
+for i in 0 1 2 3 4 5 6 7 8 9; do
+	text=`echo $text | sed -E "s/($i+)/\1 /g"`
+done
+
+echo $text | tr ' ' '\n' | awk '{printf("%d%c", length($1), substr($1, 1, 1))}'
+echo
