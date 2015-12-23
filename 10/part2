@@ -2,7 +2,7 @@
 
 text=$1
 
-for ((i = 0; i < 40; i++)); do
+for ((i = 0; i < 50; i++)); do
 	text=`echo $text | ./compress-badly`
 done
 

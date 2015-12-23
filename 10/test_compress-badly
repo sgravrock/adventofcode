@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 check() {
-	result=`./compress-badly $1`
+	result=`echo $1 | ./compress-badly`
 	if ! [ $result == $2 ]; then
 		echo "Expected $result from $1 but got $2"
 		exit 1
