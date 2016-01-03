@@ -6,6 +6,8 @@ class reindeer:
 		self.speed = speed
 		self.endurance = endurance
 		self.rest = rest
+	def __str__(self):
+		return self.name
 	def distance(self, seconds):
 		total = 0
 		elapsed = 0
