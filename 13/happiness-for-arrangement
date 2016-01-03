@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+mkpairs() {
+	for name in $@; do
+		if [ ! -z $prev ]; then
+			echo $prev $name
+		fi
+		prev=$name
+	done
+
+	echo $prev $1
+}
+
+spec=`cat -`
+
+mkpairs $@ | while read line; do
+	echo "$spec" | ./happiness-for-pair $line
+done | ./sum
