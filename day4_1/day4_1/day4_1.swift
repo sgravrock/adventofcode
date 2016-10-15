@@ -3,8 +3,8 @@ import Foundation
 func mine(key: String) -> Int {
 	for i in 0...Int.max {
 		let hash = makeHash(key: key, n: i)
-		
-		if hash.hasPrefix("00000") {
+
+		if isValid(hash: hash) {
 			return i
 		}
 	}
@@ -12,9 +12,8 @@ func mine(key: String) -> Int {
 	return -1
 }
 
-func makeHash(key: String, n: Int) -> String {
-	let digest = md5("\(key)\(n)")
-	return toHexString(bytes: digest)
+func makeHash(key: String, n: Int) -> [UInt8] {
+	return md5("\(key)\(n)")
 }
 
 func md5(_ value: String) -> [UInt8] {
@@ -28,4 +27,8 @@ func md5(_ value: String) -> [UInt8] {
 
 func toHexString(bytes: [UInt8]) -> String {
 	return bytes.map { String(format: "%02x", $0) }.joined(separator: "");
+}
+
+func isValid(hash: [UInt8]) -> Bool {
+	return hash[0] == 0 && hash[1] == 0 && hash[2] < 0x10;
 }
