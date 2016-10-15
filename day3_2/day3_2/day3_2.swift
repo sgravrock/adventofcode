@@ -14,31 +14,32 @@ struct Point: Hashable {
 	}
 }
 
+class Santa {
+	var pos: Point
+	
+	init() {
+		pos = Point(x: 0, y: 0)
+	}
+}
+
 func deliver(_ input: String) -> Int {
 	var visited = Set<Point>()
-	var santa = Point(x: 0, y: 0)
-	var robosanta = Point(x: 0, y: 0)
-	visited.insert(santa)
+	let santa = Santa()
+	let robosanta = Santa()
+	visited.insert(santa.pos)
 	var i = 0
 	
 	for c in input.characters {
-		var pos = i % 2 == 0 ? santa : robosanta
+		let moving = i % 2 == 0 ? santa : robosanta
 		switch(c) {
-		case "^": pos = pos.north
-		case "v": pos = pos.south
-		case "<": pos = pos.west
-		case ">": pos = pos.east
+		case "^": moving.pos = moving.pos.north
+		case "v": moving.pos = moving.pos.south
+		case "<": moving.pos = moving.pos.west
+		case ">": moving.pos = moving.pos.east
 		default: return -1
 		}
 		
-		visited.insert(pos)
-		
-		if i % 2 == 0 {
-			santa = pos
-		} else {
-			robosanta = pos
-		}
-		
+		visited.insert(moving.pos)
 		i += 1
 	}
 	
