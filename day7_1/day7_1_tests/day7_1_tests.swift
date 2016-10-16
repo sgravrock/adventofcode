@@ -79,8 +79,9 @@ class day7_1_tests: XCTestCase {
 
 	func testValuesAreMemoized() {
 		let handle = PropertyHandle(prop: nil)
+		let dep = PropertyHandle(prop: Constant(value: 0))
 		var timesComputed = 0
-		handle.prop = Property(lhs: nil, rhs: nil, compute: { (_, _) -> UInt16? in
+		handle.prop = UnaryFunction(dependency: dep, compute: { (_) -> UInt16 in
 			timesComputed += 1
 			return 0
 		})
