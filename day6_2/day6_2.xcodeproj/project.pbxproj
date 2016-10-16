@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		AA75AA501DB303FF00A6263F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA75AA4F1DB303FF00A6263F /* main.swift */; };
-		AA75AA5D1DB3040D00A6263F /* day6_1_tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA75AA5C1DB3040D00A6263F /* day6_1_tests.swift */; };
-		AAB927231DB31C4C00AA3AB0 /* LightDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB927221DB31C4C00AA3AB0 /* LightDisplay.swift */; };
-		AAB927241DB31C4C00AA3AB0 /* LightDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB927221DB31C4C00AA3AB0 /* LightDisplay.swift */; };
+		AA75AA5D1DB3040D00A6263F /* day6_2_tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA75AA5C1DB3040D00A6263F /* day6_2_tests.swift */; };
+		AAB927261DB32BBB00AA3AB0 /* LightDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB927251DB32BBB00AA3AB0 /* LightDisplay.swift */; };
+		AAB927271DB32BBB00AA3AB0 /* LightDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB927251DB32BBB00AA3AB0 /* LightDisplay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,12 +26,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AA75AA4C1DB303FF00A6263F /* day6_1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = day6_1; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA75AA4C1DB303FF00A6263F /* day6_2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = day6_2; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA75AA4F1DB303FF00A6263F /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		AA75AA5A1DB3040D00A6263F /* day6_1_tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = day6_1_tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA75AA5C1DB3040D00A6263F /* day6_1_tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = day6_1_tests.swift; sourceTree = "<group>"; };
+		AA75AA5A1DB3040D00A6263F /* day6_2_tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = day6_2_tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA75AA5C1DB3040D00A6263F /* day6_2_tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = day6_2_tests.swift; sourceTree = "<group>"; };
 		AA75AA5E1DB3040D00A6263F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AAB927221DB31C4C00AA3AB0 /* LightDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LightDisplay.swift; sourceTree = "<group>"; };
+		AAB927251DB32BBB00AA3AB0 /* LightDisplay.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LightDisplay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,8 +55,8 @@
 		AA75AA431DB303FF00A6263F = {
 			isa = PBXGroup;
 			children = (
-				AA75AA4E1DB303FF00A6263F /* day6_1 */,
-				AA75AA5B1DB3040D00A6263F /* day6_1_tests */,
+				AA75AA4E1DB303FF00A6263F /* day6_2 */,
+				AA75AA5B1DB3040D00A6263F /* day6_2_tests */,
 				AA75AA4D1DB303FF00A6263F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,36 +64,36 @@
 		AA75AA4D1DB303FF00A6263F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA75AA4C1DB303FF00A6263F /* day6_1 */,
-				AA75AA5A1DB3040D00A6263F /* day6_1_tests.xctest */,
+				AA75AA4C1DB303FF00A6263F /* day6_2 */,
+				AA75AA5A1DB3040D00A6263F /* day6_2_tests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AA75AA4E1DB303FF00A6263F /* day6_1 */ = {
+		AA75AA4E1DB303FF00A6263F /* day6_2 */ = {
 			isa = PBXGroup;
 			children = (
 				AA75AA4F1DB303FF00A6263F /* main.swift */,
-				AAB927221DB31C4C00AA3AB0 /* LightDisplay.swift */,
+				AAB927251DB32BBB00AA3AB0 /* LightDisplay.swift */,
 			);
-			path = day6_1;
+			path = day6_2;
 			sourceTree = "<group>";
 		};
-		AA75AA5B1DB3040D00A6263F /* day6_1_tests */ = {
+		AA75AA5B1DB3040D00A6263F /* day6_2_tests */ = {
 			isa = PBXGroup;
 			children = (
-				AA75AA5C1DB3040D00A6263F /* day6_1_tests.swift */,
+				AA75AA5C1DB3040D00A6263F /* day6_2_tests.swift */,
 				AA75AA5E1DB3040D00A6263F /* Info.plist */,
 			);
-			path = day6_1_tests;
+			path = day6_2_tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA75AA4B1DB303FF00A6263F /* day6_1 */ = {
+		AA75AA4B1DB303FF00A6263F /* day6_2 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA75AA531DB303FF00A6263F /* Build configuration list for PBXNativeTarget "day6_1" */;
+			buildConfigurationList = AA75AA531DB303FF00A6263F /* Build configuration list for PBXNativeTarget "day6_2" */;
 			buildPhases = (
 				AA75AA481DB303FF00A6263F /* Sources */,
 				AA75AA491DB303FF00A6263F /* Frameworks */,
@@ -103,14 +103,14 @@
 			);
 			dependencies = (
 			);
-			name = day6_1;
-			productName = day6_1;
-			productReference = AA75AA4C1DB303FF00A6263F /* day6_1 */;
+			name = day6_2;
+			productName = day6_2;
+			productReference = AA75AA4C1DB303FF00A6263F /* day6_2 */;
 			productType = "com.apple.product-type.tool";
 		};
-		AA75AA591DB3040D00A6263F /* day6_1_tests */ = {
+		AA75AA591DB3040D00A6263F /* day6_2_tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA75AA5F1DB3040D00A6263F /* Build configuration list for PBXNativeTarget "day6_1_tests" */;
+			buildConfigurationList = AA75AA5F1DB3040D00A6263F /* Build configuration list for PBXNativeTarget "day6_2_tests" */;
 			buildPhases = (
 				AA75AA561DB3040D00A6263F /* Sources */,
 				AA75AA571DB3040D00A6263F /* Frameworks */,
@@ -120,9 +120,9 @@
 			);
 			dependencies = (
 			);
-			name = day6_1_tests;
-			productName = day6_1_tests;
-			productReference = AA75AA5A1DB3040D00A6263F /* day6_1_tests.xctest */;
+			name = day6_2_tests;
+			productName = day6_2_tests;
+			productReference = AA75AA5A1DB3040D00A6263F /* day6_2_tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -145,7 +145,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AA75AA471DB303FF00A6263F /* Build configuration list for PBXProject "day6_1" */;
+			buildConfigurationList = AA75AA471DB303FF00A6263F /* Build configuration list for PBXProject "day6_2" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -157,8 +157,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA75AA4B1DB303FF00A6263F /* day6_1 */,
-				AA75AA591DB3040D00A6263F /* day6_1_tests */,
+				AA75AA4B1DB303FF00A6263F /* day6_2 */,
+				AA75AA591DB3040D00A6263F /* day6_2_tests */,
 			);
 		};
 /* End PBXProject section */
@@ -179,7 +179,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA75AA501DB303FF00A6263F /* main.swift in Sources */,
-				AAB927231DB31C4C00AA3AB0 /* LightDisplay.swift in Sources */,
+				AAB927261DB32BBB00AA3AB0 /* LightDisplay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -187,8 +187,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA75AA5D1DB3040D00A6263F /* day6_1_tests.swift in Sources */,
-				AAB927241DB31C4C00AA3AB0 /* LightDisplay.swift in Sources */,
+				AA75AA5D1DB3040D00A6263F /* day6_2_tests.swift in Sources */,
+				AAB927271DB32BBB00AA3AB0 /* LightDisplay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,7 +303,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = day6_1_tests/Info.plist;
+				INFOPLIST_FILE = day6_2_tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "Steve-Gravrock.day5-1-tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -316,7 +316,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = day6_1_tests/Info.plist;
+				INFOPLIST_FILE = day6_2_tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "Steve-Gravrock.day5-1-tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -328,7 +328,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AA75AA471DB303FF00A6263F /* Build configuration list for PBXProject "day6_1" */ = {
+		AA75AA471DB303FF00A6263F /* Build configuration list for PBXProject "day6_2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA75AA511DB303FF00A6263F /* Debug */,
@@ -337,7 +337,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA75AA531DB303FF00A6263F /* Build configuration list for PBXNativeTarget "day6_1" */ = {
+		AA75AA531DB303FF00A6263F /* Build configuration list for PBXNativeTarget "day6_2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA75AA541DB303FF00A6263F /* Debug */,
@@ -346,7 +346,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA75AA5F1DB3040D00A6263F /* Build configuration list for PBXNativeTarget "day6_1_tests" */ = {
+		AA75AA5F1DB3040D00A6263F /* Build configuration list for PBXNativeTarget "day6_2_tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA75AA601DB3040D00A6263F /* Debug */,
