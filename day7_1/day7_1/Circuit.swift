@@ -8,17 +8,17 @@ class Circuit: NSObject {
 		let arrow = words.index(of: "->")!
 		
 		if arrow == 1 {
-			assign(name: words[2], operand: words[0])
+			unary(name: words[2], operand: words[0], compute: { $0 })
 		} else if arrow == 2 && words[0] == "NOT" {
-			not(name: words[3], operand: words[1])
+			unary(name: words[3], operand: words[1], compute: { ~$0 })
 		} else if arrow == 3 && words[1] == "AND" {
-			and(name: words[4], lhs: words[0], rhs: words[2])
+			binary(name: words[4], lhs: words[0], rhs: words[2], compute: { $0 & $1 })
 		} else if arrow == 3 && words[1] == "OR" {
-			or(name: words[4], lhs: words[0], rhs: words[2])
+			binary(name: words[4], lhs: words[0], rhs: words[2], compute: { $0 | $1 })
 		} else if arrow == 3 && words[1] == "LSHIFT" {
-			lshift(name: words[4], lhs: words[0], rhs: words[2])
+			binary(name: words[4], lhs: words[0], rhs: words[2], compute: { $0 << $1 })
 		} else if arrow == 3 && words[1] == "RSHIFT" {
-			rshift(name: words[4], lhs: words[0], rhs: words[2])
+			binary(name: words[4], lhs: words[0], rhs: words[2], compute: { $0 >> $1 })
 		}
 	}
 
@@ -26,40 +26,14 @@ class Circuit: NSObject {
 		return wires.get(wire).value()
 	}
 	
-	private func assign(name: String, operand: String) {
+	private func unary(name: String, operand: String, compute: @escaping UnaryComputeFunc) {
 		let handle = wires.get(name)
-		handle.prop = UnaryFunction(dependency: getOperand(operand),
-		                            compute: { $0 })
-	}
-
-	private func not(name: String, operand: String) {
-		let handle = wires.get(name)
-		handle.prop = UnaryFunction(dependency: getOperand(operand),
-		                            compute: { ~$0 })
-	}
-
-	private func and(name: String, lhs: String, rhs: String) {
-		let handle = wires.get(name)
-		handle.prop = BinaryFunction(lhs: getOperand(lhs), rhs: getOperand(rhs),
-		                             compute: { $0 & $1 })
-	}
-
-	private func or(name: String, lhs: String, rhs: String) {
-		let handle = wires.get(name)
-		handle.prop = BinaryFunction(lhs: getOperand(lhs), rhs: getOperand(rhs),
-		                             compute: { $0 | $1 })
-	}
-
-	private func lshift(name: String, lhs: String, rhs: String) {
-		let handle = wires.get(name)
-		handle.prop = BinaryFunction(lhs: getOperand(lhs), rhs: getOperand(rhs),
-		                             compute: { $0 << $1 })
+		handle.prop = UnaryFunction(dependency: getOperand(operand), compute: compute)
 	}
 	
-	private func rshift(name: String, lhs: String, rhs: String) {
+	private func binary(name: String, lhs: String, rhs: String, compute: @escaping BinaryComputeFunc) {
 		let handle = wires.get(name)
-		handle.prop = BinaryFunction(lhs: getOperand(lhs), rhs: getOperand(rhs),
-		                             compute: { $0 >> $1 })
+		handle.prop = BinaryFunction(lhs: getOperand(lhs), rhs: getOperand(rhs), compute: compute)
 	}
 	
 	private func getOperand(_ name: String) -> PropertyHandle {
