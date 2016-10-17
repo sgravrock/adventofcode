@@ -26,16 +26,30 @@ func simpleUnescapes(_ escaped: String) -> String {
 }
 
 func expandHexEscapes(_ escaped: String) throws -> String {
-	var output = escaped
+	return try regexMap(input: escaped,
+	                pattern: "\\\\x[0-9a-f]{2}",
+	                options: .caseInsensitive,
+	                convertedBy: { (m) -> String in
+						let ss = m.substring(from: m.index(m.startIndex, offsetBy: 2))
+						return hexToString(ss)
+					})
+}
+
+func regexMap(input: String,
+              pattern: String,
+              options: NSRegularExpression.Options,
+              convertedBy: (String) -> String) throws -> String {
+	
+	var output = input
 	var offset = 0
-	let re = try NSRegularExpression(pattern: "\\\\x[0-9a-f]{2}", options: .caseInsensitive)
-	let matches = re.matches(in: escaped, options: [], range: NSMakeRange(0, escaped.characters.count))
+	let re = try NSRegularExpression(pattern: pattern, options: options)
+	let matches = re.matches(in: input, options: [], range: NSMakeRange(0, input.characters.count))
 	
 	for match in matches {
 		// OMGWTF... there has to be a better way than this.
-		let inputRange = escaped.index(escaped.startIndex, offsetBy: match.range.location + 2)..<escaped.index(escaped.startIndex, offsetBy: match.range.location + 4)
+		let inputRange = input.index(input.startIndex, offsetBy: match.range.location)..<input.index(input.startIndex, offsetBy: match.range.location + match.range.length)
 		let outputRange = output.index(output.startIndex, offsetBy:match.range.location + offset)..<output.index(output.startIndex, offsetBy:match.range.location + offset + match.range.length)
-		let replacement = hexToString(escaped.substring(with: inputRange))
+		let replacement = convertedBy(input.substring(with: inputRange))
 		output = output.replacingCharacters(in: outputRange, with: replacement)
 		offset += replacement.characters.count - match.range.length
 	}
