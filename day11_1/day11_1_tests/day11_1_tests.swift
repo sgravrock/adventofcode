@@ -35,6 +35,5 @@ class day11_1_tests: XCTestCase {
 	func test_nextValidPassword() {
 		XCTAssertEqual("abcdffaa", nextValidPassword("abcdefgh"))
 		XCTAssertEqual("ghjaabcc", nextValidPassword("ghijklmn"))
-        
 	}
 }

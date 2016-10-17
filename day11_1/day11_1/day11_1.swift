@@ -1,44 +1,53 @@
 import Foundation
 
 func isValid(_ s: String) -> Bool {
-	return hasStraight(s) && hasMultiplePairs(s) && !hasBadChars(s)
+    return isValid(chars: Array(s.characters))
+}
+
+func isValid(chars: [Character]) -> Bool {
+    return hasStraight(chars) && hasMultiplePairs(chars) && !hasBadChars(chars)
 }
 
 func nextValidPassword(_ current: String) -> String? {
-    var p: String? = current
+    var chars = Array(current.characters)
     
-    while p != nil {
-        p = nextPassword(p!)
-        
-        if let p2 = p, isValid(p2) {
-            return p
+    while true {
+        if !toNextPassword(&chars) {
+            return nil
         }
+        
+        if isValid(chars: chars) {
+            return String(chars)
+        }
+    }
+}
+
+func nextPassword(_ current: String) -> String? {
+	var chars = Array(current.characters)
+    
+    if toNextPassword(&chars) {
+        return String(chars)
     }
     
     return nil
 }
 
-func allZs(_ s: String) -> Bool {
-    return s.range(of: "[^z]", options: .regularExpression) == nil
-}
-
-func nextPassword(_ current: String) -> String? {
-	var chars = Array(current.characters)
-	
-	for i in (0..<chars.count).reversed() {
-		if chars[i] == "z" {
+func toNextPassword( _ chars: inout [Character]) -> Bool {
+    for i in (0..<chars.count).reversed() {
+        if chars[i] == "z" {
             if i == 0 {
-                return nil
+                return false
             }
             
-			chars[i] = "a"
-		} else {
-			chars[i] = nextChar(chars[i])
-            break
-		}
-	}
+            chars[i] = "a"
+        } else {
+            chars[i] = nextChar(chars[i])
+            return true
+        }
+    }
     
-    return String(chars)
+    assertionFailure("toNextPassword() reached unreachable code")
+    return false
 }
 
 func nextChar(_ c: Character) -> Character {
@@ -49,15 +58,15 @@ func unicodeScalar(ofCharacter: Character) -> UnicodeScalar {
     return String(ofCharacter).unicodeScalars.first!
 }
 
-func hasStraight(_ s: String) -> Bool {
-	let scalars = Array(s.unicodeScalars)
-	
-	for i in 2..<scalars.count {
-		let a = scalars[scalars.index(scalars.startIndex, offsetBy: i - 2)]
-		let b = scalars[scalars.index(scalars.startIndex, offsetBy: i - 1)]
-		let c = scalars[scalars.index(scalars.startIndex, offsetBy: i)]
+func hasStraight(_ chars: [Character]) -> Bool {
+	for i in 2..<chars.count {
+        // Assumes ASCII-like properties.
+        // If input is EBCDIC you get to keep both pieces.
+        let a = unicodeScalar(ofCharacter: chars[i - 2]).value
+        let b = unicodeScalar(ofCharacter: chars[i - 1]).value
+        let c = unicodeScalar(ofCharacter: chars[i]).value
 		
-		if a.value == c.value - 2 && b.value == c.value - 1 {
+		if a == c - 2 && b == c - 1 {
 			return true
 		}
 	}
@@ -66,10 +75,26 @@ func hasStraight(_ s: String) -> Bool {
 
 }
 
-func hasMultiplePairs(_ s: String) -> Bool {
-	return s.range(of: "(.)\\1.*(.)\\2", options: .regularExpression) != nil
+func hasMultiplePairs(_ chars: [Character]) -> Bool {
+    var firstPairEnd: Int? = nil
+    
+    for i in 1..<chars.count {
+        if chars[i] == chars[i - 1] {
+            if let f = firstPairEnd {
+                if i - 1 > f {
+                    return true
+                }
+            } else {
+                firstPairEnd = i
+            }
+        }
+    }
+    
+    return false
 }
 
-func hasBadChars(_ s: String) -> Bool {
-	return s.rangeOfCharacter(from: CharacterSet(charactersIn: "iol")) != nil
+func hasBadChars(_ chars: [Character]) -> Bool {
+    return chars.contains(where: { (c: Character) -> Bool in
+        return c == "i" || c == "o" || c == "l"
+    })
 }
