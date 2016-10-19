@@ -58,21 +58,3 @@ func permute2(_ elems: [String], first: String) -> [[String]] {
 	let subresult = permute(rest)
 	return subresult.map({ [first] + $0 })
 }
-/*
-func permute<T: Collection>(_ elems: T) -> [[T.Iterator.Element]] {
-	if elems.count == 0 {
-		return []
-	} else if elems.count == 1 {
-		return [[elems.first!]]
-	}
-	
-	return elems.map({ (first) in
-		return permute2(elems, first: first)
-	}).reduce([], +)
-}
-
-func permute2<T: Collection>(_ elems: T, first: T.Iterator.Element) -> [[T.Iterator.Element]] {
-	let rest = elems.filter({ $0 != first })
-	let subresult = permute(rest as AnyCol)
-	return subresult.map({ [first] + $0 })
-}*/

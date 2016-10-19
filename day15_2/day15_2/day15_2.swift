@@ -1,9 +1,15 @@
-func bestCookieScore(input: [String]) -> Int {
+func bestCookieScore(input: [String]) -> Int? {
     let ingredients = input.map(parseInput)
     let names = ingredients.map { $0.name }
-	let recipes = permute(names: names, amount: 100)
-    let scored = recipes.map { score(recipe: $0, ingredients: ingredients) }
-    return scored.sorted().last!
+    let recipes = permute(names: names, amount: 100)
+    let valid = recipes.filter { isValid(recipe: $0, ingredients: ingredients) }
+    let scores = valid.map { score(recipe: $0, ingredients: ingredients) }
+    return scores.sorted().last
+}
+
+func isValid(recipe: Recipe, ingredients: [Ingredient]) -> Bool {
+    let calories = ingredients.map { $0.attributes["calories"]! * recipe.amounts[$0.name]! }.reduce(0, +)
+    return calories == 500
 }
 
 func score(recipe: Recipe, ingredients: [Ingredient]) -> Int {
@@ -28,19 +34,20 @@ struct Ingredient {
 }
 
 func parseInput(_ input: String) -> Ingredient {
-	let tokens = input
-		.replacingOccurrences(of: "[:,]", with: "", options: .regularExpression)
-		.components(separatedBy: " ")
-	
-	return Ingredient(
-		name: tokens[0],
-		attributes: [
+    let tokens = input
+        .replacingOccurrences(of: "[:,]", with: "", options: .regularExpression)
+        .components(separatedBy: " ")
+    
+    return Ingredient(
+        name: tokens[0],
+        attributes: [
             "capacity": Int(tokens[2])!,
             "durability": Int(tokens[4])!,
             "flavor": Int(tokens[6])!,
-            "texture": Int(tokens[8])!
+            "texture": Int(tokens[8])!,
+            "calories": Int(tokens[10])!
         ]
-	)
+    )
 }
 
 
@@ -96,21 +103,20 @@ func permuteNonUnique(names: [String], amount: Int) -> [Recipe] {
     }
     
     return names.map { permute2(names: names, first: $0, amount: amount) }.reduce([], +)
-
+    
 }
 
 func permute2(names: [String], first: String, amount: Int) -> [Recipe] {
-	let rest = names.filter { $0 != first }
-	var result: [Recipe] = []
-	
-	for firstAmt in 0...amount {
-		let subresult = permuteNonUnique(names: rest, amount: amount - firstAmt)
-		for var p in subresult {
-			p.amounts[first] = firstAmt
-			result.append(p)
-		}
-	}
-	
-	return result
+    let rest = names.filter { $0 != first }
+    var result: [Recipe] = []
+    
+    for firstAmt in 0...amount {
+        let subresult = permuteNonUnique(names: rest, amount: amount - firstAmt)
+        for var p in subresult {
+            p.amounts[first] = firstAmt
+            result.append(p)
+        }
+    }
+    
+    return result
 }
-*/
