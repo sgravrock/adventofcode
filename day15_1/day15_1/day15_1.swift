@@ -113,4 +113,3 @@ func permute2(names: [String], first: String, amount: Int) -> [Recipe] {
 	
 	return result
 }
-*/
