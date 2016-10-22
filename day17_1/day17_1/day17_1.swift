@@ -7,41 +7,38 @@ func sum(_ a: [Int]) -> Int {
 }
 
 func combinations<T>(_ things: [T]) -> [[T]] {
-    var resultIndices = Set<Set<Int>>()
-    combine(things, into: &resultIndices)
-
-	return resultIndices.map { (result: Set<Int>) -> [T] in
-		return result.map { things[$0] }
-	}
-}
-
-func combine<T>(_ things: [T], into: inout Set<Set<Int>>) {
-	for i in 1...things.count {
-		combine(things, length: i, into: &into)
-	}
-}
-
-func combine<T>(_ things: [T], length: Int, into: inout Set<Set<Int>>) {
-	assert(length > 0)
-	assert(things.count >= length)
+	var result: [[T]] = []
 	
-	if length == things.count {
-		into.insert(Set<Int>(0..<things.count))
-	} else if length == 1 {
-		for i in 0..<things.count {
-			into.insert(Set<Int>([i]))
-		}
-	} else {
-		for i in 0..<things.count {
-			var rest = things
-			rest.remove(at: i)
-			var subresult = Set<Set<Int>>()
-			combine(rest, length: length - 1, into: &subresult)
-			
-			for var sr in subresult {
-				sr.insert(i)
-				into.insert(sr)
-			}
+	for i in 1...things.count {
+		let subresult = combinations(length: i, outOf: things.count, startingAt: 0)
+		for sr in subresult {
+			result.append(sr.map { things[$0] })
 		}
 	}
+	
+	return result
+}
+
+func combinations(length: Int, outOf: Int, startingAt: Int) -> [[Int]] {
+	assert(length >= 1)
+	assert(length <= outOf - startingAt)
+	
+	var wip: [Int] = []
+	var result: [[Int]] = []
+
+	func generateSub(length: Int, startingAt: Int) {
+		if wip.count == length {
+			result.append(wip)
+			return
+		}
+		
+		for i in startingAt..<outOf {
+			wip.append(i)
+			generateSub(length: length, startingAt: i + 1)
+			wip.removeLast()
+		}
+	}
+	
+	generateSub(length: length, startingAt: startingAt)
+	return result
 }

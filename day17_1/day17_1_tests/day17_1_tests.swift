@@ -80,7 +80,7 @@ class day17_1_tests: XCTestCase {
     }
     
     func test_combinationsWithSum_performance() {
-        let things = [1, 2, 3, 4, 5, 1, 2, 3]
+        let things = [1, 2, 3, 4, 5, 1, 2, 3, 4]
         measure {
             _ = combinations(things, withSum: 10)
         }
