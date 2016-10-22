@@ -1,12 +1,16 @@
 import XCTest
 
+func include(_ thing: Any) -> Bool {
+    return true
+}
+
 class day17_1_tests: XCTestCase {
 	func test_combinations_1() {
 		let things = ["a"]
-		let actual = combinations(things)
+        let actual = combinations(things)
         XCTAssertEqual(1, actual.count)
-        XCTAssertEqual(1, actual.first!.count)
-        XCTAssertEqual("a", actual.first!.first!)
+        XCTAssertEqual(1, actual.first?.count)
+        XCTAssertEqual("a", actual.first?.first)
 	}
 	
 	func test_combinations_2() {
@@ -74,11 +78,13 @@ class day17_1_tests: XCTestCase {
         }
 
     }
-	
-	func toSet(_ a: [[String]]) -> Set<ArrayWrapper<String>> {
-		let elems = a.map { ArrayWrapper($0) }
-		return Set(elems)
-	}
+    
+    func test_combinationsWithSum_performance() {
+        let things = [1, 2, 3, 4, 5, 1, 2, 3]
+        measure {
+            _ = combinations(things, withSum: 10)
+        }
+    }
 
     func matchExists<T>(expected: [T], actual: [[T]]) -> Bool where T: Comparable {
         let expectedSorted = expected.sorted()

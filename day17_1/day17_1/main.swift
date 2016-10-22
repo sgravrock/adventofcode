@@ -1,3 +1,5 @@
+import Foundation
+
 let input = [11,
              30,
              47,
@@ -19,5 +21,7 @@ let input = [11,
              19,
              3
 ]
+print("start at \(Date())")
 let result = combinations(input, withSum: 150)
 print(result.count)
+print("end at \(Date())")

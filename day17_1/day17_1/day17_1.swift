@@ -1,103 +1,47 @@
 func combinations(_ things: [Int], withSum: Int) -> [[Int]] {
-    let candidates = combinations(things)
-    return candidates.filter({ (candidate: [Int]) -> Bool in
-        let sum = candidate.reduce(0, +)
-        return sum == withSum
-    })
+	return combinations(things).filter { sum($0) == withSum }
 }
 
-func combinations<T>(_ things: [T]) -> [[T]] where T: Hashable {
-    let boxedThings = things.map { IdentityBox($0) }
-    var boxedResult = Set<ArrayWrapper<IdentityBox<T>>>()
-    combine(boxedThings, into: &boxedResult)
-    return boxedResult.map { $0.a.map { $0.it }}
+func sum(_ a: [Int]) -> Int {
+	return a.reduce(0, +)
 }
 
-func combine<T>(_ things: [T], into: inout Set<ArrayWrapper<T>>) where T: Hashable, T: Equatable {
-	into.insert(ArrayWrapper(things))
+func combinations<T>(_ things: [T]) -> [[T]] {
+    var resultIndices = Set<Set<Int>>()
+    combine(things, into: &resultIndices)
 
-	if things.count <= 1 {
-		return
-	}
-	
-	for i in 0..<things.count {
-		var copy = things
-		copy.remove(at: i)
-		combine(copy, into: &into)
+	return resultIndices.map { (result: Set<Int>) -> [T] in
+		return result.map { things[$0] }
 	}
 }
 
-class IdentityBox<T>: Equatable, Hashable where T: Hashable {
-    let it: T
-    
-    init(_ value: T) {
-        it = value
-    }
-    
-    static func ==(lhs: IdentityBox<T>, rhs: IdentityBox<T>) -> Bool {
-        return lhs === rhs
-    }
-    
-    var hashValue: Int {
-        // This will generate collisions whenever two boxes have the same value,
-        // but it should be good enough for our purposes.
-        return it.hashValue
-    }
-}
-
-struct ArrayWrapper<T>: Equatable, Hashable where T: Equatable, T: Hashable {
-	let a: [T]
-	
-	init(_ arr: [T]) {
-		a = arr
-	}
-	
-	static func ==(lhs: ArrayWrapper<T>, rhs: ArrayWrapper<T>) -> Bool {
-		return equals(array1: lhs.a, array2: rhs.a)
-	}
-	
-	var hashValue: Int {
-		return hash(array: a)
+func combine<T>(_ things: [T], into: inout Set<Set<Int>>) {
+	for i in 1...things.count {
+		combine(things, length: i, into: &into)
 	}
 }
 
-func equals<T>(array1: [T], array2: [T]) -> Bool where T: Equatable {
-	if array1.count != array2.count {
-		return false
-	}
+func combine<T>(_ things: [T], length: Int, into: inout Set<Set<Int>>) {
+	assert(length > 0)
+	assert(things.count >= length)
 	
-	for i in 0..<array1.count {
-		if array1[i] != array2[i] {
-			return false
+	if length == things.count {
+		into.insert(Set<Int>(0..<things.count))
+	} else if length == 1 {
+		for i in 0..<things.count {
+			into.insert(Set<Int>([i]))
 		}
-	}
-	
-	return true
-}
-
-func hash<T>(array: Array<T>) -> Int where T: Hashable {
-	// DJB hash algorighm
-	var hash = 5381
-	
-	for x in array {
-		hash = ((hash << 5) &+ hash) &+ x.hashValue
-	}
-	
-	return hash
-}
-
-func equals<TKey, TValue>(dict1: Dictionary<TKey, TValue>, dict2: Dictionary<TKey, TValue>) -> Bool
-	where TKey: Hashable, TValue: Hashable {
-		
-		if dict1.count != dict2.count {
-			return false
-		}
-		
-		for kv in dict1 {
-			if dict2[kv.key] != kv.value {
-				return false
+	} else {
+		for i in 0..<things.count {
+			var rest = things
+			rest.remove(at: i)
+			var subresult = Set<Set<Int>>()
+			combine(rest, length: length - 1, into: &subresult)
+			
+			for var sr in subresult {
+				sr.insert(i)
+				into.insert(sr)
 			}
 		}
-		
-		return true
+	}
 }
