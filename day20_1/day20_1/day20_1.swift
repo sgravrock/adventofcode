@@ -16,13 +16,15 @@ func lowestHouseNumberWithPresents(_ nPresents: Int, limit: Int) -> Int? {
 }
 
 func presentsAtHouse(_ houseNum: Int) -> Int {
-	var nPresents = 0
+	var nPresents = houseNum * 10
 
-	for elfNum in 1...houseNum {
-		if houseNum % elfNum == 0 {
-			nPresents += elfNum * 10
+	if houseNum >= 2 {
+		for elfNum in 1...houseNum / 2 {
+			if houseNum % elfNum == 0 {
+				nPresents += elfNum * 10
+			}
 		}
-	}
+		}
 	
 	return nPresents
 }
