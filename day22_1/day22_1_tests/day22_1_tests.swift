@@ -27,20 +27,19 @@ class day22_1_tests: XCTestCase {
 		let player = Player(hitPoints: 10, mana: 250)
 		let boss = Boss(hitPoints: 13, damagePoints: 8)
 		
-		player.cast(spell: poison, target: boss)
+		// cast was here
 		XCTAssertEqual(13, boss.hitPoints)		// no damage yet
+		playerTurn(player: player, boss: boss, spell: poison)
 		XCTAssertEqual(77, player.mana)
-		playerTurn(player: player, boss: boss)
 		XCTAssertEqual(13, boss.hitPoints)		// poison has done no damage yet
 		bossTurn(player: player, boss: boss)
 		XCTAssertEqual(10, boss.hitPoints)		// poison does 3 damage
 		XCTAssertEqual(5, player.activeEffects[0].duration)
 		XCTAssertEqual(2, player.hitPoints)		// boss does 8 damage
 
-		player.cast(spell: magicMissile, target: boss)
-		XCTAssertEqual(6, boss.hitPoints)		// Magic Missile does 4 instant damage
-		playerTurn(player: player, boss: boss)
-		XCTAssertEqual(3, boss.hitPoints)		// Poison does 3 damage
+		// cast was here
+		playerTurn(player: player, boss: boss, spell: magicMissile)
+		XCTAssertEqual(3, boss.hitPoints)		// Poison does 3 damage, Magic Missile does 4 instant damage
 		XCTAssertEqual(4, player.activeEffects[0].duration)
 		
 		bossTurn(player: player, boss: boss)
@@ -58,9 +57,8 @@ class day22_1_tests: XCTestCase {
 		- Boss has 14 hit points
 		Player casts Recharge.
 		*/
-		player.cast(spell: recharge, target: boss)
 		XCTAssertEqual(14, boss.hitPoints)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: recharge)
 		XCTAssertEqual(21, player.mana)
 
 		/*
@@ -86,8 +84,7 @@ class day22_1_tests: XCTestCase {
 		*/
 		XCTAssertEqual(2, player.hitPoints)
 		XCTAssertEqual(14, boss.hitPoints)
-		player.cast(spell: shield, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: shield)
 		XCTAssertEqual(110, player.mana)	// 122 + 101 (recharge) - 113 (shield)
 		XCTAssertEqual(2, player.activeEffects.count)
 		XCTAssertEqual(3, player.activeEffects[0].duration)
@@ -119,8 +116,7 @@ class day22_1_tests: XCTestCase {
 		*/
 		XCTAssertEqual(1, player.hitPoints)
 		XCTAssertEqual(14, boss.hitPoints)
-		player.cast(spell: drain, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: drain)
 		XCTAssertEqual(2, player.activeEffects.count)		// drain has no effects
 		XCTAssertEqual(1, player.activeEffects[0].duration)	// recharge
 		XCTAssertEqual(4, player.activeEffects[1].duration)	// shield
@@ -154,8 +150,7 @@ class day22_1_tests: XCTestCase {
 		XCTAssertEqual(2, player.hitPoints)
 		XCTAssertEqual(7, player.armorPoints)
 		XCTAssertEqual(340, player.mana)
-		player.cast(spell: poison, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: poison)
 		XCTAssertEqual(2, player.activeEffects.count)
 		XCTAssertEqual(2, player.activeEffects[0].duration)
 		
@@ -189,8 +184,7 @@ class day22_1_tests: XCTestCase {
 		XCTAssertEqual(7, player.armorPoints)
 		XCTAssertEqual(167, player.mana)
 		XCTAssertEqual(9, boss.hitPoints)
-		player.cast(spell: magicMissile, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: magicMissile)
 		XCTAssertEqual(1, player.activeEffects.count)
 		XCTAssertEqual(4, player.activeEffects[0].duration)
 
@@ -231,8 +225,7 @@ class day22_1_tests: XCTestCase {
 		let boss = Boss(hitPoints: 5, damagePoints: 2)
 		let spell1 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 2, armor: 2, damage: 0, mana: 0))
 		let spell2 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 1, armor: 1, damage: 0, mana: 0))
-		player.cast(spell: spell1, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: spell1)
 		XCTAssertFalse(player.canCast(spell: spell2))
 	}
 	
@@ -241,8 +234,7 @@ class day22_1_tests: XCTestCase {
 		let boss = Boss(hitPoints: 5, damagePoints: 2)
 		let spell1 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 2, armor: 2, damage: 0, mana: 0))
 		let spell2 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 1, armor: 0, damage: 1, mana: 0))
-		player.cast(spell: spell1, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: spell1)
 		XCTAssertTrue(player.canCast(spell: spell2))
 	}
 	
@@ -251,8 +243,7 @@ class day22_1_tests: XCTestCase {
 		let boss = Boss(hitPoints: 5, damagePoints: 2)
 		let spell1 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 2, armor: 2, damage: 0, mana: 0))
 		let spell2 = Spell(cost: 0, damage: 0, healing: 0, effect: nil)
-		player.cast(spell: spell1, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: spell1)
 		XCTAssertTrue(player.canCast(spell: spell2))
 	}
 
@@ -261,8 +252,7 @@ class day22_1_tests: XCTestCase {
 		let boss = Boss(hitPoints: 5, damagePoints: 2)
 		let spell1 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 1, armor: 2, damage: 0, mana: 0))
 		let spell2 = Spell(cost: 0, damage: 0, healing: 0, effect: Effect(duration: 1, armor: 1, damage: 0, mana: 0))
-		player.cast(spell: spell1, target: boss)
-		playerTurn(player: player, boss: boss)
+		playerTurn(player: player, boss: boss, spell: spell1)
 		XCTAssertTrue(player.canCast(spell: spell2))
 	}
 	

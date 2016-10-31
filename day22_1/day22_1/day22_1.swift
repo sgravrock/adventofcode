@@ -9,8 +9,7 @@ func minManaToWin(player: Player, boss: Boss, spells: [Spell]) -> Int? {
 	
 	while pendingSteps.count > 0 {
 		let step = pendingSteps.removeFirst()
-		step.player.cast(spell: step.nextSpell, target: step.boss)
-		playerTurn(player: step.player, boss: step.boss)
+		playerTurn(player: step.player, boss: step.boss, spell: step.nextSpell)
 		bossTurn(player: step.player, boss: step.boss)
 		let cost = step.costSoFar + step.nextSpell.cost
 		
@@ -50,8 +49,7 @@ struct Step {
 }
 
 func minManaToWin(player: Player, boss: Boss, spells: [Spell], nextSpell: Spell) -> Int? {
-	player.cast(spell: nextSpell, target: boss)
-	playerTurn(player: player, boss: boss)
+	playerTurn(player: player, boss: boss, spell: nextSpell)
 	bossTurn(player: player, boss: boss)
 	
 	switch currentGameState(player: player, boss: boss) {
@@ -212,12 +210,8 @@ func currentGameState(player: Player, boss: Boss) -> GameState {
 	}
 }
 
-func turns(player: Player, boss: Boss) {
-	playerTurn(player: player, boss: boss)
-	bossTurn(player: player, boss: boss)
-}
-
-func playerTurn(player: Player, boss: Boss) {
+func playerTurn(player: Player, boss: Boss, spell: Spell) {
+	player.cast(spell: spell, target: boss)
 	player.applyEffects(target: boss)
 }
 
