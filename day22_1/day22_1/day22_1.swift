@@ -1,20 +1,55 @@
-func minManaToWin(player: Player, boss: Boss) -> Int? {
-	let validSpells = spells.filter { player.canCast(spell: $0) }	
-	let results = validSpells
-		.map({ (s: Spell) -> Int? in
-			return minManaToWin(player: player.clone(), boss: boss.clone(), nextSpell: s)
-		})
-		.filter { $0 != nil }
-		.sorted(by: {$0! < $1! })
-	
-	if let best = results.first {
-		return best
+func minManaToWin(player: Player, boss: Boss, spells: [Spell]) -> Int? {
+	var pendingSteps : [Step] = []
+
+	for spell in spells.filter({ player.canCast(spell: $0) }) {
+		pendingSteps.append(Step(player: player.clone(), boss: boss.clone(), nextSpell: spell, costSoFar: 0))
 	}
 	
-	return nil
+	var minMana = Int.max
+	
+	while pendingSteps.count > 0 {
+		let step = pendingSteps.removeFirst()
+		step.player.cast(spell: step.nextSpell, target: step.boss)
+		playerTurn(player: step.player, boss: step.boss)
+		bossTurn(player: step.player, boss: step.boss)
+		let cost = step.costSoFar + step.nextSpell.cost
+		
+		if cost > minMana {
+			break;
+		}
+		
+		switch currentGameState(player: step.player, boss: step.boss) {
+		case .PlayerWon:
+			minMana = cost
+			print("New minimum: \(minMana)")
+		case .BossWon:
+			break;
+		case .Running:
+			for spell in spells.filter({ step.player.canCast(spell: $0) }) {
+				pendingSteps.append(step.nextStep(spell: spell))
+			}
+		}
+	}
+	
+	if minMana == Int.max {
+		return nil
+	}
+	
+	return minMana
 }
 
-func minManaToWin(player: Player, boss: Boss, nextSpell: Spell) -> Int? {
+struct Step {
+	let player: Player
+	let boss: Boss
+	let nextSpell: Spell
+	let costSoFar: Int
+	
+	func nextStep(spell: Spell) -> Step {
+		return Step(player: player.clone(), boss: boss.clone(), nextSpell: spell, costSoFar: costSoFar + nextSpell.cost)
+	}
+}
+
+func minManaToWin(player: Player, boss: Boss, spells: [Spell], nextSpell: Spell) -> Int? {
 	player.cast(spell: nextSpell, target: boss)
 	playerTurn(player: player, boss: boss)
 	bossTurn(player: player, boss: boss)
@@ -25,7 +60,7 @@ func minManaToWin(player: Player, boss: Boss, nextSpell: Spell) -> Int? {
 	case .PlayerWon:
 		return nextSpell.cost
 	case .Running:
-		if let subresult = minManaToWin(player: player.clone(), boss: boss.clone()) {
+		if let subresult = minManaToWin(player: player.clone(), boss: boss.clone(), spells: spells) {
 			return subresult + nextSpell.cost
 		} else {
 			return nil
@@ -59,7 +94,7 @@ let drain = Spell(cost: 73, damage: 2, healing: 2, effect: nil)
 let shield = Spell(cost: 113, damage: 0, healing: 0, effect: Effect(duration: 6, armor: 7, damage: 0, mana: 0))
 let poison = Spell(cost: 173, damage: 0, healing: 0, effect: Effect(duration: 6, armor: 0, damage: 3, mana: 0))
 let recharge = Spell(cost: 229, damage: 0, healing: 0, effect: Effect(duration: 5, armor: 0, damage: 0, mana: 101))
-let spells = [
+let allSpells = [
 	magicMissile,
 	drain,
 	shield,

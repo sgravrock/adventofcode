@@ -284,4 +284,25 @@ class day22_1_tests: XCTestCase {
 		boss.hitPoints = 0
 		XCTAssertEqual(.PlayerWon, currentGameState(player: player, boss: boss))
 	}
+	
+	func test_minManaToWin() {
+		let player = Player(hitPoints: 10, mana: 250)
+		let boss = Boss(hitPoints: 13, damagePoints: 8)
+		let spells = [poison, magicMissile]
+		XCTAssertEqual(226, minManaToWin(player: player, boss: boss, spells: spells))
+	}
+	
+	func test_minManaToWin_alwaysTerminates() {
+		let player = Player(hitPoints: 10, mana: 250)
+		let boss = Boss(hitPoints: 13, damagePoints: 8)
+		let bogusSpell = Spell(cost: 100, damage: 0, healing: 8, effect: Effect(duration: 1, armor: 8, damage: 0, mana: 100))
+		let spells = [poison, magicMissile, bogusSpell]
+		let e = expectation(description: "completion")
+		
+		DispatchQueue.global().async {
+			XCTAssertEqual(226, minManaToWin(player: player, boss: boss, spells: spells))
+			e.fulfill()
+		}
+		waitForExpectations(timeout: 1, handler: nil)
+	}
 }
