@@ -73,7 +73,7 @@ func sum(_ a: [Int]) -> Int {
 
 func combinations(_ things: [Int]) -> [[Int]] {
     return (1...things.count).flatMap({ (size: Int) -> [[Int]] in
-        let subresult = combinations(length: size, outOf: things.count, startingAt: 0)
+        let subresult = indexCombinations(length: size, outOf: things.count, startingAt: 0)
         return subresult.map({ (indices: [Int]) -> [Int] in
             return indices.map { things[$0] }
         })
@@ -81,13 +81,13 @@ func combinations(_ things: [Int]) -> [[Int]] {
 }
 
 func combinations(_ things: [Int], length: Int) -> [[Int]] {
-	let indexedCombos = combinations(length: length, outOf: things.count, startingAt: 0)
+	let indexedCombos = indexCombinations(length: length, outOf: things.count, startingAt: 0)
 	return indexedCombos.map({ (indices: [Int]) -> [Int] in
 		return indices.map { things[$0] }
 	})
 }
 
-func combinations(length: Int, outOf: Int, startingAt: Int) -> [[Int]] {
+func indexCombinations(length: Int, outOf: Int, startingAt: Int) -> [[Int]] {
     assert(length >= 1)
     assert(length <= outOf - startingAt)
     
