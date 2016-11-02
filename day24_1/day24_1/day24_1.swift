@@ -73,7 +73,7 @@ func sum(_ a: [Int]) -> Int {
 
 func combinations(_ things: [Int]) -> [[Int]] {
     return (1...things.count).flatMap({ (size: Int) -> [[Int]] in
-        let subresult = indexCombinations(length: size, outOf: things.count, startingAt: 0)
+        let subresult = IndexCombinations(length: size, outOf: things.count, startingAt: 0)
         return subresult.map({ (indices: [Int]) -> [Int] in
             return indices.map { things[$0] }
         })
@@ -81,32 +81,53 @@ func combinations(_ things: [Int]) -> [[Int]] {
 }
 
 func combinations(_ things: [Int], length: Int) -> [[Int]] {
-	let indexedCombos = indexCombinations(length: length, outOf: things.count, startingAt: 0)
+	let indexedCombos = IndexCombinations(length: length, outOf: things.count, startingAt: 0)
 	return indexedCombos.map({ (indices: [Int]) -> [Int] in
 		return indices.map { things[$0] }
 	})
 }
 
-func indexCombinations(length: Int, outOf: Int, startingAt: Int) -> [[Int]] {
-    assert(length >= 1)
-    assert(length <= outOf - startingAt)
+struct IndexCombinations : Sequence {
+    let comboSize: Int
+    let inputSize: Int
+    let startIndex: Int
     
-    var wip: [Int] = []
-    var result: [[Int]] = []
-    
-    func generateSub(length: Int, startingAt: Int) {
-        if wip.count == length {
-            result.append(wip)
-            return
-        }
-        
-        for i in startingAt..<outOf {
-            wip.append(i)
-            generateSub(length: length, startingAt: i + 1)
-            wip.removeLast()
-        }
+    init(length: Int, outOf: Int, startingAt: Int) {
+        assert(length >= 1)
+        assert(length <= outOf - startingAt)
+        comboSize = length
+        inputSize = outOf
+        startIndex = startingAt
     }
     
-    generateSub(length: length, startingAt: startingAt)
-    return result
+    func makeIterator() -> AnyIterator<[Int]> {
+        var wip: [Int] = []
+        var result: [[Int]] = []
+        
+        func generateSub(length: Int, startingAt: Int) {
+            if wip.count == length {
+                result.append(wip)
+                return
+            }
+            
+            for i in startingAt..<self.inputSize {
+                wip.append(i)
+                generateSub(length: length, startingAt: i + 1)
+                wip.removeLast()
+            }
+        }
+        
+        generateSub(length: self.comboSize, startingAt: self.startIndex)
+        var i = 0
+
+        return AnyIterator<[Int]> {
+            guard i < result.count else {
+                return nil
+            }
+            
+            let ret = result[i]
+            i += 1
+            return ret
+        }
+    }
 }
