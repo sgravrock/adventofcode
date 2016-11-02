@@ -32,5 +32,5 @@ let packages = [
 	113
 ]
 print("Start: \(NSDate())")
-print(idealConfigurations(packages: packages).first!.quantumEntanglement)
+print(minQE(packages: packages))
 print("End: \(NSDate())")

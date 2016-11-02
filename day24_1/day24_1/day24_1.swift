@@ -1,93 +1,70 @@
-func idealConfigurations(packages: [Int]) -> Set<Config> {
-	var currentMin = Int.max
-	var result = Set<Config>()
+import Foundation
+
+func minQE(packages: [Int]) -> Int? {
+	let totalWeight = sum(packages)
 	
-	for config in configsWithMinPassenger(packages: packages) {
-		let qe = config.quantumEntanglement
-		
-		if qe < currentMin {
-			currentMin = qe
-			result = Set<Config>()
-		}
-		
-		if qe == currentMin {
-			result.insert(config)
+	for i in 1..<packages.count - 2 {
+		if let m = minQE(packages: packages, totalWeight: totalWeight, passengerCount: i) {
+			return m
 		}
 	}
 	
-	return result
+	return nil
 }
 
-func configsWithMinPassenger(packages: [Int]) -> Set<Config> {
-	var currentMin = Int.max
-	var result = Set<Config>()
-	
-	for config in configsWithEqualWeight(packages: packages) {
-		if config.passenger.count < currentMin {
-			currentMin = config.passenger.count
-			result = Set<Config>()
-		}
-		
-		if config.passenger.count == currentMin {
-			result.insert(config)
-		}
-	}
-	
-	return result
-}
+func minQE(packages: [Int], totalWeight: Int, passengerCount: Int ) -> Int? {
+	return autoreleasepool {
+		print("Checking with \(passengerCount) in passenger")
 
-func configsWithEqualWeight(packages: [Int]) -> Set<Config> {
-	var result = Set<Config>()
-	
-	for passenger in combinations(packages) {
-		let weight = sum(passenger)
-		let notInPassenger = packages.filter { !passenger.contains($0) }
+		let combos = combinations(packages, length: passengerCount).sorted { (a: [Int], b: [Int]) -> Bool in
+			return quantumEntanglement(a) < quantumEntanglement(b)
+		}
 		
-		for left in combinations(notInPassenger, withSum: weight) {
-			let right = notInPassenger.filter { !left.contains($0) }
-			
-			if sum(right) == weight {
-				result.insert(Config(passenger: passenger, left: left, right: right))
+		print("Checking \(combos.count) combos")
+		
+		for combo in combos {
+			if isValid(packages: packages, totalWeight: totalWeight, passesngerCombo: combo) {
+				return quantumEntanglement(combo)
 			}
 		}
+		
+		return nil
 	}
-	return result
 }
 
-struct Config : Equatable, Hashable {
-    let passenger: Set<Int>
-    let left: Set<Int>
-    let right: Set<Int>
-	
-	init(passenger: [Int], left: [Int], right: [Int]) {
-		self.passenger = Set(passenger)
-		self.left = Set(left)
-		self.right = Set(right)
+func isValid(packages: [Int], totalWeight: Int, passesngerCombo: [Int]) -> Bool {
+	return autoreleasepool {
+		let weight = sum(passesngerCombo)
+		
+		if weight != totalWeight / 3 {
+			return false
+		}
+		
+		let notInPassenger = packages.filter { !passesngerCombo.contains($0) }
+		
+		for combo in combinations(notInPassenger, withSum: weight) {
+			let ok = autoreleasepool(invoking: { () -> Bool in
+				let rest = notInPassenger.filter { !combo.contains($0) }
+				return sum(rest) == weight
+			})
+			
+			if ok {
+				return true
+			}
+		}
+		
+		return false
 	}
-	
-	var quantumEntanglement: Int {
-		return passenger.reduce(1, *)
-	}
-    
-    var hashValue: Int {
-        let hashes = [passenger, left, right].map { $0.hashValue }
-        return hash(array: hashes)
-    }
-    
-    static func ==(lhs: Config, rhs: Config) -> Bool {
-        return lhs.passenger == rhs.passenger && lhs.left == rhs.left && lhs.right == rhs.right
-    }
 }
 
-func hash<T>(array: [T]) -> Int where T: Hashable {
-    // DJB hash algorithm
-    var hash = 5381
-    
-    for v in array {
-        hash = ((hash << 5) &+ hash) &+ v.hashValue
-    }
-    
-    return hash
+func quantumEntanglement(_ a: [Int]) -> Int {
+	var p = 1
+	
+	for n in a {
+		p *= n
+	}
+	
+	return p
 }
 
 func combinations(_ things: [Int], withSum: Int) -> [[Int]] {
@@ -96,10 +73,6 @@ func combinations(_ things: [Int], withSum: Int) -> [[Int]] {
 
 func sum(_ a: [Int]) -> Int {
     return a.reduce(0, +)
-}
-
-func sum(_ s: Set<Int>) -> Int {
-	return s.reduce(0, +)
 }
 
 func combinations<T>(_ things: [T]) -> [[T]] {
@@ -117,6 +90,13 @@ func combinations<T>(_ things: [T]) -> [[T]] {
     }
     
     return result
+}
+
+func combinations<T>(_ things: [T], length: Int) -> [[T]] {
+	let indexedCombos = combinations(length: length, outOf: things.count, startingAt: 0)
+	return indexedCombos.map({ (indices: [Int]) -> [T] in
+		return indices.map { things[$0] }
+	})
 }
 
 func combinations(length: Int, outOf: Int, startingAt: Int) -> [[Int]] {
