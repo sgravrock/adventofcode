@@ -15,10 +15,9 @@ func minQE(packages: [Int]) -> Int? {
 func minQE(packages: [Int], weight: Int, passengerCount: Int ) -> Int? {
 	return autoreleasepool {
 		print("Checking with \(passengerCount) in passenger")
-
-		let combos = combinations(packages, length: passengerCount)
-			.filter { sum($0) == weight }
-			.sorted { (a: [Int], b: [Int]) -> Bool in
+        let allCombos = combinations(packages, length: passengerCount)
+        let combosWithMinWeight: LazyFilterSequence<LazyMapSequence<IndexCombinations, [Int]> > = allCombos.filter { sum($0) == weight }
+        let combos = combosWithMinWeight.sorted { (a: [Int], b: [Int]) -> Bool in
 				return quantumEntanglement(a) < quantumEntanglement(b)
 			}
 		
@@ -71,20 +70,59 @@ func sum(_ a: [Int]) -> Int {
     return a.reduce(0, +)
 }
 
-func combinations(_ things: [Int]) -> [[Int]] {
-    return (1...things.count).flatMap({ (size: Int) -> [[Int]] in
-        let subresult = IndexCombinations(length: size, outOf: things.count, startingAt: 0)
-        return subresult.map({ (indices: [Int]) -> [Int] in
-            return indices.map { things[$0] }
-        })
+// Basically the same as the std lib LazySequence's lazy flatMap overload,
+// except that I can figure out how to write the type signature of a method that returns it.
+struct PotentiallyLazyFlatMapSequence<TInputSequence, TChunk>: Sequence where TInputSequence: Sequence, TChunk: Sequence {
+    var input: TInputSequence
+    let transform: (TInputSequence.Iterator.Element) -> TChunk
+    
+    init(input: TInputSequence, transform: @escaping (TInputSequence.Iterator.Element) -> TChunk) {
+        self.input = input
+        self.transform = transform
+    }
+    
+    func makeIterator() -> AnyIterator<TChunk.Iterator.Element> {
+        var inputIter = input.makeIterator()
+        var chunkIter: TChunk.Iterator? = nil
+        
+        return AnyIterator<TChunk.Iterator.Element> {
+            while true {
+                if chunkIter == nil {
+                    guard let inputEl = inputIter.next() else {
+                        return nil
+                    }
+                    
+                    let chunk = self.transform(inputEl)
+                    chunkIter = chunk.makeIterator()
+                }
+                
+                if let result = chunkIter?.next() {
+                    return result
+                } else {
+                    chunkIter = nil
+                }
+            }
+        }
+    }
+}
+
+func combinations(_ things: [Int]) -> PotentiallyLazyFlatMapSequence<[Int], LazyMapSequence<IndexCombinations, [Int]>> {
+    let sizes = Array(1...things.count)
+    return PotentiallyLazyFlatMapSequence(input: sizes, transform: { (size: Int) -> LazyMapSequence<IndexCombinations, [Int]> in
+        return combinations(things, length: size)
     })
 }
 
-func combinations(_ things: [Int], length: Int) -> [[Int]] {
-	let indexedCombos = IndexCombinations(length: length, outOf: things.count, startingAt: 0)
-	return indexedCombos.map({ (indices: [Int]) -> [Int] in
-		return indices.map { things[$0] }
-	})
+func combinations(_ things: [Int], length: Int) -> LazyMapSequence<IndexCombinations, [Int]> {
+	let indexedCombos = lazyIndexCombinations(length: length, outOf: things.count, startingAt: 0)
+    let result: LazyMapSequence<IndexCombinations, [Int]> = indexedCombos.map({ (indices: [Int]) -> [Int] in
+        return indices.map { things[$0] }
+    })
+    return result
+}
+
+func lazyIndexCombinations(length: Int, outOf: Int, startingAt: Int) -> LazySequence<IndexCombinations> {
+    return IndexCombinations(length: length, outOf: outOf, startingAt: startingAt).lazy
 }
 
 struct IndexCombinations : Sequence {
@@ -104,6 +142,7 @@ struct IndexCombinations : Sequence {
         var wip: [Int] = []
         var result: [[Int]] = []
         
+        // TODO: moar lazy
         func generateSub(length: Int, startingAt: Int) {
             if wip.count == length {
                 result.append(wip)

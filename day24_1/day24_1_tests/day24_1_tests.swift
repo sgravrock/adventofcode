@@ -14,7 +14,7 @@ class day24_1_tests: XCTestCase {
     
     func test_combinations_1() {
         let things = [5]
-		let actual = combinations(things, length: 1)
+		let actual = Array(combinations(things, length: 1))
         XCTAssertEqual(1, actual.count)
         XCTAssertEqual(1, actual.first?.count)
         XCTAssertEqual(5, actual.first?.first)
@@ -29,8 +29,8 @@ class day24_1_tests: XCTestCase {
             [4],
             [5]
         ]
-		let actual1 = combinations(things, length: 1)
-		let actual2 = combinations(things, length: 2)
+		let actual1 = Array(combinations(things, length: 1))
+		let actual2 = Array(combinations(things, length: 2))
 		XCTAssertEqual(expected1.count, actual1.count)
 		
 		for i in 0..<expected1.count {
@@ -59,9 +59,9 @@ class day24_1_tests: XCTestCase {
             [4],
             [5]
         ]
-		let actual1 = combinations(things, length: 1)
-		let actual2 = combinations(things, length: 2)
-		let actual3 = combinations(things, length: 3)
+		let actual1 = Array(combinations(things, length: 1))
+		let actual2 = Array(combinations(things, length: 2))
+		let actual3 = Array(combinations(things, length: 3))
 		XCTAssertEqual(expected1.count, actual1.count)
 		
 		for i in 0..<expected1.count {
@@ -92,7 +92,7 @@ class day24_1_tests: XCTestCase {
             [4],
             [5]
         ]
-        let actual = combinations(things)
+        let actual = Array(combinations(things))
         XCTAssertEqual(expected.count, actual.count)
         
         for i in 0..<expected.count {
