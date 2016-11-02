@@ -72,20 +72,12 @@ func sum(_ a: [Int]) -> Int {
 }
 
 func combinations(_ things: [Int]) -> [[Int]] {
-    var result: [[Int]] = []
-	
-	if things.count == 0 {
-		return result
-	}
-    
-    for i in 1...things.count {
-        let subresult = combinations(length: i, outOf: things.count, startingAt: 0)
-        for sr in subresult {
-            result.append(sr.map { things[$0] })
-        }
-    }
-    
-    return result
+    return (1...things.count).flatMap({ (size: Int) -> [[Int]] in
+        let subresult = combinations(length: size, outOf: things.count, startingAt: 0)
+        return subresult.map({ (indices: [Int]) -> [Int] in
+            return indices.map { things[$0] }
+        })
+    })
 }
 
 func combinations(_ things: [Int], length: Int) -> [[Int]] {
