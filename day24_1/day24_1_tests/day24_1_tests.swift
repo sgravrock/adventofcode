@@ -13,21 +13,21 @@ class day24_1_tests: XCTestCase {
 	}
     
     func test_combinations_1() {
-        let things = ["a"]
+        let things = [5]
 		let actual = combinations(things, length: 1)
         XCTAssertEqual(1, actual.count)
         XCTAssertEqual(1, actual.first?.count)
-        XCTAssertEqual("a", actual.first?.first)
+        XCTAssertEqual(5, actual.first?.first)
     }
     
     func test_combinations_2() {
-        let things = ["a", "b"]
+        let things = [4, 5]
         let expected2 = [
-            ["a", "b"]
+            [4, 5]
 		]
 		let expected1 = [
-            ["a"],
-            ["b"]
+            [4],
+            [5]
         ]
 		let actual1 = combinations(things, length: 1)
 		let actual2 = combinations(things, length: 2)
@@ -45,19 +45,19 @@ class day24_1_tests: XCTestCase {
     }
 	
     func test_combinations_3() {
-        let things = ["a", "b", "c"]
+        let things = [3, 4, 5]
         let expected3 = [
-            ["a", "b", "c"]
+            [3, 4, 5]
 		]
 		let expected2 = [
-            ["a", "b"],
-            ["a", "c"],
-            ["b", "c"]
+            [3, 4],
+            [3, 5],
+            [4, 5]
 		]
 		let expected1 = [
-            ["a"],
-            ["b"],
-            ["c"]
+            [3],
+            [4],
+            [5]
         ]
 		let actual1 = combinations(things, length: 1)
 		let actual2 = combinations(things, length: 2)
@@ -80,6 +80,26 @@ class day24_1_tests: XCTestCase {
 			XCTAssertTrue(matchExists(expected: expected3[i], actual: actual3))
 		}
     }
+    
+    func test_combinations_all() {
+        let things = [3, 4, 5]
+        let expected = [
+            [3, 4, 5],
+            [3, 4],
+            [3, 5],
+            [4, 5],
+            [3],
+            [4],
+            [5]
+        ]
+        let actual = combinations(things)
+        XCTAssertEqual(expected.count, actual.count)
+        
+        for i in 0..<expected.count {
+            XCTAssertTrue(matchExists(expected: expected[i], actual: actual))
+        }
+    }
+
 	
     func test_combinationsWithSum() {
         let things = [20, 15, 10, 5, 5]

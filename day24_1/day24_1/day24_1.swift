@@ -71,8 +71,8 @@ func sum(_ a: [Int]) -> Int {
     return a.reduce(0, +)
 }
 
-func combinations<T>(_ things: [T]) -> [[T]] {
-    var result: [[T]] = []
+func combinations(_ things: [Int]) -> [[Int]] {
+    var result: [[Int]] = []
 	
 	if things.count == 0 {
 		return result
@@ -88,9 +88,9 @@ func combinations<T>(_ things: [T]) -> [[T]] {
     return result
 }
 
-func combinations<T>(_ things: [T], length: Int) -> [[T]] {
+func combinations(_ things: [Int], length: Int) -> [[Int]] {
 	let indexedCombos = combinations(length: length, outOf: things.count, startingAt: 0)
-	return indexedCombos.map({ (indices: [Int]) -> [T] in
+	return indexedCombos.map({ (indices: [Int]) -> [Int] in
 		return indices.map { things[$0] }
 	})
 }
