@@ -1,10 +1,10 @@
 import Foundation
 
 func minQE(packages: [Int]) -> Int? {
-	let totalWeight = sum(packages)
+	let weight = sum(packages) / 3
 	
 	for i in 1..<packages.count - 2 {
-		if let m = minQE(packages: packages, totalWeight: totalWeight, passengerCount: i) {
+		if let m = minQE(packages: packages, weight: weight, passengerCount: i) {
 			return m
 		}
 	}
@@ -12,18 +12,20 @@ func minQE(packages: [Int]) -> Int? {
 	return nil
 }
 
-func minQE(packages: [Int], totalWeight: Int, passengerCount: Int ) -> Int? {
+func minQE(packages: [Int], weight: Int, passengerCount: Int ) -> Int? {
 	return autoreleasepool {
 		print("Checking with \(passengerCount) in passenger")
 
-		let combos = combinations(packages, length: passengerCount).sorted { (a: [Int], b: [Int]) -> Bool in
-			return quantumEntanglement(a) < quantumEntanglement(b)
-		}
+		let combos = combinations(packages, length: passengerCount)
+			.filter { sum($0) == weight }
+			.sorted { (a: [Int], b: [Int]) -> Bool in
+				return quantumEntanglement(a) < quantumEntanglement(b)
+			}
 		
 		print("Checking \(combos.count) combos")
 		
 		for combo in combos {
-			if isValid(packages: packages, totalWeight: totalWeight, passesngerCombo: combo) {
+			if isValid(packages: packages, weight: weight, passesngerCombo: combo) {
 				return quantumEntanglement(combo)
 			}
 		}
@@ -32,14 +34,8 @@ func minQE(packages: [Int], totalWeight: Int, passengerCount: Int ) -> Int? {
 	}
 }
 
-func isValid(packages: [Int], totalWeight: Int, passesngerCombo: [Int]) -> Bool {
+func isValid(packages: [Int], weight: Int, passesngerCombo: [Int]) -> Bool {
 	return autoreleasepool {
-		let weight = sum(passesngerCombo)
-		
-		if weight != totalWeight / 3 {
-			return false
-		}
-		
 		let notInPassenger = packages.filter { !passesngerCombo.contains($0) }
 		
 		for combo in combinations(notInPassenger, withSum: weight) {
