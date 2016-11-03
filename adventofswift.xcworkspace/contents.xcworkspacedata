@@ -32,6 +32,9 @@
       location = "group:day20_1/day20_1.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:day19_2/day19_2.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:day19_1/day19_1.xcodeproj">
    </FileRef>
    <FileRef
