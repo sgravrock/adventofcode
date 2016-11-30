@@ -7,8 +7,7 @@ fn main() {
 		.expect("Failed to read input");
 	let packages = input.lines()
 		.map(parse_package)
-		.map(|o| { o.unwrap() })
-		.collect();
+		.map(|o| { o.unwrap() });
 	println!("{}", ribbon_needed(packages));
 }
 
@@ -42,18 +41,18 @@ fn parse_package_not_enough_parts() {
 	assert_eq!(parse_package("2x3"), None);
 }
 
-fn ribbon_needed(packages: Vec<[i32; 3]>) -> i32 {
-	packages.iter().map(|p| {
-		smallest_perimeter(p) + bow_length(p)
+fn ribbon_needed<TIter: Iterator<Item = [i32; 3]>>(packages: TIter) -> i32 {
+	packages.map(|p| {
+		smallest_perimeter(&p) + bow_length(&p)
 	}).sum()
 }
 
 #[test]
 fn test_ribbon_needed() {
 	let input = vec![[2, 3, 4]];
-	assert_eq!(ribbon_needed(input), 34);
+	assert_eq!(ribbon_needed(input.iter().cloned()), 34);
 	let inputs = vec![[2, 3, 4], [1, 1, 10]];
-	assert_eq!(ribbon_needed(inputs), 48);
+	assert_eq!(ribbon_needed(inputs.iter().cloned()), 48);
 }
 
 fn smallest_perimeter(package: &[i32; 3]) -> i32 {
