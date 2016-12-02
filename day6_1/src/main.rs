@@ -1,6 +1,9 @@
 use std::collections::HashSet;
+use std::io;
+use std::io::prelude::*;
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+
+#[derive(PartialEq, Debug)]
 struct Birange {
 	xs: i32,
 	xe: i32,
@@ -8,52 +11,60 @@ struct Birange {
 	ye: i32,
 }
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Debug)]
 enum CmdType {
 	On,
 	Off,
 	Toggle
 }
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Debug)]
 struct Cmd {
 	t: CmdType,
 	range: Birange
 }
 
 fn main() {
-    println!("Hello, world!");
+	/*
+	let mut input = String::new();
+
+	io::stdin().read_to_string(&mut input)
+		.expect("Failed to read input");
+		*/
+	let stdin = io::stdin();
+	let cmds = stdin.lock().lines()
+		.map(|s| parse_cmd(&s.unwrap()));
+
+	let mut grid: HashSet<[i32;2]> = HashSet::new();
+
+	for cmd in cmds {
+		handle_cmd(&mut grid, cmd);
+	}
+
+	println!("{}", grid.len());
 }
 
 fn handle_cmd(grid: &mut HashSet<[i32;2]>, cmd: Cmd) {
-	match cmd.t {
-		CmdType::On => {
-			for x in cmd.range.xs..cmd.range.xe {
-				for y in cmd.range.ys..cmd.range.ye {
-					grid.insert([x, y]);
-				}
-			}
-		},
-		CmdType::Off => {
-			for x in cmd.range.xs..cmd.range.xe {
-				for y in cmd.range.ys..cmd.range.ye {
-					grid.remove(&[x, y]);
-				}
-			}
-		},
-		CmdType::Toggle => {
-			for x in cmd.range.xs..cmd.range.xe {
-				for y in cmd.range.ys..cmd.range.ye {
-					let c = [x, y];
+	for x in cmd.range.xs..cmd.range.xe {
+		for y in cmd.range.ys..cmd.range.ye {
+			let c = [x, y];
 
+			match cmd.t {
+				CmdType::On => {
+					grid.insert(c);
+				}
+				CmdType::Off => {
+					grid.remove(&c);
+				}
+				CmdType::Toggle => {
 					if grid.contains(&c) {
 						grid.remove(&c);
 					} else {
 						grid.insert(c);
 					}
-				}
-			}
-		},
+				},
+			};
+		}
 	}
 }
 
