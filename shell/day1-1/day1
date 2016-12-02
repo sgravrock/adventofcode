@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+input=$(sed 's/,//g' input.txt)
+start=0X0Xn
+end=$(./reduce ./move $start $input)
+expr $(echo $end | sed -e 's/-//g' -e 's/X.$//' -e 's/X/ + /')

@@ -1,0 +1,58 @@
+#!/bin/sh
+
+usage() {
+	echo Usage: $0: startpos move 1>&2
+	echo Where startpos is nXeXorientation and move is td 1>&2
+	echo e.g. 0X5Xs R8 means start at 0 north, 5 east facing south 1>&2
+	echo turn right and move 8. 1>&2
+	exit 1
+}
+
+if [ $# -ne 2 ]; then
+	usage
+fi
+
+move=$2
+set -f
+# _X prefix guards against negative N values being intepreted as flags
+set $(echo "_X$1" | sed 's/X/ /g')
+
+if [ $# -ne 4 ]; then
+	usage
+fi
+
+n=$2
+e=$3
+o=$4
+set +f
+
+case $move in
+R*)
+	o=$(./next-orientation $o R)
+	;;
+L*)
+	o=$(./next-orientation $o L)
+	;;
+*)
+	usage
+	;;
+esac
+
+dist=$(echo $move | sed 's/[RL]//')
+
+case $o in
+n)
+	n=$(expr $n + $dist)
+	;;
+s)
+	n=$(expr $n - $dist)
+	;;
+e)
+	e=$(expr $e + $dist)
+	;;
+w)
+	e=$(expr $e - $dist)
+	;;
+esac
+
+echo ${n}X${e}X${o}
