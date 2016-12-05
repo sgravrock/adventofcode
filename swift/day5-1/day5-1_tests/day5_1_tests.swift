@@ -1,0 +1,27 @@
+import XCTest
+
+class day5_1_tests: XCTestCase {
+	func test_findPassword() {
+		XCTAssertEqual("18f47a30", findPassword(doorId: "abc"))
+	}
+	
+	func test_next_character() {
+		XCTAssertEqual("1", next_character(doorId: "abc", start: 0).c);
+		XCTAssertEqual("8", next_character(doorId: "abc", start: 3231930).c);
+	}
+	
+	func test_hash() {
+		XCTAssertEqual("000001dbbfa3a5c83a2d506429c7b00e",
+		               toHexString(bytes: md5("abcdef609043")))
+	}
+	
+	func test_isValid() {
+		let maxValid: [UInt8] = [0x0, 0x0, 0x0f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+		let minInvalid: [UInt8] = [0x0, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+		let otherDigit: [UInt8] = [0x0, 0x01, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]
+		XCTAssertTrue(isValid(hash: maxValid))
+		XCTAssertFalse(isValid(hash: minInvalid))
+		XCTAssertFalse(isValid(hash: otherDigit))
+	}
+
+}
