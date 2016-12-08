@@ -8,21 +8,45 @@ fn main() {
 }
 
 fn find_password(door_id: &str) -> String {
-	let mut chars: Vec<char> = vec![];
-	let mut i = 0;
-
-	while chars.len() < 8 {
-		let result = next_char(door_id, i);
-		chars.push(result.0);
-		i = result.1 + 1;
-	}
-
-	chars.into_iter().collect()
+  let pwd = Password::new(door_id);
+	pwd.collect::<String>()
 }
 
 #[test]
 fn test_find_password() {
 	assert_eq!(find_password("abc"), "18f47a30");
+}
+
+struct Password<'a> {
+	door_id: &'a str,
+	next_hash_suffix: i32,
+	next_pos: i32,
+}
+
+impl <'a> Password<'a> {
+	fn new(door_id: &'a str) -> Password {
+		Password {
+			door_id: door_id,
+			next_hash_suffix: 0,
+			next_pos: 0,
+		}
+	}
+}
+
+impl <'a> Iterator for Password<'a> {
+	type Item = char;
+
+	fn next(&mut self) -> Option<char> {
+		match self.next_pos {
+			0 ... 7 => {
+				let r = next_char(&self.door_id, self.next_hash_suffix);
+				self.next_hash_suffix = r.1 + 1;
+				self.next_pos += 1;
+				Some(r.0)
+			},
+			_ => None
+		}
+	}
 }
 
 fn next_char(door_id: &str, start: i32) -> (char, i32) {
@@ -42,8 +66,11 @@ fn next_char(door_id: &str, start: i32) -> (char, i32) {
 
 #[test]
 fn test_next_char() {
-	assert_eq!(next_char("abc", 0), ('1', 3231929));
-	assert_eq!(next_char("abc", 3231930), ('8', 5017308));
+	let mut pwd = Password::new("abc");
+	assert_eq!(pwd.next(), Some('1'));
+	assert_eq!(pwd.next_hash_suffix, 3231930);
+	assert_eq!(pwd.next(), Some('8'));
+	assert_eq!(pwd.next_hash_suffix, 5017309);
 }
 
 fn make_hash(secret: &str, n: i32) -> [u8; 16] {
