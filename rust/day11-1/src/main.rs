@@ -1,17 +1,26 @@
 extern crate regex;
 use regex::Regex;
 use std::collections::HashSet;
+use std::collections::BTreeSet;
+use std::hash::Hash;
 
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Clone)]
 enum ThingType {
 	Gen,
 	Chip
 }
 
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Clone)]
 struct ScienceThing {
 	kind: ThingType,
 	molecule: String
+}
+
+#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+struct Move {
+	from_floor: usize,
+	to_floor: usize,
+	carrying: BTreeSet<ScienceThing>
 }
 
 
@@ -124,4 +133,125 @@ fn test_is_valid_gen_protects_chip() {
 		].iter().cloned().collect(),
 	];
 	assert_eq!(true, is_valid(&floors));
+}
+
+fn possible_moves(from: usize, floors: &Vec<HashSet<ScienceThing>>) -> HashSet<Move> {
+	let mut result = HashSet::new();
+	let carry_sets = candidate_carry_sets(floors[from].iter().cloned().collect());
+
+	for c in carry_sets {
+		if from > 0 {
+			result.insert(Move {
+				from_floor: from,
+				to_floor: from - 1,
+				carrying: c.iter().cloned().collect()
+			});
+		}
+
+		if from + 1 < floors.len() {
+			result.insert(Move {
+				from_floor: from,
+				to_floor: from + 1,
+				carrying: c.iter().cloned().collect()
+			});
+		}
+	}
+
+	result
+}
+
+#[test]
+fn possible_moves_only_adjacent_floors() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[ gen("a") ].iter().cloned().collect(),
+		[ gen("b") ].iter().cloned().collect(),
+		[ gen("c") ].iter().cloned().collect(),
+		[ gen("d") ].iter().cloned().collect(),
+	];
+	let f0: Vec<usize> = possible_moves(0, &floors)
+		.iter()
+		.map(|m| m.to_floor)
+		.collect();
+	assert_eq!(vec![1], f0);
+	let mut f1: Vec<usize> = possible_moves(1, &floors)
+		.iter()
+		.map(|m| m.to_floor)
+		.collect();
+	f1.sort();
+	assert_eq!(vec![0, 2], f1);
+	let f3: Vec<usize> = possible_moves(3, &floors)
+		.iter()
+		.map(|m| m.to_floor)
+		.collect();
+	assert_eq!(vec![2], f3);
+}
+
+#[test]
+fn possible_moves_must_carry_1_to_2() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[
+			gen("a"), gen("b"), gen("c")
+		].iter().cloned().collect(),
+		[].iter().cloned().collect(),
+	];
+	let mut expected: HashSet<Move> = HashSet::new();
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("a")].iter().cloned().collect()
+	});
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("b")].iter().cloned().collect()
+	});
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("c")].iter().cloned().collect()
+	});
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("a"), gen("b")].iter().cloned().collect()
+	});
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("a"), gen("c")].iter().cloned().collect()
+	});
+	expected.insert(Move {
+		from_floor: 0,
+		to_floor: 1,
+		carrying: [gen("b"), gen("c")].iter().cloned().collect()
+	});
+	assert_eq!(expected, possible_moves(0, &floors));
+}
+
+fn candidate_carry_sets(items: Vec<ScienceThing>) -> Vec<Vec<ScienceThing>> {
+	let mut result = vec![];
+
+	for i in (0..items.len()) {
+		result.push(vec![items[i].clone()]);
+
+		for j in ((i + 1)..items.len()) {
+			result.push(vec![items[i].clone(), items[j].clone()]);
+		}
+	}
+
+	result
+}
+
+#[test]
+fn test_candidate_carry_sets() {
+	let things = vec![gen("a") ,gen("b"), gen("c")];
+	let expected: Vec<Vec<ScienceThing>> = vec![
+		vec![gen("a")],
+		vec![gen("a"), gen("b")],
+		vec![gen("a"), gen("c")],
+		vec![gen("b")],
+		vec![gen("b"), gen("c")],
+		vec![gen("c")],
+	];
+	assert_eq!(expected, candidate_carry_sets(things));
 }

@@ -6,3 +6,4 @@ authors = ["steve <sdg@panix.com>"]
 [dependencies]
 time = "0.1.35"
 regex = "0.1"
+itertools = "0.5.8"
