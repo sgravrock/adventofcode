@@ -50,17 +50,78 @@ The second floor contains a plutonium-compatible microchip and a strontium-compa
 The fourth floor contains nothing relevant.");
 	let expected: Vec<HashSet<ScienceThing>> = vec![
 		[
-			ScienceThing { kind: ThingType::Gen, molecule: "thulium".to_string() },
-			ScienceThing { kind: ThingType::Chip, molecule: "thulium".to_string() },
-			ScienceThing { kind: ThingType::Gen, molecule: "plutonium".to_string() },
-			ScienceThing { kind: ThingType::Gen, molecule: "strontium".to_string() },
+			gen("thulium"), chip("thulium"), gen("plutonium"), gen("strontium")
 		].iter().cloned().collect(),
 		[
-			ScienceThing { kind: ThingType::Chip, molecule: "plutonium".to_string() },
-			ScienceThing { kind: ThingType::Chip, molecule: "strontium".to_string() },
+			chip("plutonium"), chip("strontium")
 		].iter().cloned().collect(),
 		HashSet::new()
 	];
 	assert_eq!(expected, actual);
 }
 
+fn chip(molecule: &str) -> ScienceThing {
+	ScienceThing { kind: ThingType::Chip, molecule: molecule.to_string() }
+}
+
+fn gen(molecule: &str) -> ScienceThing {
+	ScienceThing { kind: ThingType::Gen, molecule: molecule.to_string() }
+}
+
+fn is_valid(floors: &Vec<HashSet<ScienceThing>>) -> bool {
+	floors.iter().all(is_valid_floor)
+}
+
+fn is_valid_floor(things: &HashSet<ScienceThing>) -> bool {
+	let (chips, gens): (Vec<&ScienceThing>, Vec<&ScienceThing>) = 
+		things.iter().partition(|thing| {
+			match thing.kind {
+				ThingType::Chip => true,
+				_ => false
+			}
+		});
+	let unprocteted_chips = chips.iter().any(|c| {
+		!gens.iter().any(|g| g.molecule == c.molecule)
+	});
+	gens.len() == 0 || !unprocteted_chips
+}
+
+#[test]
+fn test_is_valid_no_gens() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[
+			chip("thulium"), chip("plutonium")
+		].iter().cloned().collect(),
+	];
+	assert_eq!(true, is_valid(&floors));
+}
+
+#[test]
+fn test_is_valid_no_chips() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[
+			gen("thulium"), gen("plutonium")
+		].iter().cloned().collect(),
+	];
+	assert_eq!(true, is_valid(&floors));
+}
+
+#[test]
+fn test_is_valid_cant_fry() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[
+			gen("thulium"), chip("strontium")
+		].iter().cloned().collect(),
+	];
+	assert_eq!(false, is_valid(&floors));
+}
+
+#[test]
+fn test_is_valid_gen_protects_chip() {
+	let floors: Vec<HashSet<ScienceThing>> = vec![
+		[
+			gen("thulium"), chip("strontium"), gen("strontium")
+		].iter().cloned().collect(),
+	];
+	assert_eq!(true, is_valid(&floors));
+}
