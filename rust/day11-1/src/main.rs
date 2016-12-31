@@ -1,22 +1,20 @@
 extern crate regex;
 use regex::Regex;
-use std::collections::HashSet;
 use std::collections::BTreeSet;
-use std::hash::Hash;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 enum ThingType {
 	Gen,
 	Chip
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 struct ScienceThing {
 	kind: ThingType,
 	molecule: String
 }
 
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 struct Move {
 	from_floor: usize,
 	to_floor: usize,
@@ -32,7 +30,7 @@ The fourth floor contains nothing relevant.";
 	let floors = parse_input(input);
 }
 
-fn parse_input(input: &str) -> Vec<HashSet<ScienceThing>> {
+fn parse_input(input: &str) -> Vec<BTreeSet<ScienceThing>> {
 	let re = Regex::new("([a-z]+)(-compatible microchip| generator)").unwrap();
 
 	input.split('\n')
@@ -57,14 +55,14 @@ fn test_parse_input() {
 	let actual = parse_input("The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
 The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
 The fourth floor contains nothing relevant.");
-	let expected: Vec<HashSet<ScienceThing>> = vec![
+	let expected: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("thulium"), chip("thulium"), gen("plutonium"), gen("strontium")
 		].iter().cloned().collect(),
 		[
 			chip("plutonium"), chip("strontium")
 		].iter().cloned().collect(),
-		HashSet::new()
+		BTreeSet::new()
 	];
 	assert_eq!(expected, actual);
 }
@@ -77,11 +75,11 @@ fn gen(molecule: &str) -> ScienceThing {
 	ScienceThing { kind: ThingType::Gen, molecule: molecule.to_string() }
 }
 
-fn is_valid(floors: &Vec<HashSet<ScienceThing>>) -> bool {
+fn is_valid(floors: &Vec<BTreeSet<ScienceThing>>) -> bool {
 	floors.iter().all(is_valid_floor)
 }
 
-fn is_valid_floor(things: &HashSet<ScienceThing>) -> bool {
+fn is_valid_floor(things: &BTreeSet<ScienceThing>) -> bool {
 	let (chips, gens): (Vec<&ScienceThing>, Vec<&ScienceThing>) = 
 		things.iter().partition(|thing| {
 			match thing.kind {
@@ -97,7 +95,7 @@ fn is_valid_floor(things: &HashSet<ScienceThing>) -> bool {
 
 #[test]
 fn test_is_valid_no_gens() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			chip("thulium"), chip("plutonium")
 		].iter().cloned().collect(),
@@ -107,7 +105,7 @@ fn test_is_valid_no_gens() {
 
 #[test]
 fn test_is_valid_no_chips() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("thulium"), gen("plutonium")
 		].iter().cloned().collect(),
@@ -117,7 +115,7 @@ fn test_is_valid_no_chips() {
 
 #[test]
 fn test_is_valid_cant_fry() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("thulium"), chip("strontium")
 		].iter().cloned().collect(),
@@ -127,7 +125,7 @@ fn test_is_valid_cant_fry() {
 
 #[test]
 fn test_is_valid_gen_protects_chip() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("thulium"), chip("strontium"), gen("strontium")
 		].iter().cloned().collect(),
@@ -135,8 +133,8 @@ fn test_is_valid_gen_protects_chip() {
 	assert_eq!(true, is_valid(&floors));
 }
 
-fn possible_moves(from: usize, floors: &Vec<HashSet<ScienceThing>>) -> HashSet<Move> {
-	let mut result = HashSet::new();
+fn possible_moves(from: usize, floors: &Vec<BTreeSet<ScienceThing>>) -> BTreeSet<Move> {
+	let mut result = BTreeSet::new();
 	let carry_sets = candidate_carry_sets(floors[from].iter().cloned().collect());
 
 	for c in carry_sets {
@@ -162,7 +160,7 @@ fn possible_moves(from: usize, floors: &Vec<HashSet<ScienceThing>>) -> HashSet<M
 
 #[test]
 fn possible_moves_only_adjacent_floors() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[ gen("a") ].iter().cloned().collect(),
 		[ gen("b") ].iter().cloned().collect(),
 		[ gen("c") ].iter().cloned().collect(),
@@ -188,13 +186,13 @@ fn possible_moves_only_adjacent_floors() {
 
 #[test]
 fn possible_moves_must_carry_1_to_2() {
-	let floors: Vec<HashSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("a"), gen("b"), gen("c")
 		].iter().cloned().collect(),
 		[].iter().cloned().collect(),
 	];
-	let mut expected: HashSet<Move> = HashSet::new();
+	let mut expected = BTreeSet::new();
 	expected.insert(Move {
 		from_floor: 0,
 		to_floor: 1,
