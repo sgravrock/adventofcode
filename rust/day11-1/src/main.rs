@@ -1,6 +1,20 @@
 extern crate regex;
 use regex::Regex;
+#[cfg(test)]
+extern crate timebomb;
 use std::collections::BTreeSet;
+use std::collections::VecDeque;
+
+
+fn main() {
+	let input = "The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
+The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
+The third floor contains a promethium generator, a promethium-compatible microchip, a ruthenium generator, and a ruthenium-compatible microchip.
+The fourth floor contains nothing relevant.";
+	let start = parse_input(input);
+	println!("{:?}", shortest_path(start));
+}
+
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 enum ThingType {
@@ -15,27 +29,46 @@ struct ScienceThing {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-struct Move {
-	from_floor: usize,
+struct Move<'a> {
+	from: &'a State,
 	to_floor: usize,
 	carrying: BTreeSet<ScienceThing>
 }
 
+impl<'a> Move<'a> {
+	fn apply(&self) -> State {
+		let mut i = 0;
+		let floors = self.from.floors.iter()
+			.map(|things| {
+				let fi = i;
+				i += 1;
 
-fn main() {
-	let input = "The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
-The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
-The third floor contains a promethium generator, a promethium-compatible microchip, a ruthenium generator, and a ruthenium-compatible microchip.
-The fourth floor contains nothing relevant.";
-	let floors = parse_input(input);
+				if fi == self.from.current_floor {
+					things - &self.carrying
+				} else if fi == self.to_floor {
+					things.union(&self.carrying).cloned().collect()
+				} else {
+					things.clone()
+				}
+			})
+			.collect();
+
+		State { floors: floors, current_floor: self.to_floor }
+	}
 }
 
-fn parse_input(input: &str) -> Vec<BTreeSet<ScienceThing>> {
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+struct State {
+	floors: Vec<BTreeSet<ScienceThing>>,
+	current_floor: usize
+}
+
+
+fn parse_input(input: &str) -> State {
 	let re = Regex::new("([a-z]+)(-compatible microchip| generator)").unwrap();
 
-	input.split('\n')
+	let floors = input.split('\n')
 		.map(|line| {
-			println!("checking {}", line);
 			re.captures_iter(line)
 				.map(|cap| {
 					let m = cap.at(1).unwrap().to_string();
@@ -47,7 +80,9 @@ fn parse_input(input: &str) -> Vec<BTreeSet<ScienceThing>> {
 				})
 				.collect()
 		})
-		.collect()
+		.collect();
+
+	State { floors: floors, current_floor: 0 }
 }
 
 #[test]
@@ -55,7 +90,7 @@ fn test_parse_input() {
 	let actual = parse_input("The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
 The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
 The fourth floor contains nothing relevant.");
-	let expected: Vec<BTreeSet<ScienceThing>> = vec![
+	let floors: Vec<BTreeSet<ScienceThing>> = vec![
 		[
 			gen("thulium"), chip("thulium"), gen("plutonium"), gen("strontium")
 		].iter().cloned().collect(),
@@ -64,16 +99,86 @@ The fourth floor contains nothing relevant.");
 		].iter().cloned().collect(),
 		BTreeSet::new()
 	];
+	let expected = State { floors: floors, current_floor: 0 };
 	assert_eq!(expected, actual);
 }
 
+#[cfg(test)]
 fn chip(molecule: &str) -> ScienceThing {
 	ScienceThing { kind: ThingType::Chip, molecule: molecule.to_string() }
 }
 
+#[cfg(test)]
 fn gen(molecule: &str) -> ScienceThing {
 	ScienceThing { kind: ThingType::Gen, molecule: molecule.to_string() }
 }
+
+
+fn shortest_path(start: State) -> Option<usize> {
+	let mut visited = BTreeSet::new();
+	let mut queue = VecDeque::new();
+	queue.push_back((0, start));
+
+	while !queue.is_empty() {
+		let (n_moves, s) = queue.pop_front().unwrap();
+
+		if !visited.insert(s.clone()) {
+			continue;
+		}
+
+		for m in possible_moves(&s).iter() {
+			let next_state = m.apply();
+
+			if is_valid(&next_state.floors) {
+				if is_finished(&next_state.floors) {
+					return Some(n_moves + 1);
+				}
+
+				queue.push_back((n_moves + 1, next_state));
+			}
+		}
+	}
+
+	None
+}
+
+#[test]
+fn shortest_path_terminates() {
+	// No solution, but an infinite series of non-solution moves possible
+	let start = parse_input("x-compatible microchip
+nothing
+y generator");
+	timebomb::timeout_ms(|| {
+		shortest_path(start);
+	}, 1000);
+}
+
+#[test]
+fn shortest_path_not_found() {
+	let start = parse_input("x-compatible microchip
+nothing
+y generator");
+	assert_eq!(None, shortest_path(start));
+}
+
+#[test]
+fn shortest_path_easy() {
+	let start = parse_input("x generator, x-compatible microchip
+nothing
+nothing");
+	assert_eq!(Some(2), shortest_path(start));
+}
+
+
+#[test]
+fn shortest_path_harder() {
+let start = parse_input("The first floor contains a hydrogen-compatible microchip and a lithium-compatible microchip.
+The second floor contains a hydrogen generator.
+The third floor contains a lithium generator.
+The fourth floor contains nothing relevant.");
+	assert_eq!(Some(11), shortest_path(start));
+}
+
 
 fn is_valid(floors: &Vec<BTreeSet<ScienceThing>>) -> bool {
 	floors.iter().all(is_valid_floor)
@@ -133,23 +238,49 @@ fn test_is_valid_gen_protects_chip() {
 	assert_eq!(true, is_valid(&floors));
 }
 
-fn possible_moves(from: usize, floors: &Vec<BTreeSet<ScienceThing>>) -> BTreeSet<Move> {
+fn is_finished(floors: &Vec<BTreeSet<ScienceThing>>) -> bool {
+	for i in 0..floors.len() - 1 {
+		if !floors[i].is_empty() {
+			return false;
+		}
+	}
+
+	true
+}
+
+#[test]
+fn test_is_finished() {
+	let yes: Vec<BTreeSet<ScienceThing>> = vec![
+		BTreeSet::new(),
+		[gen("a"), chip("a")].iter().cloned().collect(),
+	];
+	let no: Vec<BTreeSet<ScienceThing>> = vec![
+		[gen("a"), chip("a")].iter().cloned().collect(),
+		BTreeSet::new(),
+	];
+	assert_eq!(true, is_finished(&yes));
+	assert_eq!(false, is_finished(&no));
+}
+
+fn possible_moves<'a>(from: &'a State) -> BTreeSet<Move<'a>> {
 	let mut result = BTreeSet::new();
-	let carry_sets = candidate_carry_sets(floors[from].iter().cloned().collect());
+	let on_from_floor = from.floors[from.current_floor]
+		.iter().cloned().collect();
+	let carry_sets = candidate_carry_sets(on_from_floor);
 
 	for c in carry_sets {
-		if from > 0 {
+		if from.current_floor > 0 {
 			result.insert(Move {
-				from_floor: from,
-				to_floor: from - 1,
+				from: from,
+				to_floor: from.current_floor - 1,
 				carrying: c.iter().cloned().collect()
 			});
 		}
 
-		if from + 1 < floors.len() {
+		if from.current_floor + 1 < from.floors.len() {
 			result.insert(Move {
-				from_floor: from,
-				to_floor: from + 1,
+				from: from,
+				to_floor: from.current_floor + 1,
 				carrying: c.iter().cloned().collect()
 			});
 		}
@@ -166,18 +297,21 @@ fn possible_moves_only_adjacent_floors() {
 		[ gen("c") ].iter().cloned().collect(),
 		[ gen("d") ].iter().cloned().collect(),
 	];
-	let f0: Vec<usize> = possible_moves(0, &floors)
+	let s0 = State { floors: floors.clone(), current_floor: 0 };
+	let f0: Vec<usize> = possible_moves(&s0)
 		.iter()
 		.map(|m| m.to_floor)
 		.collect();
 	assert_eq!(vec![1], f0);
-	let mut f1: Vec<usize> = possible_moves(1, &floors)
+	let s1 = State { floors: floors.clone(), current_floor: 1 };
+	let mut f1: Vec<usize> = possible_moves(&s1)
 		.iter()
 		.map(|m| m.to_floor)
 		.collect();
 	f1.sort();
 	assert_eq!(vec![0, 2], f1);
-	let f3: Vec<usize> = possible_moves(3, &floors)
+	let s3 = State { floors: floors, current_floor: 3 };
+	let f3: Vec<usize> = possible_moves(&s3)
 		.iter()
 		.map(|m| m.to_floor)
 		.collect();
@@ -192,47 +326,48 @@ fn possible_moves_must_carry_1_to_2() {
 		].iter().cloned().collect(),
 		[].iter().cloned().collect(),
 	];
+	let s = State { floors: floors, current_floor: 0 };
 	let mut expected = BTreeSet::new();
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("a")].iter().cloned().collect()
 	});
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("b")].iter().cloned().collect()
 	});
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("c")].iter().cloned().collect()
 	});
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("a"), gen("b")].iter().cloned().collect()
 	});
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("a"), gen("c")].iter().cloned().collect()
 	});
 	expected.insert(Move {
-		from_floor: 0,
+		from: &s,
 		to_floor: 1,
 		carrying: [gen("b"), gen("c")].iter().cloned().collect()
 	});
-	assert_eq!(expected, possible_moves(0, &floors));
+	assert_eq!(expected, possible_moves(&s));
 }
 
 fn candidate_carry_sets(items: Vec<ScienceThing>) -> Vec<Vec<ScienceThing>> {
 	let mut result = vec![];
 
-	for i in (0..items.len()) {
+	for i in 0..items.len() {
 		result.push(vec![items[i].clone()]);
 
-		for j in ((i + 1)..items.len()) {
+		for j in (i + 1)..items.len() {
 			result.push(vec![items[i].clone(), items[j].clone()]);
 		}
 	}
