@@ -27,6 +27,20 @@ jnz c -5");
 	println!("{}", regs.get('a'));
 }
 
+#[derive(Clone, Debug)]
+enum Rvalue {
+	Const(i32),
+	Reg(char)
+}
+
+#[derive(Clone, Debug)]
+enum Instruction {
+	Inc(char),
+	Dec(char),
+	Cpy(char, Rvalue),
+	Jnz(Rvalue, i32)
+}
+
 fn compute(input: &str) -> RegisterFile {
 	let mut registers = RegisterFile::new();
 	let instructions = parse_input(input);
@@ -36,30 +50,21 @@ fn compute(input: &str) -> RegisterFile {
 		let instr = instructions[ip as usize].clone();
 		ip += 1;
 
-		if instr.0 == "inc" {
-			let k = instr.1.chars().next().unwrap();
-			let r = registers.get_mut(k);
-			*r += 1;
-		} else if instr.0 == "dec" {
-			let k = instr.1.chars().next().unwrap();
-			let r = registers.get_mut(k);
-			*r -= 1;
-		} else if instr.0 == "cpy" {
-			let k = instr.2.unwrap().chars().next().unwrap();
-			let v = register_or_const(instr.1, &registers);
-			let r = registers.get_mut(k);
-			*r = v;
-		} else if instr.0 == "jnz" {
-			let n = register_or_const(instr.1, &registers);
+		match instr {
+			Instruction::Inc(reg) => *(registers.get_mut(reg)) += 1,
+			Instruction::Dec(reg) => *(registers.get_mut(reg)) -= 1,
+			Instruction::Cpy(reg, rvalue) => 
+				*(registers.get_mut(reg)) = expand_rvalue(rvalue, &registers),
+			Instruction::Jnz(rvalue, offset) => {
+				let n = expand_rvalue(rvalue, &registers);
 
-			if n != 0 {
-				let off = instr.2.unwrap().parse::<i32>().unwrap();
-				ip += off - 1;
+				if n != 0 {
+					ip += offset - 1;
+				}
 			}
-		} else {
-			panic!("Don't know how to {}", instr.0);
 		}
 	}
+
 	registers
 }
 
@@ -112,26 +117,41 @@ cpy a b";
 	assert_eq!(42, regs.get('b'));
 }
 
-fn register_or_const(token: String, registers: &RegisterFile) -> i32 {
-	match token.parse::<i32>() {
-		Ok(k) => k,
-		Err(_) => registers.get(token.chars().next().unwrap())
+fn expand_rvalue(rvalue: Rvalue, registers: &RegisterFile) -> i32 {
+	match rvalue {
+		Rvalue::Const(n) => n,
+		Rvalue::Reg(r) => registers.get(r)
 	}
 }
 
-fn parse_input(input: &str) -> Vec<(String, String, Option<String>)> {
+fn parse_input(input: &str) -> Vec<Instruction> {
 	input.lines()
 		.map(|s| {
 			let ts: Vec<&str> = s.split(' ').collect();
-			let third = if ts.len() > 2 {
-								Some(ts[2].to_string())
-							} else {
-								None
-							};
-			(ts[0].to_string(), ts[1].to_string(), third)
+
+			match ts[0] {
+				"inc" => Instruction::Inc(first_char(ts[1])),
+				"dec" => Instruction::Dec(first_char(ts[1])),
+				"cpy" => Instruction::Cpy(first_char(ts[2]), parse_rvalue(ts[1])),
+				"jnz" => Instruction::Jnz(parse_rvalue(ts[1]),
+					ts[2].parse::<i32>().unwrap()),
+				_ => panic!("Can't decode: {}", s)
+			}
 		})
 		.collect()
 }
+
+fn first_char(s: &str) -> char {
+	s.chars().next().unwrap()
+}
+
+fn parse_rvalue(s: &str) -> Rvalue {
+	match s.parse::<i32>() {
+		Ok(k) => Rvalue::Const(k),
+		Err(_) => Rvalue::Reg(first_char(s))
+	}
+}
+
 
 struct RegisterFile {
 	registers: HashMap<char, i32>
