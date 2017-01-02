@@ -8,8 +8,9 @@ fn main() {
 
 fn find_nth_key(salt: &str, n: usize) -> (i32, String) {
 	HashIter::new(0, salt)
-		.filter(|&(i, ref h)| is_key(i, salt, &h))
+		.filter(|h| is_key(&h))
 		.nth(n)
+		.map(|h| (h.index, h.hash))
 		.unwrap()
 }
 
@@ -19,6 +20,19 @@ fn test_find_nth_key() {
 		find_nth_key("abc", 0));
 	assert_eq!((92, "ae2e85dd75d63e916a525df95e999ea0".to_string()),
 		find_nth_key("abc", 1));
+}
+
+#[derive(PartialEq, Eq, Debug)]
+struct Hash<'a> {
+	index: i32,
+	salt: &'a str,
+	hash: String
+}
+
+impl <'a> Hash<'a> {
+	fn new(index: i32, salt: &'a str, hash: String) -> Hash {
+		Hash { index: index, salt: salt, hash: hash }
+	}
 }
 
 struct HashIter<'a> {
@@ -33,12 +47,12 @@ impl <'a> HashIter<'a> {
 }
 
 impl <'a> Iterator for HashIter<'a> {
-	type Item = (i32, String);
+	type Item = Hash<'a>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let index = self.next_key;
 		self.next_key += 1;
-		Some((index, make_hash(self.salt, index)))
+		Some(make_hash(self.salt, index))
 	}
 }
 
@@ -46,23 +60,24 @@ impl <'a> Iterator for HashIter<'a> {
 fn test_hash_iter() {
 	let iter = HashIter::new(0, "abc");
 	let expected = vec![
-		(0, "577571be4de9dcce85a041ba0410f29f".to_string()),
-		(1, "23734cd52ad4a4fb877d8a1e26e5df5f".to_string())
+		Hash::new(0, "abc", "577571be4de9dcce85a041ba0410f29f".to_string()),
+		Hash::new(1, "abc", "23734cd52ad4a4fb877d8a1e26e5df5f".to_string())
 	];
-	let actual: Vec<(i32, String)> = iter.take(2).collect();
+	let actual: Vec<Hash> = iter.take(2).collect();
 	assert_eq!(expected, actual);
 }
 
-fn make_hash(secret: &str, n: i32) -> String {
+fn make_hash(salt: &str, n: i32) -> Hash {
 	let mut digest = Md5::new();
-	let input = format!("{}{}", secret, n);
+	let input = format!("{}{}", salt, n);
 	digest.input_str(&input);
-	digest.result_str()
+	Hash::new(n, salt, digest.result_str())
 }
 
 #[test]
 fn test_make_hash() {
-	assert_eq!(make_hash("abcdef", 609043), "000001dbbfa3a5c83a2d506429c7b00e");
+	assert_eq!(make_hash("abcdef", 609043),
+		Hash::new(609043, "abcdef", "000001dbbfa3a5c83a2d506429c7b00e".to_string()));
 }
 
 fn find_triplet(input: &str) -> Option<char> {
@@ -85,9 +100,9 @@ fn test_find_triplet() {
 	assert_eq!(Some('b'), find_triplet("abbbbfg"));
 }
 
-fn is_key(index: i32, salt: &str, hash: &str) -> bool {
-	match find_triplet(hash) {
-		Some(c) => has_hash_with_quad(index + 1, c, salt),
+fn is_key(hash: &Hash) -> bool {
+	match find_triplet(&hash.hash) {
+		Some(c) => has_hash_with_quad(hash.index + 1, c, hash.salt),
 		None => false
 	}
 }
@@ -96,13 +111,13 @@ fn has_hash_with_quad(start: i32, c: char, salt: &str) -> bool {
 	let needle = format!("{}{}{}{}{}", c, c, c, c, c);
 	HashIter::new(start, salt)
 		.take(1000)
-		.any(|(_, h)| h.contains(&needle))
+		.any(|h| h.hash.contains(&needle))
 }
 
 #[test]
 fn test_is_key() {
-	assert!(!is_key(1, "abc", "23734cd52ad4a4fb877d8a1e26e5df5f")); // no triplet
-	assert!(!is_key(18, "abc", "0034e0923cc38887a57bd7b1d4f953df")); // 888 but no 88888
-	assert!(is_key(39, "abc", "347dac6ee8eeea4652c7476d0f97bee5"));
-	assert!(!is_key(45, "abc", "ddd37f736db183b6b4c186b87dd6236c"));
+	assert!(!is_key(&Hash::new(1, "abc", "23734cd52ad4a4fb877d8a1e26e5df5f".to_string()))); // no triplet
+	assert!(!is_key(&Hash::new(18, "abc", "0034e0923cc38887a57bd7b1d4f953df".to_string() ))); // 888 but no 88888
+	assert!(is_key(&Hash::new(39, "abc", "347dac6ee8eeea4652c7476d0f97bee5".to_string() )));
+	assert!(!is_key(&Hash::new(45, "abc", "ddd37f736db183b6b4c186b87dd6236c".to_string() )));
 }
