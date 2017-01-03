@@ -1,75 +1,71 @@
 extern crate crypto;
 use crypto::md5::Md5;
 use crypto::digest::Digest;
+use std::collections::HashMap;
 
 fn main() {
-    println!("{:?}", find_nth_key("jlmsuwbz", 63));
+	 let mut hasher = CachingHasher::new("jlmsuwbz");
+    println!("{:?}", find_nth_key(64, &mut hasher));
 }
 
-fn find_nth_key(salt: &str, n: usize) -> (i32, String) {
-	HashIter::new(0, salt)
-		.filter(|h| is_key(&h))
-		.nth(n)
-		.map(|h| (h.index, h.hash))
-		.unwrap()
+fn find_nth_key(n: usize, hasher: &mut CachingHasher) -> (i32, String) {
+	let mut nfound = 0;
+
+	for i in 0.. {
+		let h = hasher.make_hash(i);
+
+		if is_key(&h, hasher) {
+			nfound += 1;
+
+			if nfound == n {
+				return (h.index, h.hash.clone());
+			}
+		}
+	}
+
+	panic!("Ran out of integers");
 }
 
 #[test]
 fn test_find_nth_key() {
-	assert_eq!(10, find_nth_key("abc", 0).0);
-	assert_eq!(22551, find_nth_key("abc", 64).0);
+	let mut hasher = CachingHasher::new("jlmsuwbz");
+	assert_eq!((22429, "922b7bd4af8e0dcc5a4ddd7eaef72569".to_string()),
+		find_nth_key(64, &mut hasher));
 }
 
-#[derive(PartialEq, Eq, Debug)]
-struct Hash<'a> {
+#[derive(PartialEq, Eq, Debug, Clone)]
+struct Hash {
 	index: i32,
-	salt: &'a str,
 	hash: String
 }
 
-impl <'a> Hash<'a> {
-	fn new(index: i32, salt: &'a str, hash: String) -> Hash {
-		Hash { index: index, salt: salt, hash: hash }
+impl Hash {
+	fn new(index: i32, hash: String) -> Hash {
+		Hash { index: index, hash: hash }
 	}
 }
 
-struct HashIter<'a> {
-	next_key: i32,
-	salt: &'a str
+struct CachingHasher<'a> {
+	salt: &'a str,
+	storage: HashMap<i32, Hash>
 }
 
-impl <'a> HashIter<'a> {
-	fn new(next_key: i32, salt: &str) -> HashIter {
-		HashIter { next_key: next_key, salt: salt }
+impl <'a> CachingHasher<'a> {
+	fn new(salt: &'a str) -> CachingHasher {
+		CachingHasher { salt: salt, storage: HashMap::new() }
+	}
+
+	fn make_hash(&mut self, index: i32) -> Hash {
+		let salt = self.salt;
+		self.storage.entry(index)
+			.or_insert_with(|| make_hash(salt, index))
+			.clone()
 	}
 }
-
-impl <'a> Iterator for HashIter<'a> {
-	type Item = Hash<'a>;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		let index = self.next_key;
-		self.next_key += 1;
-		Some(make_hash(self.salt, index))
-	}
-}
-
-/*
-#[test]
-fn test_hash_iter() {
-	let iter = HashIter::new(0, "abc");
-	let expected = vec![
-		Hash::new(0, "abc", "577571be4de9dcce85a041ba0410f29f".to_string()),
-		Hash::new(1, "abc", "23734cd52ad4a4fb877d8a1e26e5df5f".to_string())
-	];
-	let actual: Vec<Hash> = iter.take(2).collect();
-	assert_eq!(expected, actual);
-}
-*/
 
 fn make_hash(salt: &str, n: i32) -> Hash {
 	let input = format!("{}{}", salt, n);
-	Hash::new(n, salt, md5(&input))
+	Hash::new(n, md5(&input))
 }
 
 fn md5(input: &str) -> String {
@@ -82,12 +78,6 @@ fn md5(input: &str) -> String {
 	}
 
 	s
-}
-
-#[test]
-fn test_make_hash() {
-	assert_eq!(make_hash("abc", 0),
-		Hash::new(0, "abc", "a107ff634856bb300138cac6568c0f24".to_string()));
 }
 
 fn find_triplet(input: &str) -> Option<char> {
@@ -110,24 +100,21 @@ fn test_find_triplet() {
 	assert_eq!(Some('b'), find_triplet("abbbbfg"));
 }
 
-fn is_key(hash: &Hash) -> bool {
+fn is_key(hash: &Hash, hasher: &mut CachingHasher) -> bool {
 	match find_triplet(&hash.hash) {
-		Some(c) => has_hash_with_quad(hash.index + 1, c, hash.salt),
+		Some(c) => has_hash_with_quad(hash.index + 1, c, hasher),
 		None => false
 	}
 }
 
-fn has_hash_with_quad(start: i32, c: char, salt: &str) -> bool {
+fn has_hash_with_quad(start: i32, c: char, hasher: &mut CachingHasher) -> bool {
 	let needle = format!("{}{}{}{}{}", c, c, c, c, c);
-	HashIter::new(start, salt)
-		.take(1000)
-		.any(|h| h.hash.contains(&needle))
-}
 
-#[test]
-fn test_is_key() {
-	assert!(!is_key(&Hash::new(1, "abc", "23734cd52ad4a4fb877d8a1e26e5df5f".to_string()))); // no triplet
-	assert!(!is_key(&Hash::new(18, "abc", "0034e0923cc38887a57bd7b1d4f953df".to_string() ))); // 888 but no 88888
-	assert!(is_key(&Hash::new(39, "abc", "347dac6ee8eeea4652c7476d0f97bee5".to_string() )));
-	assert!(!is_key(&Hash::new(45, "abc", "ddd37f736db183b6b4c186b87dd6236c".to_string() )));
+	for i in 1..1001 {
+		if hasher.make_hash(start + i).hash.contains(&needle) {
+			return true;
+		}
+	}
+
+	false
 }
