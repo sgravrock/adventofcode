@@ -2,7 +2,7 @@ fn main() {
     println!("{}", dragon_checksum("10010000000110000", 272));
 }
 
-fn dragon(input: &str, len: usize) -> String {
+fn dragon(input: &str, len: usize) -> Vec<char> {
 	let mut result: Vec<char> = input.chars().collect();
 
 	while result.len() < len {
@@ -18,15 +18,19 @@ fn dragon(input: &str, len: usize) -> String {
 		}
 	}
 
-	result.iter().cloned().collect()
+	result
 }
 
 #[test]
 fn test_dragon() {
-	assert_eq!("1", dragon("1", 1));
-	assert_eq!("100", dragon("1", 3));
-	assert_eq!("1111000010100101011110000", dragon("111100001010", 13));
-	assert_eq!("10000011110010000111110", dragon("10000", 20));
+	let r1: String = dragon("1", 1).iter().cloned().collect();
+	assert_eq!("1", r1);
+	let r2: String = dragon("1", 3).iter().cloned().collect();
+	assert_eq!("100", r2);
+	let r3: String = dragon("111100001010", 13).iter().cloned().collect();
+	assert_eq!("1111000010100101011110000", r3);
+	let r4: String = dragon("10000", 20).iter().cloned().collect();
+	assert_eq!("10000011110010000111110", r4);
 }
 
 fn to_checksum(chars: &mut Vec<char>) {
@@ -67,7 +71,7 @@ fn test_checksum() {
 }
 
 fn dragon_checksum(input: &str, len: usize) -> String {
-	let mut d: Vec<char> = dragon(input, len).chars().collect();
+	let mut d = dragon(input, len);
 	d.truncate(len);
 	to_checksum(&mut d);
 	d.iter().cloned().collect()
