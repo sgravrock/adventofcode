@@ -5,3 +5,4 @@ authors = ["steve <sdg@panix.com>"]
 
 [dependencies]
 rust-crypto = "0.2.36"
+timebomb = "0.1.2"
