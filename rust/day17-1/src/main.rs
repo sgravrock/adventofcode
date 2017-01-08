@@ -3,63 +3,35 @@ use crypto::md5::Md5;
 use crypto::digest::Digest;
 use std::collections::VecDeque;
 use std::rc::Rc;
+use std::cmp;
 
 fn main() {
-	println!("{:?}", shortest_path("pslxynzg"));
+	println!("{:?}", longest_path("pslxynzg", ""));
 }
 
-fn shortest_path(passcode: &str) -> Option<String> {
-	let mut queue = VecDeque::new();
-	queue.push_back(Rc::new(Node { pos: (0,0), prev: None }));
-
-	while queue.len() > 0 {
-		let node = queue.pop_front().unwrap();
-		let path = node.path();
-
-		if node.pos == (3,3) {
-			return Some(path);
-		}
-
-		for d in next_directions(passcode, node.pos, &path) {
-			queue.push_back(Rc::new(Node {
-				pos: next_pos(node.pos, d),
-				prev: Some((d, node.clone()))
-			}));
-		}
+fn longest_path(passcode: &str, prefix: &str) -> Option<usize> {
+	let pos = position(prefix);
+	
+	if pos == (0, 0) {
+		return Some(prefix.chars().count());
 	}
 
-	None
+	next_directions(passcode, pos, prefix)
+		.filter_map(|path| longest_path(passcode, format!("{}{}", prefix, d)))
+		.max()
+		.map(|n| n + 1)
 }
 
-struct Node {
-	pos: (i32, i32),
-	prev: Option<(char, Rc<Node>)>
+fn position(path: &[char]) -> (i32, i32) {
+	path.iter().fold((0,0), next_pos)
 }
 
-impl Node {
-	fn path(&self) -> String {
-		let mut s = String::new();
-		self.path_into(&mut s);
-		s
-	}
-
-	fn path_into(&self, s: &mut String) {
-		match self.prev {
-			Some((d, ref p)) => {
-				p.path_into(s);
-				s.push(d);
-			},
-			None => {}
-		}
-	}
-}
 
 #[test]
-fn test_shortest_path() {
-	assert_eq!(Some("DDRRRD".to_string()), shortest_path("ihgpwlah"));
-	assert_eq!(Some("DDUDRLRRUDRD".to_string()), shortest_path("kglvqrro"));
-	assert_eq!(Some("DRURDRUDDLLDLUURRDULRLDUUDDDRR".to_string()),
-		shortest_path("ulqzkmiv"));
+fn test_longest_path() {
+	assert_eq!(Some(370), longest_path("ihgpwlah"));
+	assert_eq!(Some(492), longest_path("kglvqrro"));
+	assert_eq!(Some(830), longest_path("ulqzkmiv"));
 
 }
 
