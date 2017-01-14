@@ -1,100 +1,112 @@
 #![feature(range_contains)]
-#![feature(field_init_shorthand)]
 #![feature(inclusive_range_syntax)]
-#![feature(inclusive_range)]
-use std::ops::RangeInclusive;
+use std::env;
+use std::process;
 
 fn main() {
-	let blocklist = Blocklist::parse(INPUT, u32::max_value());
-	println!("{:?}", blocklist.unblocked_iter().count());
+	let blocklist = Blocklist::parse(INPUT);
+	
+	match env::args().skip(1).next() {
+		Some(s) => {
+			if s != "--dump" {
+				println!("Usage: day20-2 [--dump]");
+				process::exit(1);
+			}
+
+			for e in blocklist.0 {
+				println!("{} {}", e.0, e.1);
+			}
+		},
+		None => println!("{}", blocklist.num_allowed(u32::max_value()))
+	}
 }
 
 #[derive(Eq, PartialEq, Debug)]
-struct Blocklist {
-	entries: Vec<RangeInclusive<u32>>,
-	max: u32
-}
+struct Blocklist(Vec<(u32, u32)>);
 
 impl Blocklist {
-	fn parse(input: &str, max: u32) -> Blocklist {
-		let entries: Vec<RangeInclusive<u32>> = input.lines()
+	fn parse(input: &str) -> Blocklist {
+		let entries: Vec<(u32, u32)> = input.lines()
 			.map(|line| {
 				let els: Vec<u32> = line.split('-')
 					.map(|x| x.parse::<u32>().unwrap())
 					.collect();
-				els[0]...els[1]
+				(els[0], els[1])
 			})
 			.collect();
-		Blocklist { entries, max }
-	}
-	
-	fn next_unblocked(&self, start: u32) -> Option<u32> {
-		(start...self.max).find(|i| self.allows(*i))
+		Blocklist(simplify(&entries))
 	}
 
-	fn allows(&self, i: u32) -> bool {
-		let blocked = self.entries.iter().any(|range| range.contains(i));
-		!blocked
-	}
+	fn num_allowed(&self, max: u32) -> u32 {
+		let mut result = self.0[0].0 + max - self.0.last().unwrap().1;
 
-	fn unblocked_iter(&self) -> UnblockedIter {
-		UnblockedIter::new(&self)
+		for i in 1..self.0.len() {
+			result += self.0[i].0 - self.0[i-1].1 - 1;
+		}
+
+		result
 	}
 }
 
-struct UnblockedIter<'a> {
-	blocklist: &'a Blocklist,
-	next: Option<u32>
-}
+fn simplify(src: &Vec<(u32, u32)>) -> Vec<(u32, u32)> {
+	let mut new_entries = src.clone();
+	new_entries.sort_by_key(|x| x.0);
+	let mut i = 0;
 
-impl <'a> UnblockedIter<'a> {
-	fn new(blocklist: &Blocklist) -> UnblockedIter {
-		UnblockedIter { blocklist, next: Some(0u32) }
+	while i < new_entries.len() - 1 {
+		while let Some(r) = new_entries.get(i+1).and_then(|n| merge(new_entries[i], *n)) {
+			new_entries[i] = r;
+			new_entries.remove(i + 1);
+		}
+
+		i += 1;
 	}
+
+	new_entries
 }
 
-impl <'a> Iterator for UnblockedIter<'a> {
-	type Item = u32;
-	
-	fn next(&mut self) -> Option<u32> {
-		self.next.and_then(|start| {
-			let next = self.blocklist.next_unblocked(start);
-			self.next = next.map(|n| n + 1);
-			next
-		})
+fn merge(a: (u32, u32), b: (u32, u32)) -> Option<(u32, u32)> {
+	if a.0 <= b.0 && a.1 >= b.1 {
+		Some((a.0, a.1))
+	} else if b.0 <= a.0 && b.1 >= a.1 {
+		Some((b.0, b.1))
+	} else if (b.0...b.1).contains(a.1) {
+		Some((a.0, b.1))
+	} else if (a.0...a.1).contains(b.1) {
+		Some((b.0, a.1))
+	} else {
+		None
 	}
 }
 
 #[test]
 fn test_blocklist_parse() {
-	let input = "5-8
+	let input = "1-3
 0-2
-4-7";
-	let expected = Blocklist { entries: vec![5...8, 0...2, 4...7], max: 32 };
-	assert_eq!(expected, Blocklist::parse(input, 32));
+10-11
+9-12
+11-13
+5-6
+";
+	let expected = Blocklist(vec![(0, 3), (5, 6), (9, 13)]);
+	assert_eq!(expected, Blocklist::parse(input));
+
+	let input2 ="2079529322-2090642509
+2098130915-2098541161
+2087056931-2102042862
+";
+	let expected2 = Blocklist(vec![(2079529322, 2102042862)]);
+	assert_eq!(expected2, Blocklist::parse(input2));
+	
 }
 
-
 #[test]
-fn test_next_unblocked() {
-	let blocklist: Blocklist = Blocklist::parse("5-8
-0-2
-4-7
-10-255
-", 255);
-	assert_eq!(Some(3), blocklist.next_unblocked(0));
-	assert_eq!(Some(9), blocklist.next_unblocked(4));
-	assert_eq!(None, blocklist.next_unblocked(10));
-}
+fn test_blocklist_num_allowed() {
+	let input = "1-3
+6-7
+";
+	assert_eq!(4, Blocklist::parse(input).num_allowed(8));
 
-#[test]
-fn test_iter() {
-	let blocklist: Blocklist = Blocklist::parse("5-8
-0-2
-4-7
-10-253", 255);
-	let result: Vec<u32> = blocklist.unblocked_iter().collect();
-	assert_eq!(vec![3, 9, 254, 255], result);
 }
 
 
