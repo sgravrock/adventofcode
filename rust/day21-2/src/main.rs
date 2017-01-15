@@ -2,10 +2,10 @@
 
 fn main() {
 	let instructions = parse_input(INPUT);
-	println!("{}", scramble("abcdefgh", instructions));
+	println!("{}", unscramble("fbgdceah", instructions));
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug)]
 enum Instr {
 	SwapLetter(char, char),
 	SwapPos(usize, usize),
@@ -81,42 +81,56 @@ impl Instr {
 			},
 			&Instr::RotateAbs { dir, offset } => {
 				match dir {
-					Dir::L => {
-						let suffix: String = input.chars().take(offset).collect();
-						let prefix: String = input.chars().skip(offset).collect();
-						format!("{}{}", prefix, suffix)
-					},
-					Dir::R => {
-						let n = input.chars().count() - offset;
-						let prefix: String = input.chars().skip(n).collect();
-						let suffix: String = input.chars().take(n).collect();
-						format!("{}{}", prefix, suffix)
-					},
+					Dir::R => rotate_left(input, offset),
+					Dir::L => rotate_right(input, offset)
 				}
 			},
 			&Instr::RotateRel(c) => {
-				let i = input.chars().position(|x| x == c).unwrap();
 				let len = input.chars().count();
-				let mut offset = 1 + i;
+				assert!(len == 8, "RotateRel only works on 8 char inputs");
+				let pos = input.chars().position(|x| x == c).unwrap();
 
-				if i >= 4 {
-					offset += 1;
-				}
+				let orig_pos = match pos {
+					0 => 7,
+					1 => 0,
+					2 => 4,
+					3 => 1,
+					4 => 5,
+					5 => 2,
+					6 => 6,
+					7 => 3,
+					_ => panic!("Can't happen")
+				};
 
-				if offset % len == 0 {
-					input.to_string()
+				if pos > orig_pos {
+					rotate_left(input, pos - orig_pos)
+				} else if pos < orig_pos {
+					rotate_right(input, orig_pos - pos)
 				} else {
-					Instr::RotateAbs { dir: Dir::R, offset: offset % len }.apply(input)
+					input.to_string()
 				}
 			},
 			&Instr::Move { src, dest } => {
 				let mut chars: Vec<char> = input.chars().collect();
-				let c = chars.remove(src);
-				chars.insert(dest, c);
+				let c = chars.remove(dest);
+				chars.insert(src, c);
 				chars.into_iter().collect()
 			}
 		}
 	}
+}
+
+fn rotate_left(input: &str, offset: usize) -> String {
+	let suffix: String = input.chars().take(offset).collect();
+	let prefix: String = input.chars().skip(offset).collect();
+	format!("{}{}", prefix, suffix)
+}
+
+fn rotate_right(input: &str, offset: usize) -> String {
+	let n = input.chars().count() - offset;
+	let prefix: String = input.chars().skip(n).collect();
+	let suffix: String = input.chars().take(n).collect();
+	format!("{}{}", prefix, suffix)
 }
 
 #[test]
@@ -126,39 +140,39 @@ fn test_swap_letter() {
 
 #[test]
 fn test_swap_position() {
-	assert_eq!("ebcda", Instr::SwapPos(4, 0).apply("abcde"));
+	assert_eq!("abcde", Instr::SwapPos(4, 0).apply("ebcda"));
 }
 
 #[test]
 fn test_reverse() {
-	assert_eq!("xabcdex", Instr::Reverse(1, 5).apply("xedcbax"));
-	assert_eq!("xbcdeax", Instr::Reverse(1, 4).apply("xedcbax"));
+	assert_eq!("xedcbax", Instr::Reverse(1, 5).apply("xabcdex"));
+	assert_eq!("xedcbax", Instr::Reverse(1, 4).apply("xbcdeax"));
 }
 
 #[test]
 fn test_rotate_abs() {
-	assert_eq!("bcdea", Instr::RotateAbs{dir: Dir::L, offset: 1}.apply("abcde"));
-	assert_eq!("cdeab", Instr::RotateAbs{dir: Dir::L, offset: 2}.apply("abcde"));
-	assert_eq!("eabcd", Instr::RotateAbs{dir: Dir::R, offset: 1}.apply("abcde"));
+	assert_eq!("abcde", Instr::RotateAbs{dir: Dir::L, offset: 1}.apply("bcdea"));
+	assert_eq!("abcde", Instr::RotateAbs{dir: Dir::L, offset: 2}.apply("cdeab"));
+	assert_eq!("abcde", Instr::RotateAbs{dir: Dir::R, offset: 1}.apply("eabcd"));
 }
 
 #[test]
 fn test_rotate_rel() {
-	assert_eq!("ecabd", Instr::RotateRel('b').apply("abdec"));
-	assert_eq!("decab", Instr::RotateRel('d').apply("ecabd"));
-	assert_eq!("habcdefg", Instr::RotateRel('a').apply("abcdefgh"));
-	assert_eq!("ghabcdef", Instr::RotateRel('b').apply("abcdefgh"));
-	assert_eq!("fghabcde", Instr::RotateRel('c').apply("abcdefgh"));
-	assert_eq!("efghabcd", Instr::RotateRel('d').apply("abcdefgh"));
-	assert_eq!("cdefghab", Instr::RotateRel('e').apply("abcdefgh"));
-	assert_eq!("bcdefgha", Instr::RotateRel('f').apply("abcdefgh"));
+	assert_eq!("abdecxyz", Instr::RotateRel('b').apply("yzabdecx"));
+	assert_eq!("ecabdxyz", Instr::RotateRel('d').apply("abdxyzec"));
+	assert_eq!("abcdefgh", Instr::RotateRel('a').apply("habcdefg"));
+	assert_eq!("abcdefgh", Instr::RotateRel('b').apply("ghabcdef"));
+	assert_eq!("abcdefgh", Instr::RotateRel('c').apply("fghabcde"));
+	assert_eq!("abcdefgh", Instr::RotateRel('d').apply("efghabcd"));
+	assert_eq!("abcdefgh", Instr::RotateRel('e').apply("cdefghab"));
+	assert_eq!("abcdefgh", Instr::RotateRel('f').apply("bcdefgha"));
 	assert_eq!("abcdefgh", Instr::RotateRel('g').apply("abcdefgh"));
-	assert_eq!("habcdefg", Instr::RotateRel('h').apply("abcdefgh"));
+	assert_eq!("abcdefgh", Instr::RotateRel('h').apply("habcdefg"));
 }
 
 #[test]
 fn test_move() {
-	assert_eq!("bdeac", Instr::Move { src: 1, dest: 4 }.apply("bcdea"));
+	assert_eq!("bcdea", Instr::Move { src: 1, dest: 4 }.apply("bdeac"));
 }
 
 fn require_num(s: &str) -> usize {
@@ -209,12 +223,14 @@ move position 6 to position 4";
 	assert_eq!(expected, parse_input(input));
 }
 
-fn scramble(input: &str, instructions: Vec<Instr>) -> String {
-	instructions.iter().fold(input.to_string(), |pwd, ins| ins.apply(&pwd))
+fn unscramble(input: &str, instructions: Vec<Instr>) -> String {
+	instructions.iter()
+		.rev()
+		.fold(input.to_string(), |pwd, ins| ins.apply(&pwd))
 }
 
 #[test]
-fn test_scramble() {
+fn test_unscramble() {
 	let instructions = parse_input("swap position 4 with position 0
 swap letter d with letter b
 reverse positions 0 through 4
@@ -224,8 +240,7 @@ move position 3 to position 0
 rotate based on position of letter b
 rotate based on position of letter d");
 	
-	assert_eq!("decab", scramble("abcde", instructions.clone()));
-	assert_eq!("xbdecyza", scramble("abcdexyz", instructions));
+	assert_eq!("abcdexyz", unscramble("xbdecyza", instructions));
 }
 
 static INPUT: &'static str = "move position 2 to position 6
