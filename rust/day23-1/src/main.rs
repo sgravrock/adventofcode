@@ -11,10 +11,10 @@ enum Rvalue {
 
 #[derive(Copy, Clone, Debug)]
 enum Instruction {
-	Inc(char),
-	Dec(char),
-	Cpy(char, Rvalue),
-	Jnz(Rvalue, i32),
+	Inc(Rvalue),
+	Dec(Rvalue),
+	Cpy(Rvalue, Rvalue),
+	Jnz(Rvalue, Rvalue),
 	Tgl(Rvalue)
 }
 
@@ -28,15 +28,28 @@ fn compute(input: &str) -> RegisterFile {
 		ip += 1;
 
 		match instr {
-			Instruction::Inc(reg) => *(registers.get_mut(reg)) += 1,
-			Instruction::Dec(reg) => *(registers.get_mut(reg)) -= 1,
-			Instruction::Cpy(reg, rvalue) => 
-				*(registers.get_mut(reg)) = expand_rvalue(rvalue, &registers),
+			Instruction::Inc(op) => {
+				if let Rvalue::Reg(reg) = op {
+					*(registers.get_mut(reg)) += 1;
+				}
+			},
+			Instruction::Dec(op) => {
+				if let Rvalue::Reg(reg) = op {
+					*(registers.get_mut(reg)) -= 1;
+				}
+			},
+			Instruction::Cpy(op, rvalue) => {
+				if let Rvalue::Reg(reg) = op {
+					*(registers.get_mut(reg)) = expand_rvalue(rvalue, &registers);
+				}
+			},
 			Instruction::Jnz(rvalue, offset) => {
-				let n = expand_rvalue(rvalue, &registers);
+				if let Rvalue::Const(off) = offset {
+					let n = expand_rvalue(rvalue, &registers);
 
-				if n != 0 {
-					ip += offset - 1;
+					if n != 0 {
+						ip += off - 1;
+					}
 				}
 			},
 			Instruction::Tgl(offset) => {
@@ -146,6 +159,17 @@ inc a";
 	assert_eq!(1, regs.get('a'));
 }
 
+#[test]
+fn test_ignores_invalid_instructions() {
+	let input = "inc 5
+dec 5
+cpy a 5
+jnz 2 a
+inc a";
+	let regs = compute(input);
+	assert_eq!(1, regs.get('a'));
+}
+
 fn expand_rvalue(rvalue: Rvalue, registers: &RegisterFile) -> i32 {
 	match rvalue {
 		Rvalue::Const(n) => n,
@@ -159,11 +183,10 @@ fn parse_input(input: &str) -> Vec<Instruction> {
 			let ts: Vec<&str> = s.split(' ').collect();
 
 			match ts[0] {
-				"inc" => Instruction::Inc(first_char(ts[1])),
-				"dec" => Instruction::Dec(first_char(ts[1])),
-				"cpy" => Instruction::Cpy(first_char(ts[2]), parse_rvalue(ts[1])),
-				"jnz" => Instruction::Jnz(parse_rvalue(ts[1]),
-					ts[2].parse::<i32>().unwrap()),
+				"inc" => Instruction::Inc(parse_rvalue(ts[1])),
+				"dec" => Instruction::Dec(parse_rvalue(ts[1])),
+				"cpy" => Instruction::Cpy(parse_rvalue(ts[2]), parse_rvalue(ts[1])),
+				"jnz" => Instruction::Jnz(parse_rvalue(ts[1]), parse_rvalue(ts[2])),
 				"tgl" => Instruction::Tgl(parse_rvalue(ts[1])),
 				_ => panic!("Can't decode: {}", s)
 			}
