@@ -72,7 +72,7 @@ fn toggle(src: &Instruction) -> Instruction {
 	match src {
 		&Instruction::Inc(n) => Instruction::Dec(n),
 		&Instruction::Dec(n) => Instruction::Inc(n),
-		&Instruction::Tgl(n) => Instruction::Tgl(n), // TODO
+		&Instruction::Tgl(n) => Instruction::Inc(n),
 		&Instruction::Cpy { src, dest } =>
 			Instruction::Jnz { criterion: src, offset: dest },
 		&Instruction::Jnz { criterion, offset } =>
@@ -152,6 +152,22 @@ inc a
 inc a";
 	let regs = compute(input);
 	assert_eq!(2, regs.get('a'));
+}
+
+#[test]
+fn test_tgl_tgl() {
+	// 2nd tgl becomes a nop
+	let input = "tgl 1
+tgl 1
+dec a";
+	let regs = compute(input);
+	assert_eq!(-1, regs.get('a'));
+
+	// 2nd tgl becomes an inc
+	let input2 = "tgl 1
+tgl a";
+	let regs2 = compute(input2);
+	assert_eq!(1, regs2.get('a'));
 }
 
 #[test]
