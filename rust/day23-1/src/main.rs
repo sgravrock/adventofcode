@@ -25,6 +25,7 @@ fn compute(input: &str) -> RegisterFile {
 
 	while ip >= 0 && ip < instructions.len() as i32 {
 		let instr = instructions[ip as usize].clone();
+		println!("Executing {:?}", instr);
 		ip += 1;
 
 		match instr {
@@ -40,6 +41,7 @@ fn compute(input: &str) -> RegisterFile {
 			},
 			Instruction::Cpy { src, dest } => {
 				if let Rvalue::Reg(reg) = dest {
+					println!("Copying to {:?}", reg);
 					*(registers.get_mut(reg)) = expand_rvalue(src, &registers);
 				}
 			},
@@ -71,7 +73,10 @@ fn toggle(src: &Instruction) -> Instruction {
 		&Instruction::Inc(n) => Instruction::Dec(n),
 		&Instruction::Dec(n) => Instruction::Inc(n),
 		&Instruction::Tgl(n) => Instruction::Tgl(n), // TODO
-		_ => panic!("Don't know how to toggle {:?}", src)
+		&Instruction::Cpy { src, dest } =>
+			Instruction::Jnz { criterion: src, offset: dest },
+		&Instruction::Jnz { criterion, offset } =>
+			Instruction::Cpy { src: criterion, dest: offset }
 	}
 }
 
@@ -138,9 +143,8 @@ dec b";
 	assert_eq!(1, regs.get('b'));
 }
 
-/* TODO: Need to be able to store invalid instructions (like cpy 1 a) first
 #[test]
-fn test_tgl_binary() {
+fn test_tgl_cpy() {
 	let input = "cpy a 1
 tgl 1
 cpy a 2
@@ -149,7 +153,14 @@ inc a";
 	let regs = compute(input);
 	assert_eq!(2, regs.get('a'));
 }
-*/
+
+#[test]
+fn test_tgl_jnz() {
+	let input = "tgl 1
+jnz 42 a";
+	let regs = compute(input);
+	assert_eq!(42, regs.get('a'));
+}
 
 #[test]
 fn test_tgl_oob() {
