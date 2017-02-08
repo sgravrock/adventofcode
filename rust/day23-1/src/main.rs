@@ -13,8 +13,8 @@ enum Rvalue {
 enum Instruction {
 	Inc(Rvalue),
 	Dec(Rvalue),
-	Cpy(Rvalue, Rvalue),
-	Jnz(Rvalue, Rvalue),
+	Cpy { src: Rvalue, dest: Rvalue },
+	Jnz { criterion: Rvalue, offset: Rvalue },
 	Tgl(Rvalue)
 }
 
@@ -38,14 +38,14 @@ fn compute(input: &str) -> RegisterFile {
 					*(registers.get_mut(reg)) -= 1;
 				}
 			},
-			Instruction::Cpy(op, rvalue) => {
-				if let Rvalue::Reg(reg) = op {
-					*(registers.get_mut(reg)) = expand_rvalue(rvalue, &registers);
+			Instruction::Cpy { src, dest } => {
+				if let Rvalue::Reg(reg) = dest {
+					*(registers.get_mut(reg)) = expand_rvalue(src, &registers);
 				}
 			},
-			Instruction::Jnz(rvalue, offset) => {
+			Instruction::Jnz { criterion, offset } => {
 				if let Rvalue::Const(off) = offset {
-					let n = expand_rvalue(rvalue, &registers);
+					let n = expand_rvalue(criterion, &registers);
 
 					if n != 0 {
 						ip += off - 1;
@@ -185,8 +185,14 @@ fn parse_input(input: &str) -> Vec<Instruction> {
 			match ts[0] {
 				"inc" => Instruction::Inc(parse_rvalue(ts[1])),
 				"dec" => Instruction::Dec(parse_rvalue(ts[1])),
-				"cpy" => Instruction::Cpy(parse_rvalue(ts[2]), parse_rvalue(ts[1])),
-				"jnz" => Instruction::Jnz(parse_rvalue(ts[1]), parse_rvalue(ts[2])),
+				"cpy" => Instruction::Cpy {
+					src: parse_rvalue(ts[1]),
+					dest: parse_rvalue(ts[2])
+				},
+				"jnz" => Instruction::Jnz {
+					criterion: parse_rvalue(ts[1]),
+					offset: parse_rvalue(ts[2])
+				},
 				"tgl" => Instruction::Tgl(parse_rvalue(ts[1])),
 				_ => panic!("Can't decode: {}", s)
 			}
