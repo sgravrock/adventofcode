@@ -46,12 +46,10 @@ fn compute(input: &str) -> RegisterFile {
 				}
 			},
 			Instruction::Jnz { criterion, offset } => {
-				if let Rvalue::Const(off) = offset {
-					let n = expand_rvalue(criterion, &registers);
+				let n = expand_rvalue(criterion, &registers);
 
-					if n != 0 {
-						ip += off - 1;
-					}
+				if n != 0 {
+					ip += expand_rvalue(offset, &registers) - 1;
 				}
 			},
 			Instruction::Tgl(offset) => {
@@ -125,6 +123,16 @@ inc a";
 }
 
 #[test]
+fn test_jnz_offset_is_reg() {
+	let input = "cpy 2 b
+jnz 1 b
+inc a
+inc a";
+	let regs = compute(input);
+	assert_eq!(1, regs.get('a'));
+}
+
+#[test]
 fn test_cpy_reg() {
 	let input = "cpy 42 a
 cpy a b";
@@ -181,17 +189,6 @@ jnz 42 a";
 #[test]
 fn test_tgl_oob() {
 	let input = "tgl 2
-inc a";
-	let regs = compute(input);
-	assert_eq!(1, regs.get('a'));
-}
-
-#[test]
-fn test_ignores_invalid_instructions() {
-	let input = "inc 5
-dec 5
-cpy a 5
-jnz 2 a
 inc a";
 	let regs = compute(input);
 	assert_eq!(1, regs.get('a'));
