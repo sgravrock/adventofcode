@@ -1,6 +1,35 @@
 use std::collections::HashMap;
+use std::collections::hash_map;
+use std::env;
 
 fn main() {
+	let input = "cpy a b
+dec b
+cpy a d
+cpy 0 a
+cpy b c
+inc a
+dec c
+jnz c -2
+dec d
+jnz d -5
+dec b
+cpy b c
+cpy c d
+dec d
+inc c
+jnz d -2
+tgl c
+cpy -16 c
+jnz 1 c
+cpy 90 c
+jnz 73 d
+inc a
+inc d
+jnz d -2
+inc c
+jnz c -5";
+	println!("{}", compute(input).get('a'));
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -22,11 +51,18 @@ fn compute(input: &str) -> RegisterFile {
 	let mut registers = RegisterFile::new();
 	let mut instructions = parse_input(input);
 	let mut ip: i32 = 0;
+	let debug = match env::var("DEBUG") {
+		Ok(val) => val.len() != 0,
+		Err(_) => false
+	};
 
 	while ip >= 0 && ip < instructions.len() as i32 {
 		let instr = instructions[ip as usize].clone();
-		println!("Executing {:?}", instr);
 		ip += 1;
+
+		if debug {
+			println!("Executing {:?}", instr);
+		}
 
 		match instr {
 			Instruction::Inc(op) => {
@@ -41,7 +77,10 @@ fn compute(input: &str) -> RegisterFile {
 			},
 			Instruction::Cpy { src, dest } => {
 				if let Rvalue::Reg(reg) = dest {
-					println!("Copying to {:?}", reg);
+					if debug {
+						println!("Copying to {:?}", reg);
+					}
+
 					*(registers.get_mut(reg)) = expand_rvalue(src, &registers);
 				}
 			},
@@ -61,13 +100,27 @@ fn compute(input: &str) -> RegisterFile {
 				}
 			}
 		}
+
+		if debug {
+			print_state(ip, &registers);
+		}
 	}
 
 	registers
 }
 
+fn print_state(ip: i32, registers: &RegisterFile) {
+	print!("{} ", ip);
+
+	for (k, v) in registers.iter() {
+		print!("{}={} ", k, v);
+	}
+
+	println!("");
+}
+
 fn toggle(src: &Instruction) -> Instruction {
-	match src {
+	let result = match src {
 		&Instruction::Inc(n) => Instruction::Dec(n),
 		&Instruction::Dec(n) => Instruction::Inc(n),
 		&Instruction::Tgl(n) => Instruction::Inc(n),
@@ -75,11 +128,12 @@ fn toggle(src: &Instruction) -> Instruction {
 			Instruction::Jnz { criterion: src, offset: dest },
 		&Instruction::Jnz { criterion, offset } =>
 			Instruction::Cpy { src: criterion, dest: offset }
-	}
+	};
+	println!("Toggling {:?} to {:?}", src, result);
+	result
 }
 
 
-/* TODO: broken until all the variations of tgl are implemented
 #[test]
 fn test_compute() {
 	let input = "cpy 2 a
@@ -93,7 +147,6 @@ dec a";
 	assert_eq!(3, regs.get('a'));
 
 }
-*/
 
 #[test]
 fn test_jnz_reg_nope() {
@@ -261,5 +314,9 @@ impl RegisterFile {
 	fn get_mut(&mut self, reg: char) -> &mut i32 {
 		self.registers.get_mut(&reg)
 			.unwrap_or_else(|| panic!("No such register {}", reg))
+	}
+
+	fn iter(&self) -> hash_map::Iter<char, i32> {
+		self.registers.iter()
 	}
 }
