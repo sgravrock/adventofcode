@@ -29,7 +29,10 @@ inc d
 jnz d -2
 inc c
 jnz c -5";
-	println!("{}", compute(input).get('a'));
+	let mut registers = RegisterFile::new();
+	*(registers.get_mut('a')) = 7;
+	compute_within(input, &mut registers);
+	println!("{}", registers.get('a'));
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -49,6 +52,11 @@ enum Instruction {
 
 fn compute(input: &str) -> RegisterFile {
 	let mut registers = RegisterFile::new();
+	compute_within(input, &mut registers);
+	registers
+}
+
+fn compute_within(input: &str, registers: &mut RegisterFile) {
 	let mut instructions = parse_input(input);
 	let mut ip: i32 = 0;
 	let debug = match env::var("DEBUG") {
@@ -105,8 +113,6 @@ fn compute(input: &str) -> RegisterFile {
 			print_state(ip, &registers);
 		}
 	}
-
-	registers
 }
 
 fn print_state(ip: i32, registers: &RegisterFile) {
