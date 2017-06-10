@@ -65,27 +65,27 @@ parseNumPair s =
     in (a, b)
 
 execute :: Grid -> Cmd -> Grid
-execute s (Cmd cmdType xr yr) = update s xr yr (cmdFn cmdType)
+execute s (Cmd cmdType xr yr) = mapRegion s xr yr (cmdFn cmdType)
 
 cmdFn :: CmdType -> (Bool -> Bool)
 cmdFn On = \_ -> True
 cmdFn Off = \_ -> False
 cmdFn Toggle = \x -> not x
 
-update :: Grid -> XRange -> YRange -> (Bool -> Bool) -> Grid
-update input (XRange x0 x1) yrange f
+mapRegion :: Grid -> XRange -> YRange -> (Bool -> Bool) -> Grid
+mapRegion input (XRange x0 x1) yrange f
     | x0 == x1 = modified
-    | otherwise = update modified (XRange (x0+1) x1) yrange f
-    where modified = updateCol input x0 yrange f
+    | otherwise = mapRegion modified (XRange (x0+1) x1) yrange f
+    where modified = mapCol input x0 yrange f
 
-updateCol :: Grid -> Int -> YRange -> (Bool -> Bool) -> Grid
-updateCol input x (YRange y0 y1) f
+mapCol :: Grid -> Int -> YRange -> (Bool -> Bool) -> Grid
+mapCol input x (YRange y0 y1) f
     | y0 == y1 = modified
-    | otherwise = updateCol modified x (YRange (y0+1) y1) f
-    where modified = updatePoint input (Point x y0) f
+    | otherwise = mapCol modified x (YRange (y0+1) y1) f
+    where modified = mapPoint input (Point x y0) f
 
-updatePoint :: Grid -> Point -> (Bool -> Bool) -> Grid
-updatePoint input p f
+mapPoint :: Grid -> Point -> (Bool -> Bool) -> Grid
+mapPoint input p f
     | newval = Set.insert p input
     | otherwise = Set.delete p input
     where
