@@ -1,6 +1,5 @@
 module Lib
-    ( isNice
-    , Point(..)
+    ( Point(..)
     , XRange(..)
     , YRange(..)
     , CmdType(..)
@@ -12,9 +11,6 @@ module Lib
 
 import qualified Data.Set as Set
 import Data.List.Split
-
-isNice :: String -> Bool
-isNice _ = False
 
 data Point = Point Int Int deriving(Show, Ord, Eq)
 data XRange = XRange Int Int deriving(Show, Eq)
