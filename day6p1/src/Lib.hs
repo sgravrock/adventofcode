@@ -1,9 +1,11 @@
 module Lib
     ( isNice
     , Point(..)
-    , Range(..)
+    , XRange(..)
+    , YRange(..)
     , Cmd(..)
     , execute
+    , turnOff
     ) where
 
 import qualified Data.Set as Set
@@ -11,21 +13,45 @@ import qualified Data.Set as Set
 isNice :: String -> Bool
 isNice _ = False
 
-data Point = Point Int Int deriving(Show)
-data Range = Range Int Int deriving(Show)
-data Cmd = On Range Range | Off Range Range | Toggle Range Range
+data Point = Point Int Int deriving(Show, Ord, Eq)
+data XRange = XRange Int Int deriving(Show)
+data YRange = YRange Int Int deriving(Show)
+data Cmd = On XRange YRange | Off XRange YRange | Toggle XRange YRange
 
 type Grid = Set.Set Point
 
 execute :: Grid -> Cmd -> Grid
-execute s (On xr yr) = s
-execute s _ = s
+execute s (On xr yr) = update s xr yr turnOn
+execute s (Off xr yr) = update s xr yr turnOff
+execute s (Toggle xr yr) = update s xr yr toggle
 
---update :: Grid -> Range -> Range -> (Bool -> Bool) -> Grid
---update input xr yr f = f
---
+update :: Grid -> XRange -> YRange -> (Bool -> Bool) -> Grid
+update input (XRange x0 x1) yrange f
+    | x0 == x1 = modified
+    | otherwise = update modified (XRange (x0+1) x1) yrange f
+    where modified = updateCol input x0 yrange f
+
+updateCol :: Grid -> Int -> YRange -> (Bool -> Bool) -> Grid
+updateCol input x (YRange y0 y1) f
+    | y0 == y1 = modified
+    | otherwise = updateCol modified x (YRange (y0+1) y1) f
+    where modified = updatePoint input (Point x y0) f
+
+turnOn :: Bool -> Bool
+turnOn _ = True
+
+turnOff :: Bool -> Bool
+turnOff _ = False
+
+toggle :: Bool -> Bool
+toggle x = not x
+
+
+
 updatePoint :: Grid -> Point -> (Bool -> Bool) -> Grid
-updatePoint input p f =
-    let oldval = Set.member p input
+updatePoint input p f
+    | newval = Set.insert p input
+    | otherwise = Set.delete p input
+    where
+        oldval = Set.member p input
         newval = f oldval
-    in Set.insert p 
