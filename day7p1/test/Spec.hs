@@ -4,28 +4,34 @@ import Test.HUnit
 
 import Lib
 
-sampleCircuit = [ "123 -> x"
-                , "456 -> y"
-                , "x AND y -> d"
-                , "x OR y -> e"
-                , "x LSHIFT 2 -> f"
-                , "y RSHIFT 2 -> g"
-                , "NOT x -> h"
-                , "NOT y -> i"
-                ]
+sampleCircuit = map parseWire [ "123 -> x"
+                              , "456 -> y"
+                              , "x AND y -> d"
+                              , "x OR y -> e"
+                              , "x LSHIFT 2 -> f"
+                              , "y RSHIFT 2 -> g"
+                              , "NOT x -> h"
+                              , "NOT y -> i"
+                              ]
 
-tests = test [ {-"sample d" ~: Just 72 ~=? signalOnWire "d" sampleCircuit
-             , "sample e" ~: Just 72 ~=? signalOnWire "e" sampleCircuit
-             , "sample f" ~: Just 72 ~=? signalOnWire "f" sampleCircuit
-             , "sample g" ~: Just 72 ~=? signalOnWire "g" sampleCircuit
-             , "sample h" ~: Just 72 ~=? signalOnWire "h" sampleCircuit
-             , "sample i" ~: Just 72 ~=? signalOnWire "i" sampleCircuit
-             , "sample x" ~: Just 72 ~=? signalOnWire "x" sampleCircuit
-             , "sample y" ~: Just 72 ~=? signalOnWire "y" sampleCircuit
-             -}
-             "eval assign" ~: 42 ~=? signalOnWire "a" [parseWire "42 -> a"]
-             , "parse assign" ~: WireSpec "x" (Assign 123) ~=?
+tests = test [ "sample d" ~: 72 ~=? signalOnWire "d" sampleCircuit
+             , "sample e" ~: 507 ~=? signalOnWire "e" sampleCircuit
+             , "sample f" ~: 492 ~=? signalOnWire "f" sampleCircuit
+             , "sample g" ~: 114 ~=? signalOnWire "g" sampleCircuit
+             , "sample h" ~: 65412 ~=? signalOnWire "h" sampleCircuit
+             , "sample i" ~: 65079 ~=? signalOnWire "i" sampleCircuit
+             , "sample x" ~: 123 ~=? signalOnWire "x" sampleCircuit
+             , "sample y" ~: 456 ~=? signalOnWire "y" sampleCircuit
+             , "eval assign ref" ~: 42 ~=? signalOnWire "b"
+                [(parseWire "42 -> a"), (parseWire  "a -> b")]
+             , "eval and const" ~: 72 ~=?
+                signalOnWire "a" [parseWire "123 AND 456 -> a"]
+             , "eval or const" ~: 507 ~=?
+                signalOnWire "a" [parseWire "123 OR 456 -> a"]
+             , "parse assign const" ~: WireSpec "x" (Assign (Const 123)) ~=?
                 parseWire "123 -> x"
+             , "parse assign ref" ~: WireSpec "x" (Assign (Ref "y")) ~=?
+                parseWire "y -> x"
              , "parse and" ~:
                 WireSpec "d" (And (Ref "x") (Ref "y")) ~=?
                 parseWire "x AND y -> d"

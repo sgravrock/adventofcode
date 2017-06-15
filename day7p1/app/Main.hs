@@ -344,5 +344,5 @@ main =
                  , "k AND m -> n"
                  , "as RSHIFT 2 -> at"
                  ]
-    --in putStrLn $ show $ signalOnWire "a" inputs
-    in putStrLn $ show $ (map parseWire inputs)
+        circuit = map parseWire inputs
+    in putStrLn $ show $ signalOnWire "a" circuit
