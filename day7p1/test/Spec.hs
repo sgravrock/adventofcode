@@ -23,7 +23,8 @@ tests = test [ {-"sample d" ~: Just 72 ~=? signalOnWire "d" sampleCircuit
              , "sample x" ~: Just 72 ~=? signalOnWire "x" sampleCircuit
              , "sample y" ~: Just 72 ~=? signalOnWire "y" sampleCircuit
              -}
-             "parse assign" ~: WireSpec "x" (Assign 123) ~=?
+             "eval assign" ~: 42 ~=? signalOnWire "a" [parseWire "42 -> a"]
+             , "parse assign" ~: WireSpec "x" (Assign 123) ~=?
                 parseWire "123 -> x"
              , "parse and" ~:
                 WireSpec "d" (And (Ref "x") (Ref "y")) ~=?

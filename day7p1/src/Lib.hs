@@ -21,8 +21,18 @@ data Rvalue = Ref String
             | Const Int
             deriving (Show, Eq)
 
-signalOnWire :: String -> [String] -> Maybe Int
-signalOnWire _ _ = Nothing
+signalOnWire :: String -> [WireSpec] -> Int
+signalOnWire name specs = signalOnWire' (findWire name specs) specs
+
+signalOnWire' :: Equation -> [WireSpec] -> Int
+signalOnWire' (Assign n) _ = n
+signalOnWire' _ _ = error "nope"
+
+findWire :: String -> [WireSpec] -> Equation
+findWire targetName ((WireSpec name eqn):xs)
+    | name == targetName = eqn
+    | otherwise = findWire targetName xs
+findWire targetName [] = error ("Can't find wire " ++ targetName)
 
 parseWire :: String -> WireSpec
 parseWire line
