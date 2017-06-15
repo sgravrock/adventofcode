@@ -6,25 +6,26 @@ module Lib
     , Rvalue(..)
     ) where
 
+import Data.Word
 import Data.List.Split
 import Text.Read
 
 data WireSpec = WireSpec String Equation deriving (Show, Eq)
-data Equation = Assign Int
+data Equation = Assign Word16
               | And Rvalue Rvalue
               | Or Rvalue Rvalue
-              | LShift String Int
-              | RShift String Int
+              | LShift String Word16
+              | RShift String Word16
               | Not String
               deriving (Show, Eq)
 data Rvalue = Ref String
-            | Const Int
+            | Const Word16
             deriving (Show, Eq)
 
-signalOnWire :: String -> [WireSpec] -> Int
+signalOnWire :: String -> [WireSpec] -> Word16
 signalOnWire name specs = signalOnWire' (findWire name specs) specs
 
-signalOnWire' :: Equation -> [WireSpec] -> Int
+signalOnWire' :: Equation -> [WireSpec] -> Word16
 signalOnWire' (Assign n) _ = n
 signalOnWire' _ _ = error "nope"
 
