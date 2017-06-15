@@ -8,6 +8,7 @@ module Lib
 
 import Data.Word
 import Data.Bits
+import qualified Data.Map as Map
 import Data.List.Split
 import Text.Read
 
@@ -23,27 +24,44 @@ data Rvalue = Ref String
             | Const Word16
             deriving (Show, Eq)
 
+type Memos = Map.Map String Word16
+
 signalOnWire :: String -> [WireSpec] -> Word16
-signalOnWire name specs = signalOnWire' (findWire name specs) specs
+signalOnWire name specs = 
+    let (result, _) = memoizedSignalOnWire name specs Map.empty
+    in result
 
-signalOnWire' :: Equation -> [WireSpec] -> Word16
-signalOnWire' (Assign rvalue) circuit = expand rvalue circuit
-signalOnWire' (Not operand) circuit =
-    complement (signalOnWire operand circuit)
-signalOnWire' (And x y) circuit = (expand x circuit) .&. (expand y circuit)
-signalOnWire' (Or x y) circuit = (expand x circuit) .|. (expand y circuit)
-signalOnWire' (LShift x y) circuit = shiftWire x y 1 circuit
-signalOnWire' (RShift x y) circuit = shiftWire x y (-1) circuit
+memoizedSignalOnWire :: String -> [WireSpec] -> Memos -> (Word16, Memos)
+memoizedSignalOnWire name specs memos0 = case Map.lookup name memos0 of
+    Just n -> (n, memos0)
+    Nothing -> let (result, memos1) = signalOnWire' (findWire name specs) specs memos0
+        in (result, Map.insert name result memos1)
 
-shiftWire :: String -> Word16 -> Int -> [WireSpec] -> Word16
-shiftWire name offset multiplier circuit =
-    let lhs = signalOnWire name circuit
+signalOnWire' :: Equation -> [WireSpec] -> Memos -> (Word16, Memos)
+signalOnWire' (Assign rvalue) circuit memos = expand rvalue circuit memos
+signalOnWire' (Not operand) circuit memos =
+    let (opVal, newMemos) = memoizedSignalOnWire operand circuit memos
+    in (complement opVal, newMemos)
+signalOnWire' (And lhs rhs) circuit memos0 =
+    let (x, memos1) = (expand lhs circuit memos0)
+        (y, memos2) = (expand rhs circuit memos1)
+    in (x .&. y, memos2)
+signalOnWire' (Or lhs rhs) circuit memos0 =
+    let (x, memos1) = (expand lhs circuit memos0)
+        (y, memos2) = (expand rhs circuit memos1)
+    in (x .|. y, memos2)
+signalOnWire' (LShift x y) circuit memos = shiftWire x y 1 circuit memos
+signalOnWire' (RShift x y) circuit memos = shiftWire x y (-1) circuit memos
+
+shiftWire :: String -> Word16 -> Int -> [WireSpec] -> Memos -> (Word16, Memos)
+shiftWire name offset multiplier circuit memos =
+    let (lhs, newMemos) = memoizedSignalOnWire name circuit memos
         rhs = multiplier * (fromIntegral offset)
-    in shift lhs rhs
+    in (shift lhs rhs, newMemos)
 
-expand :: Rvalue -> [WireSpec] -> Word16
-expand (Const x) _ = x
-expand (Ref wn) circuit = signalOnWire wn circuit
+expand :: Rvalue -> [WireSpec] -> Memos -> (Word16, Memos)
+expand (Const x) _ memos = (x, memos)
+expand (Ref wn) circuit memos = memoizedSignalOnWire wn circuit memos
 
 findWire :: String -> [WireSpec] -> Equation
 findWire targetName ((WireSpec name eqn):xs)
