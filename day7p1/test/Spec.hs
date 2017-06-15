@@ -23,11 +23,12 @@ tests = test [ {-"sample d" ~: Just 72 ~=? signalOnWire "d" sampleCircuit
              , "sample x" ~: Just 72 ~=? signalOnWire "x" sampleCircuit
              , "sample y" ~: Just 72 ~=? signalOnWire "y" sampleCircuit
              -}
-             "parse const" ~: WireSpec "x" (Const 123) ~=?
+             "parse assign" ~: WireSpec "x" (Assign 123) ~=?
                 parseWire "123 -> x"
-             , "parse and" ~: WireSpec "d" (And "x" "y") ~=?
+             , "parse and" ~:
+                WireSpec "d" (And (Ref "x") (Ref "y")) ~=?
                 parseWire "x AND y -> d"
-             , "parse or" ~: WireSpec "d" (Or "x" "y") ~=?
+             , "parse or" ~: WireSpec "d" (Or (Ref "x") (Ref "y")) ~=?
                 parseWire "x OR y -> d"
              , "parse lshift" ~: WireSpec "f" (LShift "x" 2) ~=?
                 parseWire "x LSHIFT 2 -> f"
@@ -35,6 +36,12 @@ tests = test [ {-"sample d" ~: Just 72 ~=? signalOnWire "d" sampleCircuit
                 parseWire "x RSHIFT 2 -> f"
              , "parse not" ~: WireSpec "h" (Not "x") ~=?
                 parseWire "NOT x -> h"
+             , "parse and const" ~:
+                WireSpec "d" (And (Const 4) (Const 5)) ~=?
+                parseWire "4 AND 5 -> d"
+             , "parse or const" ~: 
+                WireSpec "d" (Or (Const 4) (Const 5)) ~=?
+                parseWire "4 OR 5 -> d"
              ]
 
 run = runTestTT tests
