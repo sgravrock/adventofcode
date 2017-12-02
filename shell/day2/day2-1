@@ -1,0 +1,12 @@
+#!/bin/bash
+
+(
+	echo 0
+	
+	while read line; do
+		echo "$line" | tr '\t' '\n' | sort -rn | awk 'NR==1{print} END{print}'
+		echo "- +"
+	done
+
+	echo p
+) | dc
