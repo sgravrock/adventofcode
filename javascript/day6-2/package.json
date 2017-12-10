@@ -1,0 +1,11 @@
+{
+  "name": "day6-1",
+  "version": "0.0.0",
+  "main": "day6-1.js",
+  "scripts": {
+  	"test": "./node_modules/.bin/jasmine"
+  },
+  "devDependencies": {
+    "jasmine": "^2.8.0"
+  }
+}
