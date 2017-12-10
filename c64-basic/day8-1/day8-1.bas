@@ -11,10 +11,8 @@
 100 REM initialize registers
 110 GOSUB 1900
 120 REM execute the program
-125 PRINT "Debug: There are "; PROGRAMLN; " instructions"
 130 FOR PC = 1 TO PROGRAMLN
 140 LINE$ = PROGRAM$(PC)
-145 PRINT "Debug: Calling to execute '"; LINE$; "'"
 150 GOSUB 1100
 160 NEXT PC
 170 REM find the largest register value
@@ -54,15 +52,11 @@
 1010 REM args: RN$, the register name
 1020 FOR I = 1 TO 30
 1030 IF RN$(I) <> RN$ THEN GOTO 1060
-1035 PRINT "Debug: Found register "; RN$; " at "; I
 1040 OUT = I
-1045 PRINT "Debug: Returning from register serach"
 1050 RETURN
 1060 NEXT I
 1070 REM Not found. Allocate.
-1075 PRINT "Debug: Trying to allocate register "; RN$
 1080 GOSUB 2100
-1085 PRINT "Debug: "; RN$; " is now at "; OUT
 1090 RETURN
 
 1100 REM execute an instruction
@@ -71,7 +65,6 @@
 1120 GOSUB 700
 1130 REM should we execute?
 1140 GOSUB 1300
-1145 PRINT "Debug: Do we execute? "; EX$
 1150 IF EX$ <> "y" THEN RETURN
 1160 REM find delta
 1170 LINE$ = WS$(3)
@@ -81,8 +74,6 @@
 1210 RN$ = WS$(1)
 1230 GOSUB 1000
 1240 RV(OUT) = RV(OUT) + D
-1250 PRINT "Debug: Adjusted '"; RN$(OUT); "' (rn '"; RN$; "' r# "; OUT; ") by "; D
-1260 PRINT "Debug: New value is "; RV(OUT)
 1270 RETURN
 
 1300 REM Determine if an instruction should be executed
@@ -115,7 +106,6 @@
 1560 IF RV(RN) = ROP THEN EX$ = "y"
 1570 RETURN
 1580 IF RV(RN) > ROP THEN EX$ = "y"
-1585 PRINT "Debug: "; STR$(RV(RN)); ">"; STR$(ROP); " -> "; EX$
 1590 RETURN
 1600 IF RV(RN) >= ROP THEN EX$ = "y"
 1610 RETURN
@@ -137,7 +127,6 @@
 
 2000 REM list registers, for debugging purposes
 2010 FOR I = 1 TO 30
-2020 PRINT "Debug: Register "; I; " has name '"; RN$(I); "' and value ", RV(I)
 2030 NEXT I
 2040 RETURN
 
@@ -145,8 +134,6 @@
 2110 REM args: RN$, the register name
 2120 FOR I = 1 TO 30
 2130 IF RN$(I) <> "" THEN GOTO 2160
-2135 PRINT "Debug: Found an empty register at "; I
-2136 PRINT "Debug: Allocating it to '"; RN$; "'"
 2140 RN$(I) = RN$
 2145 OUT = I
 2150 RETURN
@@ -170,7 +157,6 @@
 2420 RETURN
 
 10000 REM self-tests
-10005 PRINT "Debug: beginning self-tests"
 10010 GOSUB 10400
 10020 REM initialize registers
 10030 GOSUB 1900
@@ -181,7 +167,6 @@
 10080 LINE$ = "z inc 1 if b < 5"
 10090 EX = 1
 10100 GOSUB 10200
-10190 PRINT "Debug: self-tests passed"
 10195 RETURN
 
 10200 REM test an instruction
@@ -211,9 +196,3 @@
 10490 PRINT "Fatal: -10 parsed to "; STR$(OUT)
 10500 EXIT
 10510 RETURN
-
-
-1100 REM execute an instruction
-1110 REM args: LINE$, the instruction
-1000 REM find the index of a named register
-1010 REM args: RN$, the register name

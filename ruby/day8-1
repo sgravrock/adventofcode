@@ -22,8 +22,6 @@ Instruction = Struct.new(:dest, :delta, :cond) do
 		if cond.passes?(registers)
 			result = registers.fetch(dest, 0) + delta
 			registers[dest] = result
-			puts "Debug: Adjusted '#{dest}' by #{delta}"
-			puts "Debug: #{dest} is now at #{result}"
 		end
 	end
 end
