@@ -175,10 +175,10 @@
 10020 REM initialize registers
 10030 GOSUB 1900
 10040 LINE$ = "z dec 231 if bfx > -10"
-10050 EX = 0
+10050 EX = -231
 10060 GOSUB 10200
 10070 GOSUB 1900
-10080 LINE$ = "a inc 1 if b < 5"
+10080 LINE$ = "z inc 1 if b < 5"
 10090 EX = 1
 10100 GOSUB 10200
 10190 PRINT "Debug: self-tests passed"
@@ -188,7 +188,8 @@
 10210 REM input: LINE$, the instruction; EX: the expected value of z
 10220 REM execute the instruction
 10225 INS$ = LINE$
-10230 GOSUB 1100
+10230 Z = 0
+10235 GOSUB 1100
 10240 REM get the index of the destination register
 10250 RN$ = "z"
 10260 GOSUB 1000

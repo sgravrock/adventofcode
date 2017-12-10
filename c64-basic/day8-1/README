@@ -1,0 +1,2 @@
+Usage: cbmbasic day8-1.bas < input.txt 
+Or more likely: cbmbasic day8-1.bas < input.txt | grep -v Debug
