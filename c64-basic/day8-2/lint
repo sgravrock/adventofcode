@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+require 'set'
+
+lastn = 0
+seen = Set::new
+ok = true
+
+STDIN.read.split("\n").each do |line|
+	n = line.split(' ')[0].to_i
+
+	if n != 0
+		if seen.include? n
+			puts "Line #{n} is duplicated"
+			ok = false
+		elsif n <= lastn
+			puts "Line #{n} is out of order"
+			ok = false
+		end
+
+		lastn = n
+		seen.add n
+	end
+end
+
+exit ok
