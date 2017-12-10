@@ -8,7 +8,8 @@ typedef enum {
 	TT_CLOSE_BRACE,
 	TT_OPEN_ANGLE,
 	TT_CLOSE_ANGLE,
-	TT_BANG,
+	TT_CANCELATION,
+	TT_COMMA,
 	TT_END,
 	TT_OTHER
 } TokenType;
@@ -20,6 +21,7 @@ typedef struct {
 
 Lexer *lexer_make(const char *input);
 void lexer_destroy(Lexer *lexer);
+Token lexer_peek(Lexer *lexer);
 Token lexer_next(Lexer *lexer);
 
 #endif

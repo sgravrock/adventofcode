@@ -2,22 +2,34 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "lexer.h"
+#include "parser.h"
 
 typedef struct {
 	const char *name;
-	bool (*fn)();
+	bool (*fn)(void);
 } RegisteredTest;
 
 #define TEST(fn) { #fn, fn }
 
-static bool test_lexer();
+static bool test_lexer_next(void);
+static bool test_lexer_peek(void);
+static bool test_parser(void);
+static void emit_group(int score);
+static void emit_failure(void);
 static bool assert_equal_int(int expected, int actual, const char *context);
 static bool assert_equal_char(char expected, char actual);
 
 
+static int groups[10];
+static size_t ngroups;
+static bool parser_failed;
+
+
 int main(void) {
 	RegisteredTest tests[] = {
-		TEST(test_lexer)
+		TEST(test_lexer_next),
+		TEST(test_lexer_peek),
+		TEST(test_parser),
 	};
 
 	bool ok = true;
@@ -40,9 +52,9 @@ int main(void) {
 	}
 }
 
-static bool test_lexer() {
+static bool test_lexer_next(void) {
 	bool ok = true;
-	Lexer *lexer = lexer_make("<>{}!x");
+	Lexer *lexer = lexer_make("<>{}!ax,");
 
 	Token t = lexer_next(lexer);
 	ok = assert_equal_char('<', t.c) && ok;
@@ -61,12 +73,16 @@ static bool test_lexer() {
 	ok = assert_equal_int(TT_CLOSE_BRACE, t.type, "}") && ok;
 
 	t = lexer_next(lexer);
-	ok = assert_equal_char('!', t.c) && ok;
-	ok = assert_equal_int(TT_BANG, t.type, "!") && ok;
+	ok = assert_equal_char('a', t.c) && ok;
+	ok = assert_equal_int(TT_CANCELATION, t.type, "a") && ok;
 
 	t = lexer_next(lexer);
 	ok = assert_equal_char('x', t.c) && ok;
 	ok = assert_equal_int(TT_OTHER, t.type, "x") && ok;
+
+	t = lexer_next(lexer);
+	ok = assert_equal_char(',', t.c) && ok;
+	ok = assert_equal_int(TT_COMMA, t.type, ",") && ok;
 
 	t = lexer_next(lexer);
 	ok = assert_equal_char('\0', t.c) && ok;
@@ -74,6 +90,54 @@ static bool test_lexer() {
 
 	lexer_destroy(lexer);
 	return ok;
+}
+
+static bool test_lexer_peek(void) {
+	bool ok = true;
+	Lexer *lexer = lexer_make("<>");
+
+	Token t = lexer_peek(lexer);
+	ok = assert_equal_int(TT_OPEN_ANGLE, t.type, "<") && ok;
+	ok = assert_equal_char('<', t.c) && ok;
+
+	t = lexer_next(lexer);
+	ok = assert_equal_char('<', t.c) && ok;
+
+	return ok;
+}
+
+static bool test_parser(void) {
+	bool ok = true;
+	ngroups = 0;
+	parser_failed = false;
+
+	Lexer *lexer = lexer_make("{{{}}}");
+	Parser parser = { lexer, emit_group, emit_failure };
+	parse(parser);
+	ok = assert_equal_int(3, ngroups, "# groups in {{{}}}") && ok;
+	ok = assert_equal_int(1, groups[0], "group 0 in {{{}}}") && ok;
+	ok = assert_equal_int(2, groups[1], "group 1 in {{{}}}") && ok;
+	ok = assert_equal_int(3, groups[2], "group 2 in {{{}}}") && ok;
+
+	if (parser_failed) {
+		printf("Parser failed\n");
+		ok = false;
+	}
+
+	return ok;
+}
+
+static void emit_group(int score) {
+	if (ngroups >= sizeof groups / sizeof *groups) {
+		printf("Too many groups\n");
+		exit(EXIT_FAILURE);
+	}
+
+	groups[ngroups++] = score;
+}
+
+static void emit_failure(void) {
+	parser_failed = true;
 }
 
 static bool assert_equal_int(int expected, int actual, const char *context) {
