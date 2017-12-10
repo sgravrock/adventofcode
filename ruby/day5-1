@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'minitest/autorun'
-require 'minitest/spec'
+require './microtest'
 
 class State
 	def initialize(offsets, ip)
@@ -36,7 +35,7 @@ def steps_to_exit(offsets)
 	i
 end
 
-class Tests < Minitest::Test
+class Tests < Microtest::Test
 	def test_steps_to_exit
 		assert_equal 5, steps_to_exit([0, 3, 0, 1, -3])
 	end
@@ -52,6 +51,8 @@ class Tests < Minitest::Test
 		assert_equal [2, 3, 0, 1, -3], s3.offsets
 	end
 end
+
+Microtest.run(Tests.new)
 
 input = [
 	0,

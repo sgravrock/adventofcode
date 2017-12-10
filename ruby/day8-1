@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'minitest/autorun'
-require 'minitest/spec'
+require './microtest'
 
 def highest_register(input)
 	instructions = input.split("\n").collect {|line| parse_instruction(line) }
@@ -51,7 +50,7 @@ Condition = Struct.new(:left_operand, :operator, :right_operand) do
 end
 
 
-class Tests < Minitest::Test
+class Tests < Microtest::Test
 	def test_highest_register_example
 		instructions = <<~END
 			b inc 5 if a > 1
@@ -62,6 +61,8 @@ class Tests < Minitest::Test
 		assert_equal 1, highest_register(instructions)
 	end
 end
+
+Microtest.run(Tests.new)
 
 input = <<END
 g dec 231 if bfx > -10

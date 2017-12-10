@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'minitest/autorun'
-require 'minitest/spec'
+require './microtest'
 
 def valid?(input)
 	words = input.split ' '
@@ -14,7 +13,7 @@ def num_valid(input)
 		.length
 end
 
-class Tests < Minitest::Test
+class Tests < Microtest::Test
 	def test_valid
 		assert_equal true, valid?('aa bb cc dd ee')
 		assert_equal true, valid?('aa bb cc dd aaa')
@@ -33,6 +32,8 @@ class Tests < Minitest::Test
 		assert_equal false, valid?('aa bb cc dd aa')
 	end
 end
+
+Microtest.run(Tests.new)
 
 
 input = <<~END
