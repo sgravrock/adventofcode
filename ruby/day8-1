@@ -4,41 +4,49 @@ require 'minitest/autorun'
 require 'minitest/spec'
 
 def highest_register(input)
-	instructions = input.split("\n").collect {|line| line.split(' ') }
+	instructions = input.split("\n").collect {|line| parse_instruction(line) }
 	registers = {}
-	instructions.each {|instruction| execute(instruction, registers) }
+	instructions.each {|ins| ins.execute(registers) }
 	return registers.values.max
 end
 
-def execute(instruction, registers)
-	if should_execute?(instruction, registers)
-		dest = instruction[0]
-		delta = instruction[2].to_i
-		delta *= -1 if instruction[1] == 'dec'
-		registers[dest] = registers.fetch(dest, 0) + delta
+def parse_instruction(line)
+	words = line.split(' ')
+	delta = words[2].to_i
+	delta *= -1 if words[1] == 'dec'
+	cond = Condition.new(words[4], words[5], words[6].to_i)
+	Instruction.new(words[0], delta, cond)
+end
+
+Instruction = Struct.new(:dest, :delta, :cond) do
+	def execute(registers)
+		if cond.passes?(registers)
+			result = registers.fetch(dest, 0) + delta
+			registers[dest] = result
+		end
 	end
 end
 
-def should_execute?(instruction, registers)
-	left = registers.fetch(instruction[4], 0)
-	operator = instruction[5]
-	right = instruction[6].to_i
-
-	case operator
-	when '>'
-		left > right
-	when '>='
-		left >= right
-	when '<'
-		left < right
-	when '<='
-		left <= right
-	when '=='
-		left == right
-	when '!='
-		left != right
-	else
-		raise "Unknown operator #{operator}"
+Condition = Struct.new(:left_operand, :operator, :right_operand) do
+	def passes?(registers)
+		left = registers.fetch(left_operand, 0)
+	
+		case operator
+		when '>'
+			left > right_operand
+		when '>='
+			left >= right_operand
+		when '<'
+			left < right_operand
+		when '<='
+			left <= right_operand
+		when '=='
+			left == right_operand
+		when '!='
+			left != right_operand
+		else
+			raise "Unknown operator #{operator}"
+		end
 	end
 end
 
