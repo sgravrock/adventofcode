@@ -17,8 +17,8 @@ garbage-atom: (any token except TT_CLOSE_ANGLE)
 
 static bool maybe_group(Parser parser, int group_depth);
 static void group_body(Parser parser, int group_depth);
-static bool maybe_list_head(Parser parser, int group_depth);
-static void list_tail(Parser parser, int group_depth);
+static bool maybe_list_element(Parser parser, int group_depth);
+static bool maybe_garbage(Parser parser);
 
 void parse(Parser parser) {
 	if (!maybe_group(parser, 0)) {
@@ -56,34 +56,48 @@ static bool maybe_group(Parser parser, int group_depth) {
 }
 
 static void group_body(Parser parser, int group_depth) {
-	if (maybe_list_head(parser, group_depth)) {
-		list_tail(parser, group_depth);
-	}
-}
-
-static bool maybe_list_head(Parser parser, int group_depth) {
-	// TODO: could also be garbage
-	if (!maybe_group(parser, group_depth)) {
-		return false;
-	}
-
-	/*
-	Token t = lexer_peek(parser.lexer);
-
-	if (t.type != 
-	*/
-	return false;
-}
-
-static void list_tail(Parser parser, int group_depth) {
-	if (lexer_peek(parser.lexer).type != TT_COMMA) {
+	if (!maybe_list_element(parser, group_depth)) {
 		return;
+	}
+
+	while (lexer_peek(parser.lexer).type == TT_COMMA) {
+		lexer_next(parser.lexer);
+
+		if (!maybe_list_element(parser, group_depth)) {
+			fprintf(stderr, "Parse error: expected a list item but got %c\n",
+				lexer_peek(parser.lexer).c);
+			parser.fail();
+			return;
+		}
+	}
+}
+
+static bool maybe_list_element(Parser parser, int group_depth) {
+	return maybe_group(parser, group_depth) || maybe_garbage(parser);
+}
+
+static bool maybe_garbage(Parser parser) {
+	if (lexer_peek(parser.lexer).type != TT_OPEN_ANGLE) {
+		return false;
 	}
 
 	lexer_next(parser.lexer);
 
-	if (!maybe_list_head(parser, group_depth)) {
-		fprintf(stderr, "Parse error: expected a list item but got %c\n",
-			lexer_peek(parser.lexer).c);
+	while (lexer_peek(parser.lexer).type != TT_CLOSE_ANGLE) {
+		Token g = lexer_next(parser.lexer);
+
+		if (g.type == TT_END) {
+			fprintf(stderr, "Parse error: Unexpected end of input in garbage\n");
+			parser.fail();
+			return true;
+		}
 	}
+
+	Token t = lexer_next(parser.lexer);
+	if (t.type != TT_CLOSE_ANGLE) {
+		fprintf(stderr, "Parse error: Expected > but got %c\n", t.c);
+		parser.fail();
+	}
+
+	return true;
 }

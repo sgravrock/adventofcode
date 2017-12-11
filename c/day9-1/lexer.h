@@ -1,7 +1,10 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-typedef struct lexer Lexer;
+typedef struct {
+	const char *nextchar;
+} Lexer;
+
 
 typedef enum {
 	TT_OPEN_BRACE,
@@ -19,8 +22,6 @@ typedef struct {
 	char c;
 } Token;
 
-Lexer *lexer_make(const char *input);
-void lexer_destroy(Lexer *lexer);
 Token lexer_peek(Lexer *lexer);
 Token lexer_next(Lexer *lexer);
 

@@ -13,7 +13,9 @@ typedef struct {
 
 static bool test_lexer_next(void);
 static bool test_lexer_peek(void);
-static bool test_parser(void);
+static bool test_parser_groups(void);
+static bool test_parser_garbage(void);
+static bool test_parser_unterminated_garbage(void);
 static void emit_group(int score);
 static void emit_failure(void);
 static bool assert_equal_int(int expected, int actual, const char *context);
@@ -29,7 +31,9 @@ int main(void) {
 	RegisteredTest tests[] = {
 		TEST(test_lexer_next),
 		TEST(test_lexer_peek),
-		TEST(test_parser),
+		TEST(test_parser_groups),
+		TEST(test_parser_garbage),
+		TEST(test_parser_unterminated_garbage)
 	};
 
 	bool ok = true;
@@ -54,65 +58,64 @@ int main(void) {
 
 static bool test_lexer_next(void) {
 	bool ok = true;
-	Lexer *lexer = lexer_make("<>{}!ax,");
+	Lexer lexer = {"<>{}!ax,"};
 
-	Token t = lexer_next(lexer);
+	Token t = lexer_next(&lexer);
 	ok = assert_equal_char('<', t.c) && ok;
 	ok = assert_equal_int(TT_OPEN_ANGLE, t.type, "<") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('>', t.c) && ok;
 	ok = assert_equal_int(TT_CLOSE_ANGLE, t.type, ">") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('{', t.c) && ok;
 	ok = assert_equal_int(TT_OPEN_BRACE, t.type, "{") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('}', t.c) && ok;
 	ok = assert_equal_int(TT_CLOSE_BRACE, t.type, "}") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('a', t.c) && ok;
 	ok = assert_equal_int(TT_CANCELATION, t.type, "a") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('x', t.c) && ok;
 	ok = assert_equal_int(TT_OTHER, t.type, "x") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char(',', t.c) && ok;
 	ok = assert_equal_int(TT_COMMA, t.type, ",") && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('\0', t.c) && ok;
 	ok = assert_equal_int(TT_END, t.type, "end of input") && ok;
 
-	lexer_destroy(lexer);
 	return ok;
 }
 
 static bool test_lexer_peek(void) {
 	bool ok = true;
-	Lexer *lexer = lexer_make("<>");
+	Lexer lexer = {"<>"};
 
-	Token t = lexer_peek(lexer);
+	Token t = lexer_peek(&lexer);
 	ok = assert_equal_int(TT_OPEN_ANGLE, t.type, "<") && ok;
 	ok = assert_equal_char('<', t.c) && ok;
 
-	t = lexer_next(lexer);
+	t = lexer_next(&lexer);
 	ok = assert_equal_char('<', t.c) && ok;
 
 	return ok;
 }
 
-static bool test_parser(void) {
+static bool test_parser_groups(void) {
 	bool ok = true;
 	ngroups = 0;
 	parser_failed = false;
 
-	Lexer *lexer = lexer_make("{{{}}}");
-	Parser parser = { lexer, emit_group, emit_failure };
+	Lexer lexer = {"{{{}}}"};
+	Parser parser = { &lexer, emit_group, emit_failure };
 	parse(parser);
 	ok = assert_equal_int(3, ngroups, "# groups in {{{}}}") && ok;
 	ok = assert_equal_int(1, groups[0], "group 0 in {{{}}}") && ok;
@@ -125,6 +128,42 @@ static bool test_parser(void) {
 	}
 
 	return ok;
+}
+
+static bool test_parser_garbage(void) {
+	bool ok = true;
+	ngroups = 0;
+	parser_failed = false;
+
+	Lexer lexer = {"{<a>,<a>,<!>>}"};
+	Parser parser = { &lexer, emit_group, emit_failure };
+	parse(parser);
+
+	ok = assert_equal_int(1, ngroups, "# groups in {<a>,<a>,<!>>}") && ok;
+	ok = assert_equal_int(1, groups[0], "group 0 in {<a>,<a>,<!>>}") && ok;
+
+	if (parser_failed) {
+		printf("Parser failed\n");
+		ok = false;
+	}
+
+	return ok;
+}
+
+static bool test_parser_unterminated_garbage(void) {
+	ngroups = 0;
+	parser_failed = false;
+
+	Lexer lexer = {"{<a}"};
+	Parser parser = { &lexer, emit_group, emit_failure };
+	parse(parser);
+
+	if (!parser_failed) {
+		printf("Expected parser to fail but it did not\n");
+		return false;
+	}
+
+	return true;
 }
 
 static void emit_group(int score) {
