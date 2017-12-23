@@ -1,0 +1,6 @@
+Revision history for Perl extension Day10_1.
+
+0.01  Sat Dec 23 13:38:52 2017
+	- original version; created by h2xs 1.23 with options
+		-AX --skip-exporter --use-new-tests -n Day10_1
+
