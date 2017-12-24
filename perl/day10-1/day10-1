@@ -1,0 +1,7 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use Day10_1 qw(makeHash);
+
+my $hash = makeHash(256, [120,93,0,90,5,80,129,74,1,165,204,255,254,2,50,113]);
+print "$hash\n";

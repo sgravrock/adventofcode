@@ -1,18 +1,28 @@
-# Before 'make install' is performed this script should be runnable with
-# 'make test'. After 'make install' it should work as 'perl Day10_1.t'
-
-#########################
-
-# change 'tests => 1' to 'tests => last_test_to_print';
-
 use strict;
 use warnings;
 
-use Test::More tests => 1;
-BEGIN { use_ok('Day10_1') };
+use Test::More tests => 7;
+BEGIN { use_ok('Day10_1', qw(makeHash iterateHash makeListOfLength)) };
 
-#########################
-
-# Insert your test code below, the Test::More module is use()ed here so read
-# its man page ( perldoc Test::More ) for help writing this test script.
-
+is_deeply(makeListOfLength(5), [0, 1, 2, 3, 4], 'makeListOfLength');
+is_deeply(
+	iterateHash(3, [0, 1, 2, 3, 4], 0, 0),
+	[[2, 1, 0, 3, 4], 3, 1],
+	'iterateHash first'
+);
+is_deeply(
+	iterateHash(4, [2, 1, 0, 3, 4], 3, 1),
+	[[4, 3, 0, 1, 2], 3, 2],
+	'iterateHash second (skip and wrap around)'
+);
+is_deeply(
+	iterateHash(1, [4, 3, 0, 1, 2], 3, 2),
+	[[4, 3, 0, 1, 2], 1, 3],
+	'iterateHash third'
+);
+is_deeply(
+	iterateHash(5, [4, 3, 0, 1, 2], 1, 3),
+	[[3, 4, 2, 1, 0], 4, 4],
+	'iterateHash fourth'
+);
+is(makeHash(5, [3, 4, 1, 5]), 12, 'makeHash for sample input');
