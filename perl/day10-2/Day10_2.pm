@@ -21,8 +21,10 @@ sub makeHash {
 		skipSize => 0
 	);
 
-	foreach my $inputLength (@inputLengths) {
-		iterateHash($inputLength, \%state);
+	foreach (1..64) {
+		foreach my $inputLength (@inputLengths) {
+			iterateHash($inputLength, \%state);
+		}
 	}
 
 	return @$list[0] * @$list[1];
