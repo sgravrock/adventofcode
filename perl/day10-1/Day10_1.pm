@@ -13,31 +13,33 @@ our @EXPORT_OK = qw(makeHash iterateHash makeListOfLength);
 
 sub makeHash {
 	my $listLen = shift(@_);
-	my $list = makeListOfLength($listLen);
 	my $inputLengths = shift(@_);
-	my $pos = 0;
-	my $skipSize = 0;
+	my $list = makeListOfLength($listLen);
+	my %state = (
+		list => $list,
+		pos => 0,
+		skipSize => 0
+	);
 
 	foreach my $inputLength (@$inputLengths) {
-		my $result = iterateHash($inputLength, $list, $pos, $skipSize);
-		($list, $pos, $skipSize) = @$result;
+		iterateHash($inputLength, \%state);
 	}
 
 	return @$list[0] * @$list[1];
 }
 
 sub iterateHash {
-	my ($inputLength, $list, $curPos, $skipSize) = @_;
+	my ($inputLength, $state) = @_;
+	my $list = $state->{list};
 
 	for (my $i = 0; $i < $inputLength / 2; $i++) {
-		my $a = ($i + $curPos) % scalar @$list;
-		my $b = ($curPos + $inputLength - $i - 1) % scalar @$list;
+		my $a = ($i + $state->{pos}) % scalar @$list;
+		my $b = ($state->{pos} + $inputLength - $i - 1) % scalar @$list;
 		(@$list[$a], @$list[$b]) = (@$list[$b], @$list[$a]);
 	}
 
-	$curPos = ($curPos + $inputLength + $skipSize) % scalar @$list;
-	$skipSize++;
-	return [$list, $curPos, $skipSize];
+	$state->{pos} = ($state->{pos} + $inputLength + $state->{skipSize}) % scalar @$list;
+	$state->{skipSize}++;
 }
 
 sub makeListOfLength {
