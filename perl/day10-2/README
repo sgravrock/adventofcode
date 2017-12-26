@@ -1,2 +1,3 @@
+First, run `cpan -i Carp::Assert`.
 To run tests, just do `./run-tests`. But if you want to see the output of print
 statements, run `perl Day10_2.t` instead.

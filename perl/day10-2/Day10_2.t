@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
-BEGIN { use_ok('Day10_2', qw(makeHash iterateHash makeListOfLength prepareInputLengths)) };
+use Test::More tests => 14;
+BEGIN { use_ok('Day10_2', qw(makeHash iterateHash makeListOfLength denseHash hexify prepareInputLengths chunkify)) };
 
 sub wrappedIterateHash {
 	my ($inputLength, $state) = @_;
@@ -36,4 +36,38 @@ is_deeply(
 	{list => [3, 4, 2, 1, 0], pos => 4, skipSize => 4},
 	'iterateHash fourth'
 );
-#is(makeHash(5, [3, 4, 1, 5]), 12, 'makeHash for sample input');
+is_deeply(
+	[denseHash([65, 27, 9, 1, 4, 3, 40, 50, 91, 7, 6, 0, 2, 5, 68, 22], [65, 27])],
+	[64, 90],
+	'denseHash'
+);
+is(
+	hexify(64, 7, 255),
+	'4007ff',
+	'hexify'
+);
+is(
+	makeHash(256, ''),
+	'a2582a3a0e66e6e86e3812dcb672a272',
+	'makeHash ""'
+);
+is(
+	makeHash(256, 'AoC 2017'),
+	'33efeb34ea91902bb2f59c9920caa6cd',
+	'makeHash "AoC 2017"'
+);
+is(
+	makeHash(256, '1,2,3'),
+	'3efbe78a8d82f29979031a4aa0b16a9d',
+	'makeHash "1,2,3"'
+);
+is(
+	makeHash(256, '1,2,4'),
+	'63960835bcdc130f0b66d7ff4f6a5a8e',
+	'makeHash "1,2,4"'
+);
+is_deeply(
+	[chunkify([1, 2, 3, 4, 5, 6], 3)],
+	[[1, 2, 3], [4, 5, 6]],
+	'chunkify'
+);
