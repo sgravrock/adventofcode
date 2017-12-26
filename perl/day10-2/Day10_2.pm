@@ -4,7 +4,6 @@ use 5.018002;
 use strict;
 use warnings;
 use List::Util qw(reduce);
-use Carp::Assert;
 require Exporter;
 
 our @ISA = qw(Exporter);
@@ -54,26 +53,7 @@ sub iterateHash {
 
 sub denseHash {
 	my @sparseHashes = @_;
-	use Data::Dumper;
-	print 'denseHash got ' . scalar @_ . " chunks\n";
-	for my $arg (@_) {
-		my $r = ref($arg);
-		assert $r eq 'ARRAY', "Expected array ref but got ref == $r";
-	}
-	print "==== denseHash args =====\n";
-	print Dumper(@_);
-	print "==== /denseHash args =====\n";
-	my @result = map { 
-		#print "==== denseHash is going to pass this thing to xorAll =====\n";
-		#print Dumper($_);
-		#print "==== /denseHash is going to pass this thing to xorAll =====\n";
-		assert ref $_ eq 'ARRAY';
-		xorAll(@$_)
-	} @sparseHashes;
-	print 'denseHash returning ' . scalar @result . " chunks\n";
-	print "==== denseHash ret =====\n";
-	print Dumper(@result);
-	print "==== /denseHash ret =====\n";
+	my @result = map { xorAll(@$_) } @sparseHashes;
 	return @result;
 }
 
@@ -83,13 +63,6 @@ sub hexify {
 }
 
 sub xorAll {
-	print "==== xorAll args ====\n";
-	print Dumper(@_);
-	print "==== /xorAll args ====\n";
-	for my $arg (@_) {
-		my $r = ref($arg);
-		assert !$r, "Expected a scalar but got ref to $r";
-	}
 	return reduce { $a ^ $b } 0, @_;
 }
 
