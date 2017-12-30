@@ -17,27 +17,15 @@
                       ("7" "1")
                      )])
 
-  (let ([called #f])
-    (check-false (debug-if #f (lambda () (set! called #t))))
-    (check-false called))
-  (let ([called #f])
-    (check-true (debug-if #t (lambda () (set! called #t))))
-    (check-true called))
-  
-  (check-equal? (find-line "5" sample-input) '("5" "6"))
-  
-  (check-true (reaches-directly '("4" "2") "4"))
-  (check-false (reaches-directly '("4" "2") "3"))
-  
-  (check-false (reaches-via '("1" "1") "1" "0" sample-input))
-  (check-true  (reaches-via '("0" "1") "1" "0" sample-input))
-  (check-true (reaches-via '("2" "0" "3" "4") "4" "0" sample-input))
-  (check-false (reaches-via '("2" "0" "3" "4") "5" "0" sample-input))
-  (check-false (reaches-via '("7" "1") "1" "0" sample-input))
+  (check-false (member-containing 5 '((1 3) (4 2))))
+  (check-equal? (member-containing 2 '((1 3) (4 2))) '(4 2))
 
-  (check-true (reaches "0" "0" sample-input))
-  (check-true (reaches "2" "0" sample-input))
-  (check-false (reaches "1" "0" sample-input))
+  ; Sort and check equality rather than using set=?,
+  ; so that failure messages include the expected and actual values
+  (check-equal? (sort (set-union-all '((1 2) (1 3) (1 4))) <) '(1 2 3 4))
 
-  (check-equal? (all-that-reach "0" sample-input) '("0" "2" "3" "4" "5" "6"))
+  (check-equal? (map (lambda (s) (sort s string<?)) (find-groups sample-input))
+                '(("1" "7") ("0" "2" "3" "4" "5" "6")))
+
+  (check-equal? (sort (all-that-reach "0" sample-input) string<?) '("0" "2" "3" "4" "5" "6"))
 )

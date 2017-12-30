@@ -14,48 +14,34 @@
 (define (contains? needle haystack)
   (not (equal? #f (member needle haystack))))
 
-(define (debug-if result debug)
-  (cond [result (debug)])
-  result)
+(define (member-containing needle haystack)
+  (let ([result (memf (lambda (lst) (member needle lst)) haystack)])
+  (if (equal? #f result)
+      #f
+      (car result))))
 
 (define (all-that-reach dest-id lines)
-  (let ([src-ids (map car lines)])
-    (printf "src IDs: ~a\n" src-ids)
-    (filter (lambda (src-id) (reaches src-id dest-id lines)) src-ids)))
+  (member-containing dest-id (find-groups lines)))
 
-(define (reaches src-id dest-id lines)
-  (or (equal? src-id dest-id)
-      (any? (lambda (line)
-              (debug-if
-               (reaches-via line src-id dest-id lines)
-               (lambda ()
-                 (printf "Top: ~a is reachable from ~a via line ~a\n" dest-id src-id line))))
-            lines)))
+(define (find-groups lines)
+  (find-groups2 lines '()))
 
-(define (reaches-directly line dest-id)
-  (debug-if (equal? dest-id (car line))
-            (lambda () (printf "~a is directly reachable via line ~a\n" dest-id line))))
+(define (find-groups2 lines groups)
+  (if (equal? 0 (length lines))
+      groups
+      (find-groups2 (cdr lines) (add-to-groups (car lines) groups))))
 
-(define (reaches-via start-line src-id dest-id lines)
-  (and (line-has-source? start-line src-id)
-       (let ([candidate-lines (remq start-line lines)])
-         (or (reaches-directly start-line dest-id)
-             (debug-if
-              (reaches-indirectly (car start-line) dest-id candidate-lines)
-              (lambda ()
-                (printf "~a is indirectly reachable from ~a" dest-id (car start-line))))))))
+(define (add-to-groups line groups)
+  (let-values ([(matches non-matches)
+                (partition (lambda (group) (line-touches-group? line group)) groups)])
+    (let* ([matches-with-line (cons line matches)]
+           [merged-matches (set-union-all matches-with-line)])
+      (append (list merged-matches) non-matches))))
 
-(define (reaches-indirectly src-id dest-id lines)
-  (any? (lambda (line)
-          (reaches-via line src-id dest-id lines))
-        lines))
+(define (line-touches-group? line group)
+  (any? (lambda (id) (contains? id group)) line))
 
-(define (line-has-source? line source-id)
-  (not (equal? #f (member source-id (cdr line)))))
+(define (set-union-all sets)
+  (apply set-union sets))
 
-(define (find-line id lines)
-  (findf (lambda (line)
-           (equal? id (car line)))
-         lines))
-
-(provide parse-line reaches reaches-directly reaches-via find-line debug-if all-that-reach)
+(provide parse-line all-that-reach find-groups set-union-all member-containing)
