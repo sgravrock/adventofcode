@@ -13,8 +13,6 @@ severity := method(layerSpecs,
 
 	while(world playerDepth < world firewall layers size,
 		total = total + world currentSeverity
-		writeln("At depth " .. (world playerDepth) .. ": Adding " .. (world currentSeverity) .. " severity")
-		if(world currentSeverity > 0, writeln(world firewall))
 		world = world advance
 	)
 
