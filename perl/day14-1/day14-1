@@ -1,0 +1,7 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use Day14_1 qw(numSquaresUsed);
+
+my $n = numSquaresUsed('ffayrhll');
+print "$n\n";
