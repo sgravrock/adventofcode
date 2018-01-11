@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+require 'set'
+
+Coord = Struct.new(:x, :y) do
+	def +(other)
+		Coord.new(x + other.x, y + other.y)
+	end
+
+	def distance(other)
+		(x - other.x).abs + (y - other.y).abs
+	end
+end
+
+def coordinates_of(num)
+	pos = Coord.new(0, 0)
+	dirs = [
+		Coord.new(1, 0),
+		Coord.new(0, -1),
+		Coord.new(-1, 0),
+		Coord.new(0, 1)
+	]
+	i = 0
+	xs = Set.new([0])
+	ys = Set.new([0])
+
+	(2..num).each do |n|
+		dir = dirs[i % dirs.length]
+		pos = pos + dir
+
+		# Turn if we just expanded the grid in any direction
+		unless xs.include?(pos.x) && ys.include?(pos.y)
+			i += 1
+			xs.add pos.x
+			ys.add pos.y
+		end
+	end
+
+	pos
+end
+
+def distance(n)
+	coordinates_of(1).distance(coordinates_of(n))
+end
+
+class Tests < Microtest::Test 
+	def test_coord_add
+		assert_equal(Coord.new(0, 3), Coord.new(1, 1) + Coord.new(-1, 2))
+	end
+
+	def test_coord_distance
+		origin = Coord.new(0, 0)
+		assert_equal(0, origin.distance(origin))
+		assert_equal(3, origin.distance(Coord.new(-2, 1)))
+		assert_equal(2, origin.distance(Coord.new(2, 0)))
+		assert_equal(4, origin.distance(Coord.new(2, -2)))
+	end
+
+	def test_distance
+		origin = Coord.new(0, 0)
+		assert_equal(0, distance(1))
+		assert_equal(3, distance(12))
+		assert_equal(2, distance(23))
+		assert_equal(31, distance(1024))
+	end
+
+	def test_coordinates_of_1
+		assert_equal(Coord.new(0, 0), coordinates_of(1))
+	end
+
+	def test_coordinates_of_2
+		assert_equal(Coord.new(1, 0), coordinates_of(2))
+	end
+
+	def test_coordinates_of_3
+		assert_equal(Coord.new(1, -1), coordinates_of(3))
+	end
+
+	def test_coordinates_of_4
+		assert_equal(Coord.new(0, -1), coordinates_of(4))
+	end
+
+	def test_coordinates_of_5
+		assert_equal(Coord.new(-1, -1), coordinates_of(5))
+	end
+
+	def test_coordinates_of_7
+		assert_equal(Coord.new(-1, 1), coordinates_of(7))
+	end
+
+	def test_coordinates_of_10
+		assert_equal(Coord.new(2, 1), coordinates_of(10))
+	end
+end
+
+Microtest.run(Tests.new)
+puts "#{distance(289326)}"
