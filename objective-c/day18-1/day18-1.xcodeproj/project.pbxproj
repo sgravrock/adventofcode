@@ -11,6 +11,9 @@
 		AAA2F73C200BC490003EB3B7 /* Instruction.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F73B200BC490003EB3B7 /* Instruction.m */; };
 		AAA2F73D200BC490003EB3B7 /* Instruction.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F73B200BC490003EB3B7 /* Instruction.m */; };
 		AAA2F743200BC90F003EB3B7 /* InstructionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F742200BC90F003EB3B7 /* InstructionTests.m */; };
+		AAA2F746200BFA66003EB3B7 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F745200BFA66003EB3B7 /* Machine.m */; };
+		AAA2F747200BFA66003EB3B7 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F745200BFA66003EB3B7 /* Machine.m */; };
+		AAA2F74C200C0B32003EB3B7 /* ExampleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AAA2F74B200C0B32003EB3B7 /* ExampleTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +36,10 @@
 		AAA2F73A200BC490003EB3B7 /* Instruction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Instruction.h; sourceTree = "<group>"; };
 		AAA2F73B200BC490003EB3B7 /* Instruction.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Instruction.m; sourceTree = "<group>"; };
 		AAA2F742200BC90F003EB3B7 /* InstructionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = InstructionTests.m; sourceTree = "<group>"; };
+		AAA2F744200BFA66003EB3B7 /* Machine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Machine.h; sourceTree = "<group>"; };
+		AAA2F745200BFA66003EB3B7 /* Machine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Machine.m; sourceTree = "<group>"; };
+		AAA2F748200C02F3003EB3B7 /* rvalue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rvalue.h; sourceTree = "<group>"; };
+		AAA2F74B200C0B32003EB3B7 /* ExampleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExampleTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +84,9 @@
 				AAA2F723200BC1A6003EB3B7 /* main.m */,
 				AAA2F73A200BC490003EB3B7 /* Instruction.h */,
 				AAA2F73B200BC490003EB3B7 /* Instruction.m */,
+				AAA2F744200BFA66003EB3B7 /* Machine.h */,
+				AAA2F745200BFA66003EB3B7 /* Machine.m */,
+				AAA2F748200C02F3003EB3B7 /* rvalue.h */,
 			);
 			path = "day18-1";
 			sourceTree = "<group>";
@@ -86,6 +96,7 @@
 			children = (
 				AAA2F732200BC453003EB3B7 /* Info.plist */,
 				AAA2F742200BC90F003EB3B7 /* InstructionTests.m */,
+				AAA2F74B200C0B32003EB3B7 /* ExampleTests.m */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -180,6 +191,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAA2F73C200BC490003EB3B7 /* Instruction.m in Sources */,
+				AAA2F746200BFA66003EB3B7 /* Machine.m in Sources */,
 				AAA2F724200BC1A6003EB3B7 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -188,7 +200,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAA2F74C200C0B32003EB3B7 /* ExampleTests.m in Sources */,
 				AAA2F73D200BC490003EB3B7 /* Instruction.m in Sources */,
+				AAA2F747200BFA66003EB3B7 /* Machine.m in Sources */,
 				AAA2F743200BC90F003EB3B7 /* InstructionTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

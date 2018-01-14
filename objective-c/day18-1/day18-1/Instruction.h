@@ -1,13 +1,8 @@
 #import <Foundation/Foundation.h>
-NS_ASSUME_NONNULL_BEGIN
+#import "rvalue.h"
+@class Machine;
 
-typedef struct Argument {
-	BOOL isRef;
-	union {
-		int value;
-		char ref;
-	} refOrValue;
-} Argument;
+NS_ASSUME_NONNULL_BEGIN
 
 typedef enum {
 	Play,
@@ -20,11 +15,12 @@ typedef enum {
 
 @protocol Instruction
 + (instancetype)fromTokens:(NSArray<NSString *> *)tokens;
+- (NSNumber *)executeOnMachine:(Machine *)machine;
 @end
 
 @interface UnaryInstruction: NSObject<Instruction>
-- (instancetype)initWithArg:(Argument)arg;
-@property (nonatomic, readonly, assign) Argument arg1;
+- (instancetype)initWithArg:(Rvalue)arg;
+@property (nonatomic, readonly, assign) Rvalue arg1;
 @end
 
 @interface SoundInstruction : UnaryInstruction
@@ -34,9 +30,9 @@ typedef enum {
 @end
 
 @interface MutatingInstruction : NSObject<Instruction>
-- (instancetype)initWithDest:(char)arg1 arg:(Argument)arg2;
+- (instancetype)initWithDest:(char)arg1 arg:(Rvalue)arg2;
 @property (nonatomic, readonly, assign) char arg1;
-@property (nonatomic, readonly, assign) Argument arg2;
+@property (nonatomic, readonly, assign) Rvalue arg2;
 @end
 
 @interface SetInstruction : MutatingInstruction
@@ -52,13 +48,13 @@ typedef enum {
 @end
 
 @interface JumpInstruction: NSObject<Instruction>
-- (instancetype)initWithArg:(Argument)arg1 arg:(Argument)arg2;
-@property (nonatomic, readonly, assign) Argument arg1;
-@property (nonatomic, readonly, assign) Argument arg2;
+- (instancetype)initWithArg:(Rvalue)arg1 arg:(Rvalue)arg2;
+@property (nonatomic, readonly, assign) Rvalue arg1;
+@property (nonatomic, readonly, assign) Rvalue arg2;
 @end
 
 
 NSObject<Instruction> *parseInstruction(NSString *input);
-NSArray<NSObject<Instruction> *> *parseInstructions(NSString *input);
+NSArray<NSObject<Instruction> *> *parseInstructions(NSArray<NSString *> *lines);
 
 NS_ASSUME_NONNULL_END
