@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Instruction.h"
-#import "Machine.h"
+#import "Process.h"
 
 @interface InstructionTests : XCTestCase
 
@@ -99,70 +99,70 @@
 
 - (void)testExecuteSndValue {
 	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd 5");
-	Machine *machine = [[Machine alloc] init];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual(machine.mostRecentSound, [NSNumber numberWithLongLong:5]);
+	Process *process = [[Process alloc] init];
+	[subject executeInProcess:process];
+	XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:5]);
 }
 
 - (void)testExecuteSndReg {
 	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd X");
-	Machine *machine = [[Machine alloc] init];
-	[machine setRegister:'X' to:3];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual(machine.mostRecentSound, [NSNumber numberWithLongLong:3]);
+	Process *process = [[Process alloc] init];
+	[process setRegister:'X' to:3];
+	[subject executeInProcess:process];
+	XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:3]);
 }
 
 - (void)testExecuteSet {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"set X 5");
-	Machine *machine = [[Machine alloc] init];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual([machine valueInRegister:'X'], 5);
+	Process *process = [[Process alloc] init];
+	[subject executeInProcess:process];
+	XCTAssertEqual([process valueInRegister:'X'], 5);
 }
 
 - (void)testExecuteAdd {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"add X 2");
-	Machine *machine = [[Machine alloc] init];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual([machine valueInRegister:'X'], 2);
-	[subject executeOnMachine:machine];
-	XCTAssertEqual([machine valueInRegister:'X'], 4);
+	Process *process = [[Process alloc] init];
+	[subject executeInProcess:process];
+	XCTAssertEqual([process valueInRegister:'X'], 2);
+	[subject executeInProcess:process];
+	XCTAssertEqual([process valueInRegister:'X'], 4);
 }
 
 - (void)testExecuteMul {
 	MulInstruction *subject = (MulInstruction *)parseInstruction(@"mul X 2");
-	Machine *machine = [[Machine alloc] init];
-	[machine setRegister:'X' to:3];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual([machine valueInRegister:'X'], 6);
+	Process *process = [[Process alloc] init];
+	[process setRegister:'X' to:3];
+	[subject executeInProcess:process];
+	XCTAssertEqual([process valueInRegister:'X'], 6);
 }
 
 - (void)testExecuteMod {
 	ModInstruction *subject = (ModInstruction *)parseInstruction(@"mod X 2");
-	Machine *machine = [[Machine alloc] init];
-	[machine setRegister:'X' to:3];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual([machine valueInRegister:'X'], 1);
+	Process *process = [[Process alloc] init];
+	[process setRegister:'X' to:3];
+	[subject executeInProcess:process];
+	XCTAssertEqual([process valueInRegister:'X'], 1);
 }
 
 - (void)testExecuteRcv {
 	ReceiveInstruction *subject = (ReceiveInstruction *)parseInstruction(@"rcv X");
-	Machine *machine = [[Machine alloc] init];
-	machine.mostRecentSound = [NSNumber numberWithInt:42];
-	[subject executeOnMachine:machine];
-	XCTAssertNil(machine.recoveredSound);
-	[machine setRegister:'X' to:1];
-	[subject executeOnMachine:machine];
-	XCTAssertEqual(machine.recoveredSound, [NSNumber numberWithInt:42]);
+	Process *process = [[Process alloc] init];
+	process.mostRecentSound = [NSNumber numberWithInt:42];
+	[subject executeInProcess:process];
+	XCTAssertNil(process.recoveredSound);
+	[process setRegister:'X' to:1];
+	[subject executeInProcess:process];
+	XCTAssertEqual(process.recoveredSound, [NSNumber numberWithInt:42]);
 }
 
 - (void)testExecuteJgz {
 	JumpInstruction *subject = (JumpInstruction *)parseInstruction(@"jgz X 5");
-	Machine *machine = [[Machine alloc] init];
-	XCTAssertNil([subject executeOnMachine:machine]);
-	[machine setRegister:'X' to:-1];
-	XCTAssertNil([subject executeOnMachine:machine]);
-	[machine setRegister:'X' to:1];
-	XCTAssertEqual([subject executeOnMachine:machine], [NSNumber numberWithLongLong:5]);
+	Process *process = [[Process alloc] init];
+	XCTAssertNil([subject executeInProcess:process]);
+	[process setRegister:'X' to:-1];
+	XCTAssertNil([subject executeInProcess:process]);
+	[process setRegister:'X' to:1];
+	XCTAssertEqual([subject executeInProcess:process], [NSNumber numberWithLongLong:5]);
 }
 
 @end

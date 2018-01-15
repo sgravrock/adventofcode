@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Instruction.h"
-#import "Machine.h"
+#import "Process.h"
 
 @interface ExampleTests : XCTestCase
 @end
@@ -21,10 +21,10 @@
 									 @"jgz a -2"
 									 ];
 	NSArray<NSObject<Instruction> *> *program = parseInstructions(inputs);
-	Machine *machine = [[Machine alloc] init];
-	[machine execute:program];
-	XCTAssertEqual(machine.recoveredSound, [NSNumber numberWithLongLong:4]);
-	XCTAssertEqual([machine valueInRegister:'a'], 1);
+	Process *process = [[Process alloc] init];
+	[process execute:program];
+	XCTAssertEqual(process.recoveredSound, [NSNumber numberWithLongLong:4]);
+	XCTAssertEqual([process valueInRegister:'a'], 1);
 }
 
 @end

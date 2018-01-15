@@ -1,11 +1,11 @@
-#import "Machine.h"
+#import "Process.h"
 #import "Instruction.h"
 
-@interface Machine()
+@interface Process()
 @property (nonatomic, readonly, strong, nonnull) NSMutableDictionary<NSString *, NSNumber *>* registers;
 @end
 
-@implementation Machine
+@implementation Process
 
 - (instancetype)init {
 	if ((self = [super init])) {
@@ -19,7 +19,7 @@
 	int ip = 0;
 	
 	while (ip >= 0 && ip < instructions.count && self.recoveredSound == nil) {
-		NSNumber *delta = [instructions[ip] executeOnMachine:self];
+		NSNumber *delta = [instructions[ip] executeInProcess:self];
 		ip += (delta == nil ? 1 : [delta intValue]);
 	}
 }

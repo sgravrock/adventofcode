@@ -8,12 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		AA8D83FF200C705500F470D3 /* Instruction.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FA200C705500F470D3 /* Instruction.m */; };
-		AA8D8400200C705500F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Machine.m */; };
+		AA8D8400200C705500F470D3 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Process.m */; };
 		AA8D8401200C705500F470D3 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FD200C705500F470D3 /* main.m */; };
 		AA8D8410200C708000F470D3 /* ExampleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D840E200C708000F470D3 /* ExampleTests.m */; };
 		AA8D8411200C708000F470D3 /* InstructionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D840F200C708000F470D3 /* InstructionTests.m */; };
 		AA8D8412200C709700F470D3 /* Instruction.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FA200C705500F470D3 /* Instruction.m */; };
-		AA8D8413200C709C00F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Machine.m */; };
+		AA8D8413200C709C00F470D3 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Process.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,8 +32,8 @@
 		AA8D83EF200C6FD000F470D3 /* day18-2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "day18-2"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA8D83F9200C705500F470D3 /* Instruction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Instruction.h; sourceTree = "<group>"; };
 		AA8D83FA200C705500F470D3 /* Instruction.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Instruction.m; sourceTree = "<group>"; };
-		AA8D83FB200C705500F470D3 /* Machine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Machine.h; sourceTree = "<group>"; };
-		AA8D83FC200C705500F470D3 /* Machine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Machine.m; sourceTree = "<group>"; };
+		AA8D83FB200C705500F470D3 /* Process.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Process.h; sourceTree = "<group>"; };
+		AA8D83FC200C705500F470D3 /* Process.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Process.m; sourceTree = "<group>"; };
 		AA8D83FD200C705500F470D3 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AA8D83FE200C705500F470D3 /* rvalue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rvalue.h; sourceTree = "<group>"; };
 		AA8D8406200C706400F470D3 /* tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -83,8 +83,8 @@
 			children = (
 				AA8D83F9200C705500F470D3 /* Instruction.h */,
 				AA8D83FA200C705500F470D3 /* Instruction.m */,
-				AA8D83FB200C705500F470D3 /* Machine.h */,
-				AA8D83FC200C705500F470D3 /* Machine.m */,
+				AA8D83FB200C705500F470D3 /* Process.h */,
+				AA8D83FC200C705500F470D3 /* Process.m */,
 				AA8D83FD200C705500F470D3 /* main.m */,
 				AA8D83FE200C705500F470D3 /* rvalue.h */,
 			);
@@ -192,7 +192,7 @@
 			files = (
 				AA8D83FF200C705500F470D3 /* Instruction.m in Sources */,
 				AA8D8401200C705500F470D3 /* main.m in Sources */,
-				AA8D8400200C705500F470D3 /* Machine.m in Sources */,
+				AA8D8400200C705500F470D3 /* Process.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -201,7 +201,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA8D8412200C709700F470D3 /* Instruction.m in Sources */,
-				AA8D8413200C709C00F470D3 /* Machine.m in Sources */,
+				AA8D8413200C709C00F470D3 /* Process.m in Sources */,
 				AA8D8411200C708000F470D3 /* InstructionTests.m in Sources */,
 				AA8D8410200C708000F470D3 /* ExampleTests.m in Sources */,
 			);

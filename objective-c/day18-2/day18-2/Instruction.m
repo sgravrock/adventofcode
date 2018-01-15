@@ -1,5 +1,5 @@
 #import "Instruction.h"
-#import "Machine.h"
+#import "Process.h"
 
 
 static Class<Instruction> classForOpcode(NSString *opcode);
@@ -78,26 +78,26 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeOnMachine:(Machine *)machine {
+- (NSNumber *)executeInProcess:(Process *)process {
 	@throw [NSException exceptionWithName:NSInternalInconsistencyException
-								   reason:@"UnaryInstruction subclasses must override executeOnMachine:"
+								   reason:@"UnaryInstruction subclasses must override executeInProcess:"
 								 userInfo:nil];
 }
 
 @end
 
 @implementation SoundInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	long long frequency = [machine evaluate:self.arg1];
-	machine.mostRecentSound = [NSNumber numberWithLongLong:frequency];
+- (NSNumber *)executeInProcess:(Process *)process {
+	long long frequency = [process evaluate:self.arg1];
+	process.mostRecentSound = [NSNumber numberWithLongLong:frequency];
 	return nil;
 }
 @end
 
 @implementation ReceiveInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	if ([machine evaluate:self.arg1] != 0) {
-		machine.recoveredSound = machine.mostRecentSound;
+- (NSNumber *)executeInProcess:(Process *)process {
+	if ([process evaluate:self.arg1] != 0) {
+		process.recoveredSound = process.mostRecentSound;
 	}
 	return nil;
 }
@@ -119,40 +119,40 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeOnMachine:(Machine *)machine {
+- (NSNumber *)executeInProcess:(Process *)process {
 	@throw [NSException exceptionWithName:NSInternalInconsistencyException
-								   reason:@"MutatingInstruction subclasses must override executeOnMachine:"
+								   reason:@"MutatingInstruction subclasses must override executeInProcess:"
 								 userInfo:nil];
 }
 @end
 
 @implementation SetInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	[machine setRegister:self.arg1 to:[machine evaluate:self.arg2]];
+- (NSNumber *)executeInProcess:(Process *)process {
+	[process setRegister:self.arg1 to:[process evaluate:self.arg2]];
 	return nil;
 }
 @end
 
 @implementation AddInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	long long value = [machine valueInRegister:self.arg1] + [machine evaluate:self.arg2];
-	[machine setRegister:self.arg1 to:value];
+- (NSNumber *)executeInProcess:(Process *)process {
+	long long value = [process valueInRegister:self.arg1] + [process evaluate:self.arg2];
+	[process setRegister:self.arg1 to:value];
 	return nil;
 }
 @end
 
 @implementation MulInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	long long value = [machine valueInRegister:self.arg1] * [machine evaluate:self.arg2];
-	[machine setRegister:self.arg1 to:value];
+- (NSNumber *)executeInProcess:(Process *)process {
+	long long value = [process valueInRegister:self.arg1] * [process evaluate:self.arg2];
+	[process setRegister:self.arg1 to:value];
 	return nil;
 }
 @end
 
 @implementation ModInstruction
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	long long value = [machine valueInRegister:self.arg1] % [machine evaluate:self.arg2];
-	[machine setRegister:self.arg1 to:value];
+- (NSNumber *)executeInProcess:(Process *)process {
+	long long value = [process valueInRegister:self.arg1] % [process evaluate:self.arg2];
+	[process setRegister:self.arg1 to:value];
 	return nil;
 }
 @end
@@ -172,9 +172,9 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeOnMachine:(Machine *)machine {
-	if ([machine evaluate:self.arg1] > 0) {
-		return [NSNumber numberWithLongLong:[machine evaluate:self.arg2]];
+- (NSNumber *)executeInProcess:(Process *)process {
+	if ([process evaluate:self.arg1] > 0) {
+		return [NSNumber numberWithLongLong:[process evaluate:self.arg2]];
 	}
 	
 	return nil;

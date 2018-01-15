@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "Instruction.h"
-#import "Machine.h"
+#import "Process.h"
 #include <limits.h>
 
 int main(int argc, const char * argv[]) {
@@ -48,9 +48,9 @@ int main(int argc, const char * argv[]) {
 						   @"jgz f -16",
 						   @"jgz a -19"
 						   ];
-		Machine *machine = [[Machine alloc] init];
-		[machine execute:parseInstructions(input)];
-		printf("%d\n", [machine.recoveredSound intValue]);
+		Process *process = [[Process alloc] init];
+		[process execute:parseInstructions(input)];
+		printf("%d\n", [process.recoveredSound intValue]);
 	}
 	return 0;
 }

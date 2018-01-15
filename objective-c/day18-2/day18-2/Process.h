@@ -2,7 +2,7 @@
 #import "rvalue.h"
 @protocol Instruction;
 
-@interface Machine : NSObject
+@interface Process : NSObject
 
 @property (nonatomic, strong, nullable) NSNumber *mostRecentSound;
 @property (nonatomic, strong, nullable) NSNumber *recoveredSound;

@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "rvalue.h"
-@class Machine;
+@class Process;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -15,7 +15,7 @@ typedef enum {
 
 @protocol Instruction
 + (instancetype)fromTokens:(NSArray<NSString *> *)tokens;
-- (NSNumber *)executeOnMachine:(Machine *)machine;
+- (NSNumber *)executeInProcess:(Process *)process;
 @end
 
 @interface UnaryInstruction: NSObject<Instruction>
