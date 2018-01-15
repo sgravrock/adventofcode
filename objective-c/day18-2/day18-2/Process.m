@@ -1,8 +1,11 @@
 #import "Process.h"
 #import "Instruction.h"
+NS_ASSUME_NONNULL_BEGIN
 
 @interface Process()
-@property (nonatomic, readonly, strong, nonnull) NSMutableDictionary<NSString *, NSNumber *>* registers;
+@property (nonatomic, readonly, strong) NSMutableDictionary<NSString *, NSNumber *>* registers;
+@property (nonatomic, strong) NSArray<NSObject<Instruction> *> *instructions;
+@property (nonatomic, assign) int ip;
 @end
 
 @implementation Process
@@ -15,12 +18,20 @@
 	return self;
 }
 
-- (void)execute:(NSArray<NSObject<Instruction> *> *)instructions {
-	int ip = 0;
-	
-	while (ip >= 0 && ip < instructions.count && self.recoveredSound == nil) {
-		NSNumber *delta = [instructions[ip] executeInProcess:self];
-		ip += (delta == nil ? 1 : [delta intValue]);
+- (void)execute:(NSArray<NSObject<Instruction> *> *)instructions andThen:(void (^)())callback {
+	self.instructions = instructions;
+	self.ip = 0;
+	[self resumeAndThen:callback];
+}
+
+- (void)resumeAndThen:(void (^)())callback {
+	if (self.ip >= 0 && self.ip < self.instructions.count && self.recoveredSound == nil) {
+		[self.instructions[self.ip] executeInProcess:self andThen:^(NSNumber * _Nullable offset) {
+			self.ip += (offset == nil ? 1 : [offset intValue]);
+			[self resumeAndThen:callback];
+		}];
+	} else {
+		callback();
 	}
 }
 
@@ -49,3 +60,4 @@
 }
 
 @end
+NS_ASSUME_NONNULL_END

@@ -49,8 +49,9 @@ int main(int argc, const char * argv[]) {
 						   @"jgz a -19"
 						   ];
 		Process *process = [[Process alloc] init];
-		[process execute:parseInstructions(input)];
-		printf("%d\n", [process.recoveredSound intValue]);
+		[process execute:parseInstructions(input) andThen:^{
+			printf("%d\n", [process.recoveredSound intValue]);
+		}];
 	}
 	return 0;
 }

@@ -78,28 +78,28 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	@throw [NSException exceptionWithName:NSInternalInconsistencyException
-								   reason:@"UnaryInstruction subclasses must override executeInProcess:"
+								   reason:@"UnaryInstruction subclasses must override executeInProcess:andThen:"
 								 userInfo:nil];
 }
 
 @end
 
 @implementation SoundInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	long long frequency = [process evaluate:self.arg1];
 	process.mostRecentSound = [NSNumber numberWithLongLong:frequency];
-	return nil;
+	callback(nil);
 }
 @end
 
 @implementation ReceiveInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	if ([process evaluate:self.arg1] != 0) {
 		process.recoveredSound = process.mostRecentSound;
 	}
-	return nil;
+	callback(nil);
 }
 @end
 
@@ -119,41 +119,41 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	@throw [NSException exceptionWithName:NSInternalInconsistencyException
-								   reason:@"MutatingInstruction subclasses must override executeInProcess:"
+								   reason:@"MutatingInstruction subclasses must override executeInProcess:andThen:"
 								 userInfo:nil];
 }
 @end
 
 @implementation SetInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	[process setRegister:self.arg1 to:[process evaluate:self.arg2]];
-	return nil;
+	callback(nil);
 }
 @end
 
 @implementation AddInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	long long value = [process valueInRegister:self.arg1] + [process evaluate:self.arg2];
 	[process setRegister:self.arg1 to:value];
-	return nil;
+	callback(nil);
 }
 @end
 
 @implementation MulInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	long long value = [process valueInRegister:self.arg1] * [process evaluate:self.arg2];
 	[process setRegister:self.arg1 to:value];
-	return nil;
+	callback(nil);
 }
 @end
 
 @implementation ModInstruction
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	long long value = [process valueInRegister:self.arg1] % [process evaluate:self.arg2];
 	[process setRegister:self.arg1 to:value];
-	return nil;
+	callback(nil);
 }
 @end
 
@@ -172,11 +172,11 @@ static Rvalue parseArg(NSString *s) {
 	return self;
 }
 
-- (NSNumber *)executeInProcess:(Process *)process {
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
 	if ([process evaluate:self.arg1] > 0) {
-		return [NSNumber numberWithLongLong:[process evaluate:self.arg2]];
+		callback([NSNumber numberWithLongLong:[process evaluate:self.arg2]]);
+	} else {
+		callback(nil);
 	}
-	
-	return nil;
 }
 @end

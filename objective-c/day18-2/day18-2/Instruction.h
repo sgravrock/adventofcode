@@ -15,7 +15,7 @@ typedef enum {
 
 @protocol Instruction
 + (instancetype)fromTokens:(NSArray<NSString *> *)tokens;
-- (NSNumber *)executeInProcess:(Process *)process;
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable offset))callback;
 @end
 
 @interface UnaryInstruction: NSObject<Instruction>

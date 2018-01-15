@@ -100,69 +100,84 @@
 - (void)testExecuteSndValue {
 	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd 5");
 	Process *process = [[Process alloc] init];
-	[subject executeInProcess:process];
-	XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:5]);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:5]);
+	}];
 }
 
 - (void)testExecuteSndReg {
 	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd X");
 	Process *process = [[Process alloc] init];
 	[process setRegister:'X' to:3];
-	[subject executeInProcess:process];
-	XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:3]);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:3]);
+	}];
 }
 
 - (void)testExecuteSet {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"set X 5");
 	Process *process = [[Process alloc] init];
-	[subject executeInProcess:process];
-	XCTAssertEqual([process valueInRegister:'X'], 5);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual([process valueInRegister:'X'], 5);
+	}];
 }
 
 - (void)testExecuteAdd {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"add X 2");
 	Process *process = [[Process alloc] init];
-	[subject executeInProcess:process];
-	XCTAssertEqual([process valueInRegister:'X'], 2);
-	[subject executeInProcess:process];
-	XCTAssertEqual([process valueInRegister:'X'], 4);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual([process valueInRegister:'X'], 2);
+		[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset2) {
+			XCTAssertEqual([process valueInRegister:'X'], 4);
+		}];
+	}];
 }
 
 - (void)testExecuteMul {
 	MulInstruction *subject = (MulInstruction *)parseInstruction(@"mul X 2");
 	Process *process = [[Process alloc] init];
 	[process setRegister:'X' to:3];
-	[subject executeInProcess:process];
-	XCTAssertEqual([process valueInRegister:'X'], 6);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual([process valueInRegister:'X'], 6);
+	}];
 }
 
 - (void)testExecuteMod {
 	ModInstruction *subject = (ModInstruction *)parseInstruction(@"mod X 2");
 	Process *process = [[Process alloc] init];
 	[process setRegister:'X' to:3];
-	[subject executeInProcess:process];
-	XCTAssertEqual([process valueInRegister:'X'], 1);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertEqual([process valueInRegister:'X'], 1);
+	}];
 }
 
 - (void)testExecuteRcv {
 	ReceiveInstruction *subject = (ReceiveInstruction *)parseInstruction(@"rcv X");
 	Process *process = [[Process alloc] init];
 	process.mostRecentSound = [NSNumber numberWithInt:42];
-	[subject executeInProcess:process];
-	XCTAssertNil(process.recoveredSound);
-	[process setRegister:'X' to:1];
-	[subject executeInProcess:process];
-	XCTAssertEqual(process.recoveredSound, [NSNumber numberWithInt:42]);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+		XCTAssertNil(process.recoveredSound);
+		[process setRegister:'X' to:1];
+		[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
+			XCTAssertEqual(process.recoveredSound, [NSNumber numberWithInt:42]);
+		}];
+	}];
 }
 
 - (void)testExecuteJgz {
 	JumpInstruction *subject = (JumpInstruction *)parseInstruction(@"jgz X 5");
 	Process *process = [[Process alloc] init];
-	XCTAssertNil([subject executeInProcess:process]);
-	[process setRegister:'X' to:-1];
-	XCTAssertNil([subject executeInProcess:process]);
-	[process setRegister:'X' to:1];
-	XCTAssertEqual([subject executeInProcess:process], [NSNumber numberWithLongLong:5]);
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset1) {
+		XCTAssertNil(offset1);
+		[process setRegister:'X' to:-1];
+		[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset2) {
+			XCTAssertNil(offset2);
+			[process setRegister:'X' to:1];
+			[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset3) {
+				XCTAssertEqual(offset3, [NSNumber numberWithLongLong:5]);
+			}];
+		}];
+	}];
 }
 
 @end
