@@ -14,6 +14,8 @@
 		AA8D8411200C708000F470D3 /* InstructionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D840F200C708000F470D3 /* InstructionTests.m */; };
 		AA8D8412200C709700F470D3 /* Instruction.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FA200C705500F470D3 /* Instruction.m */; };
 		AA8D8413200C709C00F470D3 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Process.m */; };
+		AA8D8416200C78F700F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8415200C78F700F470D3 /* Machine.m */; };
+		AA8D8417200C78F700F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8415200C78F700F470D3 /* Machine.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +42,8 @@
 		AA8D840A200C706400F470D3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA8D840E200C708000F470D3 /* ExampleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExampleTests.m; sourceTree = "<group>"; };
 		AA8D840F200C708000F470D3 /* InstructionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = InstructionTests.m; sourceTree = "<group>"; };
+		AA8D8414200C78F700F470D3 /* Machine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Machine.h; sourceTree = "<group>"; };
+		AA8D8415200C78F700F470D3 /* Machine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Machine.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +91,8 @@
 				AA8D83FC200C705500F470D3 /* Process.m */,
 				AA8D83FD200C705500F470D3 /* main.m */,
 				AA8D83FE200C705500F470D3 /* rvalue.h */,
+				AA8D8414200C78F700F470D3 /* Machine.h */,
+				AA8D8415200C78F700F470D3 /* Machine.m */,
 			);
 			path = "day18-2";
 			sourceTree = "<group>";
@@ -191,6 +197,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA8D83FF200C705500F470D3 /* Instruction.m in Sources */,
+				AA8D8416200C78F700F470D3 /* Machine.m in Sources */,
 				AA8D8401200C705500F470D3 /* main.m in Sources */,
 				AA8D8400200C705500F470D3 /* Process.m in Sources */,
 			);
@@ -204,6 +211,7 @@
 				AA8D8413200C709C00F470D3 /* Process.m in Sources */,
 				AA8D8411200C708000F470D3 /* InstructionTests.m in Sources */,
 				AA8D8410200C708000F470D3 /* ExampleTests.m in Sources */,
+				AA8D8417200C78F700F470D3 /* Machine.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
