@@ -5,7 +5,7 @@
 static Class<Instruction> classForOpcode(NSString *opcode);
 static Rvalue parseArg(NSString *s);
 
-NSArray<NSObject<Instruction> *> *parseInstructions(NSArray<NSString *> *lines) {
+Program *parseInstructions(NSArray<NSString *> *lines) {
 	NSMutableArray<NSObject<Instruction> *> *result = [NSMutableArray array];
 	
 	for (NSString *line in lines) {
@@ -28,7 +28,7 @@ static Class<Instruction> classForOpcode(NSString *opcode) {
 	
 	if (!lookup) {
 		lookup = @{
-				   @"snd": [SoundInstruction class],
+				   @"snd": [SendInstruction class],
 				   @"rcv": [ReceiveInstruction class],
 				   @"set": [SetInstruction class],
 				   @"add": [AddInstruction class],
@@ -86,20 +86,33 @@ static Rvalue parseArg(NSString *s) {
 
 @end
 
-@implementation SoundInstruction
-- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
-	long long frequency = [process evaluate:self.arg1];
-	process.mostRecentSound = [NSNumber numberWithLongLong:frequency];
+@implementation SendInstruction
+	- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
+	long long value = [process evaluate:self.arg1];
+	[process sendValue:value];
 	callback(nil);
 }
 @end
 
 @implementation ReceiveInstruction
-- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
-	if ([process evaluate:self.arg1] != 0) {
-		process.recoveredSound = process.mostRecentSound;
++ (instancetype)fromTokens:(NSArray<NSString *> *)tokens {
+	char dest = [tokens[1] characterAtIndex:0];
+	return [[self alloc] initWithDest:dest];
+}
+
+- (instancetype)initWithDest:(char)arg {
+	if ((self = [super init])) {
+		_arg = arg;
 	}
-	callback(nil);
+	
+	return self;
+}
+
+- (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable))callback {
+	[process receiveValueAndDo:^(long long value) {
+		[process setRegister:self.arg to:value];
+		callback(nil);
+	}];
 }
 @end
 

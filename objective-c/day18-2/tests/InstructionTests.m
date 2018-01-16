@@ -1,6 +1,11 @@
 #import <XCTest/XCTest.h>
 #import "Instruction.h"
-#import "Process.h"
+#import "MockProcess.h"
+
+@interface Pipe()
+@property (nonatomic, readonly, strong, nonnull) NSMutableArray *buf;
+@end
+
 
 @interface InstructionTests : XCTestCase
 
@@ -9,24 +14,23 @@
 @implementation InstructionTests
 
 - (void)testParseSndValue {
-	SoundInstruction *result = (SoundInstruction *)parseInstruction(@"snd 5");
-	XCTAssertTrue([result isKindOfClass:[SoundInstruction class]]);
+	SendInstruction *result = (SendInstruction *)parseInstruction(@"snd 5");
+	XCTAssertTrue([result isKindOfClass:[SendInstruction class]]);
 	XCTAssertFalse(result.arg1.isRef);
 	XCTAssertEqual(result.arg1.refOrValue.value, 5);
 }
 
 - (void)testParseSndRef {
-	SoundInstruction *result = (SoundInstruction *)parseInstruction(@"snd x");
-	XCTAssertTrue([result isKindOfClass:[SoundInstruction class]]);
+	SendInstruction *result = (SendInstruction *)parseInstruction(@"snd x");
+	XCTAssertTrue([result isKindOfClass:[SendInstruction class]]);
 	XCTAssertTrue(result.arg1.isRef);
 	XCTAssertEqual(result.arg1.refOrValue.ref, 'x');
 }
 
 - (void)testParseRcv {
-	ReceiveInstruction *result = (ReceiveInstruction *)parseInstruction(@"rcv 5");
+	ReceiveInstruction *result = (ReceiveInstruction *)parseInstruction(@"rcv a");
 	XCTAssertTrue([result isKindOfClass:[ReceiveInstruction class]]);
-	XCTAssertFalse(result.arg1.isRef);
-	XCTAssertEqual(result.arg1.refOrValue.value, 5);
+	XCTAssertEqual(result.arg, 'a');
 }
 
 - (void)testParseSetReg {
@@ -98,44 +102,48 @@
 }
 
 - (void)testExecuteSndValue {
-	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd 5");
+	SendInstruction *subject = (SendInstruction *)parseInstruction(@"snd 5");
 	Process *process = [[Process alloc] init];
-	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
-		XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:5]);
-	}];
+	Pipe *writer = [[Pipe alloc] init];
+	process.writer = writer;
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {}];
+	XCTAssertEqual(writer.buf[0], [NSNumber numberWithLongLong:5]);
 }
 
 - (void)testExecuteSndReg {
-	SoundInstruction *subject = (SoundInstruction *)parseInstruction(@"snd X");
+	SendInstruction *subject = (SendInstruction *)parseInstruction(@"snd X");
 	Process *process = [[Process alloc] init];
 	[process setRegister:'X' to:3];
-	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
-		XCTAssertEqual(process.mostRecentSound, [NSNumber numberWithLongLong:3]);
-	}];
+	Pipe *writer = [[Pipe alloc] init];
+	process.writer = writer;
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {}];
+	XCTAssertEqual(writer.buf[0], [NSNumber numberWithLongLong:3]);
 }
 
 - (void)testExecuteSet {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"set X 5");
 	Process *process = [[Process alloc] init];
-	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
-		XCTAssertEqual([process valueInRegister:'X'], 5);
-	}];
+	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {}];
+	XCTAssertEqual([process valueInRegister:'X'], 5);
 }
 
 - (void)testExecuteAdd {
 	SetInstruction *subject = (SetInstruction *)parseInstruction(@"add X 2");
 	Process *process = [[Process alloc] init];
+	__block BOOL done = NO;
 	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
 		XCTAssertEqual([process valueInRegister:'X'], 2);
 		[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset2) {
 			XCTAssertEqual([process valueInRegister:'X'], 4);
+			done = YES;
 		}];
 	}];
+	XCTAssertTrue(done);
 }
 
 - (void)testExecuteMul {
 	MulInstruction *subject = (MulInstruction *)parseInstruction(@"mul X 2");
-	Process *process = [[Process alloc] init];
+	MockProcess *process = [[MockProcess alloc] init];
 	[process setRegister:'X' to:3];
 	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
 		XCTAssertEqual([process valueInRegister:'X'], 6);
@@ -144,29 +152,17 @@
 
 - (void)testExecuteMod {
 	ModInstruction *subject = (ModInstruction *)parseInstruction(@"mod X 2");
-	Process *process = [[Process alloc] init];
+	MockProcess *process = [[MockProcess alloc] init];
 	[process setRegister:'X' to:3];
 	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
 		XCTAssertEqual([process valueInRegister:'X'], 1);
 	}];
 }
 
-- (void)testExecuteRcv {
-	ReceiveInstruction *subject = (ReceiveInstruction *)parseInstruction(@"rcv X");
-	Process *process = [[Process alloc] init];
-	process.mostRecentSound = [NSNumber numberWithInt:42];
-	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
-		XCTAssertNil(process.recoveredSound);
-		[process setRegister:'X' to:1];
-		[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset) {
-			XCTAssertEqual(process.recoveredSound, [NSNumber numberWithInt:42]);
-		}];
-	}];
-}
-
 - (void)testExecuteJgz {
 	JumpInstruction *subject = (JumpInstruction *)parseInstruction(@"jgz X 5");
 	Process *process = [[Process alloc] init];
+	__block BOOL done = NO;
 	[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset1) {
 		XCTAssertNil(offset1);
 		[process setRegister:'X' to:-1];
@@ -175,9 +171,11 @@
 			[process setRegister:'X' to:1];
 			[subject executeInProcess:process andThen:^(NSNumber * _Nullable offset3) {
 				XCTAssertEqual(offset3, [NSNumber numberWithLongLong:5]);
+				done = YES;
 			}];
 		}];
 	}];
+	XCTAssertTrue(done);
 }
 
 @end

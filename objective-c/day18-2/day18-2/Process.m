@@ -4,15 +4,21 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface Process()
 @property (nonatomic, readonly, strong) NSMutableDictionary<NSString *, NSNumber *>* registers;
-@property (nonatomic, strong) NSArray<NSObject<Instruction> *> *instructions;
+@property (nonatomic, strong) Program *instructions;
 @property (nonatomic, assign) int ip;
+
 @end
 
 @implementation Process
 
 - (instancetype)init {
+	return [self initWithId:-1];
+}
+
+- (instancetype)initWithId:(int)pid {
 	if ((self = [super init])) {
 		_registers = [NSMutableDictionary dictionary];
+		[self setRegister:'p' to:pid];
 	}
 	
 	return self;
@@ -25,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)resumeAndThen:(void (^)())callback {
-	if (self.ip >= 0 && self.ip < self.instructions.count && self.recoveredSound == nil) {
+	if (self.ip >= 0 && self.ip < self.instructions.count) {
 		[self.instructions[self.ip] executeInProcess:self andThen:^(NSNumber * _Nullable offset) {
 			self.ip += (offset == nil ? 1 : [offset intValue]);
 			[self resumeAndThen:callback];
@@ -47,16 +53,20 @@ NS_ASSUME_NONNULL_BEGIN
 	self.registers[[self keyForRegister:name]] = [NSNumber numberWithLongLong:value];
 }
 
+- (void)sendValue:(long long)value {
+	[self.writer write:value];
+}
+
+- (void)receiveValueAndDo:(void (^)(long long))callback {
+	[self.reader readAndThen:callback];
+}
+
 - (long long)evaluate:(Rvalue)rvalue {
 	if (rvalue.isRef) {
 		return [self valueInRegister:rvalue.refOrValue.ref];
 	} else {
 		return rvalue.refOrValue.value;
 	}
-}
-
-- (void)playSoundWithFrequency:(int)frequency {
-	self.mostRecentSound = [NSNumber numberWithInt:frequency];
 }
 
 @end

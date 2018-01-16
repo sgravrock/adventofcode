@@ -16,6 +16,11 @@
 		AA8D8413200C709C00F470D3 /* Process.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D83FC200C705500F470D3 /* Process.m */; };
 		AA8D8416200C78F700F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8415200C78F700F470D3 /* Machine.m */; };
 		AA8D8417200C78F700F470D3 /* Machine.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8415200C78F700F470D3 /* Machine.m */; };
+		AA8D841B200C7E0100F470D3 /* MockProcess.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8419200C7E0100F470D3 /* MockProcess.m */; };
+		AA8D841D200D292A00F470D3 /* ProcessTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D841C200D292A00F470D3 /* ProcessTests.m */; };
+		AA8D8420200D2DD800F470D3 /* Pipe.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D841F200D2DD800F470D3 /* Pipe.m */; };
+		AA8D8421200D2DD800F470D3 /* Pipe.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D841F200D2DD800F470D3 /* Pipe.m */; };
+		AA8D8424200D721000F470D3 /* PipeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA8D8423200D721000F470D3 /* PipeTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +49,12 @@
 		AA8D840F200C708000F470D3 /* InstructionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = InstructionTests.m; sourceTree = "<group>"; };
 		AA8D8414200C78F700F470D3 /* Machine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Machine.h; sourceTree = "<group>"; };
 		AA8D8415200C78F700F470D3 /* Machine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Machine.m; sourceTree = "<group>"; };
+		AA8D8418200C7E0100F470D3 /* MockProcess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MockProcess.h; sourceTree = "<group>"; };
+		AA8D8419200C7E0100F470D3 /* MockProcess.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MockProcess.m; sourceTree = "<group>"; };
+		AA8D841C200D292A00F470D3 /* ProcessTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProcessTests.m; sourceTree = "<group>"; };
+		AA8D841E200D2DD800F470D3 /* Pipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Pipe.h; sourceTree = "<group>"; };
+		AA8D841F200D2DD800F470D3 /* Pipe.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Pipe.m; sourceTree = "<group>"; };
+		AA8D8423200D721000F470D3 /* PipeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PipeTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +104,8 @@
 				AA8D83FE200C705500F470D3 /* rvalue.h */,
 				AA8D8414200C78F700F470D3 /* Machine.h */,
 				AA8D8415200C78F700F470D3 /* Machine.m */,
+				AA8D841E200D2DD800F470D3 /* Pipe.h */,
+				AA8D841F200D2DD800F470D3 /* Pipe.m */,
 			);
 			path = "day18-2";
 			sourceTree = "<group>";
@@ -103,6 +116,10 @@
 				AA8D840E200C708000F470D3 /* ExampleTests.m */,
 				AA8D840F200C708000F470D3 /* InstructionTests.m */,
 				AA8D840A200C706400F470D3 /* Info.plist */,
+				AA8D8418200C7E0100F470D3 /* MockProcess.h */,
+				AA8D8419200C7E0100F470D3 /* MockProcess.m */,
+				AA8D841C200D292A00F470D3 /* ProcessTests.m */,
+				AA8D8423200D721000F470D3 /* PipeTests.m */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -196,6 +213,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA8D8420200D2DD800F470D3 /* Pipe.m in Sources */,
 				AA8D83FF200C705500F470D3 /* Instruction.m in Sources */,
 				AA8D8416200C78F700F470D3 /* Machine.m in Sources */,
 				AA8D8401200C705500F470D3 /* main.m in Sources */,
@@ -208,10 +226,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA8D8412200C709700F470D3 /* Instruction.m in Sources */,
+				AA8D841B200C7E0100F470D3 /* MockProcess.m in Sources */,
+				AA8D841D200D292A00F470D3 /* ProcessTests.m in Sources */,
+				AA8D8424200D721000F470D3 /* PipeTests.m in Sources */,
 				AA8D8413200C709C00F470D3 /* Process.m in Sources */,
 				AA8D8411200C708000F470D3 /* InstructionTests.m in Sources */,
 				AA8D8410200C708000F470D3 /* ExampleTests.m in Sources */,
 				AA8D8417200C78F700F470D3 /* Machine.m in Sources */,
+				AA8D8421200D2DD800F470D3 /* Pipe.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,6 +330,7 @@
 		AA8D83F7200C6FD000F470D3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -315,6 +338,7 @@
 		AA8D83F8200C6FD000F470D3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -323,6 +347,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				INFOPLIST_FILE = tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "Steve-Gravrock.tests";
@@ -334,6 +359,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				INFOPLIST_FILE = tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "Steve-Gravrock.tests";
@@ -369,6 +395,7 @@
 				AA8D840D200C706400F470D3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

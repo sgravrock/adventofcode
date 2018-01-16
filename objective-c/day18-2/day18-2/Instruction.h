@@ -18,15 +18,19 @@ typedef enum {
 - (void)executeInProcess:(Process *)process andThen:(void (^)(NSNumber * _Nullable offset))callback;
 @end
 
+typedef NSArray<NSObject<Instruction> *> Program;
+
 @interface UnaryInstruction: NSObject<Instruction>
 - (instancetype)initWithArg:(Rvalue)arg;
 @property (nonatomic, readonly, assign) Rvalue arg1;
 @end
 
-@interface SoundInstruction : UnaryInstruction
+@interface SendInstruction : UnaryInstruction
 @end
 
-@interface ReceiveInstruction : UnaryInstruction
+@interface ReceiveInstruction : NSObject<Instruction>
+- (instancetype)initWithDest:(char)arg;
+@property (nonatomic, readonly, assign) char arg;
 @end
 
 @interface MutatingInstruction : NSObject<Instruction>
@@ -55,6 +59,6 @@ typedef enum {
 
 
 NSObject<Instruction> *parseInstruction(NSString *input);
-NSArray<NSObject<Instruction> *> *parseInstructions(NSArray<NSString *> *lines);
+Program *parseInstructions(NSArray<NSString *> *lines);
 
 NS_ASSUME_NONNULL_END
