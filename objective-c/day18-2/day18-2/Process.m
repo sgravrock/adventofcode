@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, strong) NSMutableDictionary<NSString *, NSNumber *>* registers;
 @property (nonatomic, strong) Program *instructions;
 @property (nonatomic, assign) int ip;
-
+@property (nonatomic, assign) ProcessState state;
 @end
 
 @implementation Process
@@ -18,27 +18,44 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithId:(int)pid {
 	if ((self = [super init])) {
 		_registers = [NSMutableDictionary dictionary];
+		_state = PS_DONE;
 		[self setRegister:'p' to:pid];
 	}
 	
 	return self;
 }
 
-- (void)execute:(NSArray<NSObject<Instruction> *> *)instructions andThen:(void (^)())callback {
+- (void)execute:(NSArray<NSObject<Instruction> *> *)instructions {
 	self.instructions = instructions;
 	self.ip = 0;
-	[self resumeAndThen:callback];
+	[self resume];
 }
 
-- (void)resumeAndThen:(void (^)())callback {
-	if (self.ip >= 0 && self.ip < self.instructions.count) {
+- (void)resume {
+	self.state = PS_RUNNING;
+	
+	while (self.ip >= 0 && self.ip < self.instructions.count) {
+		__block BOOL wentAsync = NO;
+		__block BOOL completedSynchronously = NO;
+		
 		[self.instructions[self.ip] executeInProcess:self andThen:^(NSNumber * _Nullable offset) {
 			self.ip += (offset == nil ? 1 : [offset intValue]);
-			[self resumeAndThen:callback];
+			
+			if (wentAsync) {
+				[self resume];
+			} else {
+				completedSynchronously = YES;
+			}
 		}];
-	} else {
-		callback();
+		
+		if (!completedSynchronously) {
+			wentAsync = YES;
+			self.state = PS_BLOCKED;
+			return;
+		}
 	}
+	
+	self.state = PS_DONE;
 }
 
 - (NSString *)keyForRegister:(char)name {

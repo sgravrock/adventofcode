@@ -15,11 +15,9 @@
 - (void)testRunsToCompletion {
 	Process *subject = [[Process alloc] initWithId:0];
 	Program *program = parseInstructions(@[@"set a 1", @"set b 2"]);
-	__block BOOL done = NO;
-	[subject execute:program andThen:^{
-		done = YES;
-	}];
-	XCTAssertTrue(done);
+	[subject execute:program];
+	XCTAssertEqual(subject.ip, 2);
+	XCTAssertEqual(subject.state, PS_DONE);
 	XCTAssertEqual([subject valueInRegister:'a'], 1);
 	XCTAssertEqual([subject valueInRegister:'b'], 2);
 
@@ -31,11 +29,8 @@
 	[pipe write:42];
 	subject.reader = pipe;
 	Program *program = parseInstructions(@[@"rcv a"]);
-	__block BOOL done = NO;
-	[subject execute:program andThen:^{
-		done = YES;
-	}];
-	XCTAssertTrue(done);
+	[subject execute:program];
+	XCTAssertEqual(subject.state, PS_DONE);
 	XCTAssertEqual([subject valueInRegister:'a'], 42);
 	XCTAssertTrue(pipe.isEmpty);
 }
@@ -45,20 +40,17 @@
 	Pipe *reader = [[Pipe alloc] init];
 	subject.reader = reader;
 	Program *program = parseInstructions(@[@"rcv a", @"set b 1"]);
-	__block BOOL done = NO;
-	[subject execute:program andThen:^{
-		done = YES;
-	}];
+	[subject execute:program];
 	
-	XCTAssertFalse(done);
+	XCTAssertEqual(subject.state, PS_BLOCKED);
 	XCTAssertEqual([subject valueInRegister:'a'], 0);
 	XCTAssertEqual([subject valueInRegister:'b'], 0);
 
 	[reader write:17];
 
+	XCTAssertEqual(subject.state, PS_DONE);
 	XCTAssertEqual([subject valueInRegister:'a'], 17);
 	XCTAssertEqual([subject valueInRegister:'b'], 1);
-	XCTAssertTrue(done);
 }
 
 @end

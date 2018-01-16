@@ -17,11 +17,8 @@
 	proc1.writer = from1to0;
 	proc0.reader = from1to0;
 	
-	[proc0 execute:program andThen:^{
-	}];
-	
-	[proc1 execute:program andThen:^{
-	}];
+	[proc0 execute:program];
+	[proc1 execute:program];
 	
 	self.process1SendCount = from1to0.numWrites;
 }
