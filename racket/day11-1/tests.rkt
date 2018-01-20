@@ -17,3 +17,18 @@
 (check-equal? (neighbor '(1 2 3) "s") '(1 1 4))
 (check-equal? (neighbor '(1 2 3) "sw") '(0 2 4))
 (check-equal? (neighbor '(1 2 3) "nw") '(0 3 3))
+
+(check-equal? (distance '(1 -2 1) '(1 -2 1)) 0)
+(check-equal? (distance '(1 -2 1) '(1 0 -1)) 2)
+(check-equal? (distance '(1 -2 1) '(-2 2 0)) 4)
+
+(check-equal? (follow-path '(0 0 0) '("ne" "ne" "ne")) '(3 0 -3))
+(check-equal? (follow-path '(0 0 0) '("ne" "ne" "sw" "sw")) '(0 0 0))
+(check-equal? (follow-path '(0 0 0) '("ne" "ne" "s" "s")) '(2 -2 0))
+(check-equal? (follow-path '(0 0 0) '("se" "sw" "se" "sw" "sw")) '(-1 -2 3))
+
+
+(check-equal? (fewest-steps '("ne" "ne" "ne")) 3)
+(check-equal? (fewest-steps '("ne" "ne" "sw" "sw")) 0)
+(check-equal? (fewest-steps '("ne" "ne" "s" "s")) 2)
+(check-equal? (fewest-steps '("se" "sw" "se" "sw" "sw")) 3)
