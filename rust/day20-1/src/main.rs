@@ -1,5 +1,3 @@
-extern crate itertools;
-use itertools::Itertools;
 extern crate regex;
 use regex::Regex;
 
@@ -1008,7 +1006,7 @@ fn main() {
 	];
 	let particles = parse_input(input);
 	let result = closest_to_origin_long_term(particles);
-	println!("{:?}", result);
+	println!("{}", result);
 }
 
 #[derive(Debug)]
@@ -1026,14 +1024,6 @@ impl Particle {
 	fn advance(&mut self) {
 		self.velocity = add3(self.velocity, self.acceleration);
 		self.position = add3(self.position, self.velocity);
-	}
-
-	fn faster_than(&self, other: &Particle) -> bool {
-		manhattan(self.velocity) > manhattan(other.velocity)
-	}
-
-	fn accelerating_faster_than(&self, other: &Particle) -> bool {
-		manhattan(self.acceleration) > manhattan(other.acceleration)
 	}
 }
 
@@ -1096,14 +1086,25 @@ fn test_parse_input() {
 	assert_eq!(parse_input(input), expected);
 }
 
-fn closest_to_origin_long_term(mut particles: Vec<Particle>) -> Particle {
-	while particles.len() > 1 {
+fn closest_to_origin_long_term(mut particles: Vec<Particle>) -> usize {
+	let mut last_closest_id: Option<usize> = None;
+	let mut stable_iters = 0;
+
+	while stable_iters < 2000 {
 		for p in &mut particles { p.advance() }
-		remove_escaped(&mut particles);
-		println!("{} remaining", particles.len());
+		let closest = particles.iter()
+			.min_by_key(|p| manhattan(p.position))
+			.unwrap();
+
+		if last_closest_id == Some(closest.id) {
+			stable_iters += 1;
+		} else {
+			stable_iters = 0;
+			last_closest_id = Some(closest.id);
+		}
 	}
 
-	particles[0]
+	last_closest_id.unwrap()
 }
 
 #[test]
@@ -1112,120 +1113,5 @@ fn test_closest_to_origin_long_term() {
 		"p=<3,0,0>, v=<2,0,0>, a=<-1,0,0>",
 		"p=<4,0,0>, v=<0,0,0>, a=<-2,0,0>",
 	];
-	let expected = Particle {
-		id: 0,
-		position: (3, 0, 0),
-		velocity: (-1, 0, 0),
-		acceleration: (-1, 0, 0),
-	};
-	assert_eq!(closest_to_origin_long_term(parse_input(input)), expected);
-}
-
-fn has_escaped(unsorted_particles: &Vec<Particle>, particle_id: usize) -> bool {
-	if unsorted_particles.len() == 1 {
-		return false;
-	}
-
-	let by_distance = unsorted_particles.iter()
-		.sorted_by_key(|p| manhattan(p.position));
-	let last = &by_distance[by_distance.len() - 1];
-
-	if last.id != particle_id {
-		return false;
-	}
-
-	for i in 0..by_distance.len() - 1 {
-		let other = by_distance[i];
-		if other.faster_than(last) || other.accelerating_faster_than(last) {
-			return false;
-		}
-	}
-
-	true
-}
-
-#[test]
-fn test_has_escaped_single() {
-	let particles = parse_input(vec![
-		// all values are arbitrary
-		"p=<-35,0,0>, v=<2,0,0>, a=<-1,0,0>"
-	]);
-	assert_eq!(false, has_escaped(&particles, 0));
-}
-
-#[test]
-fn test_has_escaped_not_farthest() {
-	let particles = parse_input(vec![
-		// all values except position are arbitrary
-		"p=<4,0,0>, v=<0,0,0>, a=<0,0,0>",
-		"p=<2,0,0>, v=<0,0,0>, a=<0,0,0>"
-	]);
-	assert_eq!(false, has_escaped(&particles, 1));
-
-	let particles2 = parse_input(vec![
-		// all values except position are arbitrary
-		"p=<4,0,0>, v=<0,0,0>, a=<0,0,0>",
-		"p=<-2,0,0>, v=<0,0,0>, a=<0,0,0>"
-	]);
-	assert_eq!(false, has_escaped(&particles2, 1));
-}
-
-#[test]
-fn test_has_escaped_closer_has_higher_velocity() {
-	let particles = parse_input(vec![
-		// acceleration is arbitrary
-		"p=<4,0,0>, v=<1,0,0>, a=<0,0,0>",
-		"p=<2,0,0>, v=<-2,0,0>, a=<0,0,0>"
-	]);
-	assert_eq!(false, has_escaped(&particles, 0));
-}
-
-#[test]
-fn test_has_escaped_closer_and_slower_has_higher_acceleration() {
-	let particles = parse_input(vec![
-		"p=<4,0,0>, v=<2,0,0>, a=<1,0,0>",
-		"p=<2,0,0>, v=<1,0,0>, a=<2,0,0>"
-	]);
-	assert_eq!(false, has_escaped(&particles, 0));
-}
-
-#[test]
-fn test_has_escaped_farther_faster_fasterer() {
-	let particles = parse_input(vec![
-		"p=<4,0,0>, v=<2,0,0>, a=<2,0,0>",
-		"p=<2,0,0>, v=<1,0,0>, a=<1,0,0>"
-	]);
-	assert_eq!(true, has_escaped(&particles, 0));
-}
-
-#[test]
-fn test_has_escaped_farther_same_v_same_a() {
-	let particles = parse_input(vec![
-		"p=<4,0,0>, v=<-1,0,0>, a=<-1,0,0>",
-		"p=<2,0,0>, v=<1,0,0>, a=<1,0,0>"
-	]);
-	assert_eq!(true, has_escaped(&particles, 0));
-}
-
-fn remove_escaped(particles: &mut Vec<Particle>) {
-	let mut i = 0;
-
-	while i < particles.len() {
-		if has_escaped(&particles, particles[i].id) {
-			particles.remove(i);
-		} else {
-			i += 1;
-		}
-	}
-}
-
-#[test]
-fn test_remove_escaped() {
-	let mut particles = parse_input(vec![
-		"p=<4,0,0>, v=<-1,0,0>, a=<-1,0,0>",
-		"p=<2,0,0>, v=<1,0,0>, a=<1,0,0>"
-	]);
-	remove_escaped(&mut particles);
-	assert_eq!(1, particles.len());
-	assert_eq!(1, particles[0].id);
+	assert_eq!(closest_to_origin_long_term(parse_input(input)), 0);
 }

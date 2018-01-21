@@ -5,4 +5,3 @@ authors = ["steve <sdg@panix.com>"]
 
 [dependencies]
 regex = "0.2"
-itertools = "0.7.6"
