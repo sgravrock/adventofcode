@@ -1032,7 +1032,14 @@ fn add3(a: (i32, i32, i32), b: (i32, i32, i32)) -> (i32, i32, i32) {
 }
 
 fn manhattan(v: (i32, i32, i32)) -> i32 {
-	(v.0 + v.1 + v.2).abs()
+	v.0.abs() + v.1.abs() + v.2.abs()
+}
+
+#[test]
+fn test_manhattan() {
+	assert_eq!(6, manhattan((1, 2, 3)));
+	assert_eq!(6, manhattan((-1, -2, -3)));
+	assert_eq!(6, manhattan((-1, 2, -3)));
 }
 
 fn parse_input(lines: Vec<&str>) -> Vec<Particle> {
