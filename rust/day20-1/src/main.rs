@@ -1020,17 +1020,6 @@ struct Particle {
 	acceleration: (i32, i32, i32),
 }
 
-impl Particle {
-	fn advance(&mut self) {
-		self.velocity = add3(self.velocity, self.acceleration);
-		self.position = add3(self.position, self.velocity);
-	}
-}
-
-fn add3(a: (i32, i32, i32), b: (i32, i32, i32)) -> (i32, i32, i32) {
-	(a.0 + b.0, a.1 + b.1, a.2 + b.2)
-}
-
 fn manhattan(v: (i32, i32, i32)) -> i32 {
 	v.0.abs() + v.1.abs() + v.2.abs()
 }
@@ -1093,25 +1082,11 @@ fn test_parse_input() {
 	assert_eq!(parse_input(input), expected);
 }
 
-fn closest_to_origin_long_term(mut particles: Vec<Particle>) -> usize {
-	let mut last_closest_id: Option<usize> = None;
-	let mut stable_iters = 0;
-
-	while stable_iters < 2000 {
-		for p in &mut particles { p.advance() }
-		let closest = particles.iter()
-			.min_by_key(|p| manhattan(p.position))
-			.unwrap();
-
-		if last_closest_id == Some(closest.id) {
-			stable_iters += 1;
-		} else {
-			stable_iters = 0;
-			last_closest_id = Some(closest.id);
-		}
-	}
-
-	last_closest_id.unwrap()
+fn closest_to_origin_long_term(particles: Vec<Particle>) -> usize {
+	particles.iter()
+		.min_by_key(|p| manhattan(p.acceleration))
+		.unwrap()
+		.id
 }
 
 #[test]
