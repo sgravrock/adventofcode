@@ -1,0 +1,182 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+Rule = Struct.new(:input_lines, :output_lines)
+
+def parse_rules(input)
+	input.split("\n").map do |line|
+		in_out = line.split(' => ')
+		Rule.new(in_out[0].split('/'), in_out[1].split('/'))
+	end
+end
+
+def iterate(grid)
+	grid
+end
+
+def split(grid)
+	blocks_per_side = grid.length / 3
+	(0..blocks_per_side - 1).map do |by|
+		(0..blocks_per_side - 1).map do |bx|
+			extract_block grid, by, bx
+		end
+	end
+end
+
+def join(grids)
+	input_grid_size = grids[0][0].length
+	size = grids.length * input_grid_size
+
+	(0..size - 1).map do |y|
+		(0..size - 1).map do |x|
+			g = grids[y / input_grid_size][x / input_grid_size]
+			g[y % input_grid_size][x % input_grid_size]
+		end
+	end
+end
+
+def extract_block(grid, by, bx)
+	(0..2).map do |y|
+		(0..2).map do |x|
+			grid[by * 3 + y][bx * 3 + x]
+		end
+	end
+end
+
+class Tests < Microtest::Test
+	def test_parse_rules
+		input = <<~END
+			../.. => .#./.../###
+			#./.. => .#./##./#..
+		END
+		expected = [
+			Rule.new(['..', '..'], ['.#.', '...', '###']),
+			Rule.new(['#.', '..'], ['.#.', '##.', '#..'])
+		]
+		assert_equal expected, parse_rules(input)
+	end
+
+	def xtest_iterate
+		input = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input)
+		expected1 = <<~END
+			#..#
+			....
+			....
+			#..#
+		END
+		expected2 = <<~END
+			##.##.
+			#..#..
+			......
+			##.##.
+			#..#..
+			......
+		END
+		actual1 = iterate(nil)
+		assert_equal expected1, actual1
+		actual2 = iterate(actual1)
+		assert_equal expected2, actual2
+	end
+
+	def test_extract_block_3
+		input = [
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		].map {|s| s.chars}
+		expected = [
+			'##.',
+			'#..',
+			'..#'
+		].map {|s| s.chars }
+		assert_equal expected, extract_block(input, 1, 1)
+	end
+
+	def test_split_3
+		input = [
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		].map {|s| s.chars}
+		expected = [
+			[
+				[
+					'##.',
+					'#..',
+					'...'
+				].map {|s| s.chars },
+				[
+					'#.#',
+					'#..',
+					'...'
+				].map {|s| s.chars }
+			],
+			[
+				[
+					'##.',
+					'#..',
+					'.#.'
+				].map {|s| s.chars },
+				[
+					'##.',
+					'#..',
+					'..#'
+				].map {|s| s.chars }
+			]
+		]
+		assert_equal expected, split(input)
+	end
+
+	def test_join_3
+		expected = [
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		].map {|s| s.chars}
+		input = [
+			[
+				[
+					'##.',
+					'#..',
+					'...'
+				].map {|s| s.chars },
+				[
+					'#.#',
+					'#..',
+					'...'
+				].map {|s| s.chars }
+			],
+			[
+				[
+					'##.',
+					'#..',
+					'.#.'
+				].map {|s| s.chars },
+				[
+					'##.',
+					'#..',
+					'..#'
+				].map {|s| s.chars }
+			]
+		]
+		assert_equal expected, join(input)
+	end
+end
+
+Microtest.run(Tests.new)
+
+__END__
