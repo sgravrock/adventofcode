@@ -5,7 +5,12 @@ import Maybe
 
 type Msg = NoOp
 
-type alias Model = Array.Array Int -- of ranges
+type alias Layer =
+  { range: Int
+  , scannerAt: Int
+  }
+
+type alias Model = Array.Array Layer
 
 main =
   Html.beginnerProgram
@@ -15,7 +20,10 @@ main =
   }
 
 model : Model
-model = Array.fromList [3, 2, 4, 4]
+model = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
+
+layerWithRange: Int -> Layer
+layerWithRange i = { range = i, scannerAt = 0 }
 
 update: Msg -> Model -> Model
 update msg model = model -- no-op for now
@@ -33,14 +41,23 @@ bodyRows model i max =
 
 bodyRow : Model -> Int -> Html Msg
 bodyRow model rowIx =
-  tr [] (List.map (\(range) -> cell rowIx range) (Array.toList model))
+  tr [] (List.map (\(layer) -> cell rowIx layer) (Array.toList model))
 
-cell : Int -> Int -> Html Msg
-cell rowIx range =
-  if rowIx < range then
-    td [] [text "[ ]"]
+cell : Int -> Layer -> Html Msg
+cell rowIx layer = td [] [text (cellText rowIx layer)]
+
+cellText : Int -> Layer -> String
+cellText rowIx layer =
+  if rowIx >= layer.range then
+    ""
+  else if rowIx == layer.scannerAt then
+    "[S]"
   else
-    td [] [text ""]
+    "[ ]"
 
 numRows : Model -> Int
-numRows ranges = Maybe.withDefault 0 (List.maximum (Array.toList ranges))
+numRows layers = 
+  let
+    ranges = Array.map (\(layer) -> layer.range) model
+  in
+    Maybe.withDefault 0 (List.maximum (Array.toList ranges))
