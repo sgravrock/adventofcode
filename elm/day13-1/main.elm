@@ -1,13 +1,18 @@
 module Main exposing (..)
-import Html exposing (Html, table, tr, td, text)
+import Html exposing (Html, table, tr, td, text, div, button)
+import Html.Events exposing (onClick)
+
 import Array
 import Maybe
 
-type Msg = NoOp
+type Msg = Advance
+
+type Direction = Down | Up
 
 type alias Layer =
   { range: Int
   , scannerAt: Int
+  , dir: Direction
   }
 
 type alias Model = Array.Array Layer
@@ -23,14 +28,36 @@ model : Model
 model = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
 
 layerWithRange: Int -> Layer
-layerWithRange i = { range = i, scannerAt = 0 }
+layerWithRange i = { range = i, scannerAt = 0, dir = Down }
 
 update: Msg -> Model -> Model
-update msg model = model -- no-op for now
+update msg model = 
+  case msg of
+    Advance -> Array.map advanceScanner model
+
+advanceScanner : Layer -> Layer
+advanceScanner layer =
+  if layer.range == 1 then
+    layer
+  else
+    case layer.dir of
+      Down -> 
+        if layer.scannerAt + 1 < layer.range then
+          { layer | scannerAt = layer.scannerAt + 1 }
+        else
+          advanceScanner { layer | dir = Up }
+      Up ->
+        if layer.scannerAt > 0 then
+          { layer | scannerAt = layer.scannerAt - 1 }
+        else
+          advanceScanner { layer | dir = Down }
 
 view : Model -> Html Msg
 view model =
-  table [] (bodyRows model 0 (numRows model))
+  div []
+    [ table [] (bodyRows model 0 (numRows model))
+    , button [ onClick Advance ] [ text "Advance" ]
+    ]
 
 bodyRows : Model -> Int -> Int -> List (Html Msg)
 bodyRows model i max =
