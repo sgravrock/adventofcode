@@ -15,7 +15,10 @@ type alias Layer =
   , dir: Direction
   }
 
-type alias Model = Array.Array Layer
+type alias Model = 
+  { layers: Array.Array Layer
+  , playerDepth: Int
+  }
 
 main =
   Html.beginnerProgram
@@ -25,7 +28,10 @@ main =
   }
 
 model : Model
-model = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
+model = 
+  { layers = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
+  , playerDepth = 0
+  }
 
 layerWithRange: Int -> Layer
 layerWithRange i = { range = i, scannerAt = 0, dir = Down }
@@ -33,7 +39,7 @@ layerWithRange i = { range = i, scannerAt = 0, dir = Down }
 update: Msg -> Model -> Model
 update msg model = 
   case msg of
-    Advance -> Array.map advanceScanner model
+    Advance -> { model | layers = Array.map advanceScanner model.layers }
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =
@@ -68,23 +74,33 @@ bodyRows model i max =
 
 bodyRow : Model -> Int -> Html Msg
 bodyRow model rowIx =
-  tr [] (List.map (\(layer) -> cell rowIx layer) (Array.toList model))
+  let
+    cells = Array.indexedMap
+      (\i  layer -> cell rowIx model.playerDepth i layer)
+      model.layers
+  in
+    tr [] (Array.toList cells)
 
-cell : Int -> Layer -> Html Msg
-cell rowIx layer = td [] [text (cellText rowIx layer)]
+cell : Int -> Int -> Int -> Layer -> Html Msg
+cell rowIx playerDepth layerIx layer = td []
+  [text (cellText rowIx playerDepth layerIx layer)]
 
-cellText : Int -> Layer -> String
-cellText rowIx layer =
+cellText : Int -> Int -> Int -> Layer -> String
+cellText rowIx playerDepth layerIx layer =
   if rowIx >= layer.range then
     ""
+  else if rowIx == 0 && layer.scannerAt == 0 && playerDepth == layerIx then
+    "(S)"
   else if rowIx == layer.scannerAt then
     "[S]"
+  else if rowIx == 0 && playerDepth == layerIx then
+    "( )"
   else
     "[ ]"
 
 numRows : Model -> Int
 numRows layers = 
   let
-    ranges = Array.map (\(layer) -> layer.range) model
+    ranges = Array.map (\(layer) -> layer.range) model.layers
   in
     Maybe.withDefault 0 (List.maximum (Array.toList ranges))

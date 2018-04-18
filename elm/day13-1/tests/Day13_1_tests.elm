@@ -14,44 +14,49 @@ suite =
       [ test "moves each downward scanner down" <|
         \() ->
           let
-            initial = Array.fromList
+            initialLayers = Array.fromList
               [ { range = 2, scannerAt = 0, dir = Down }
               , { range = 3, scannerAt = 1, dir = Down }
               ]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
           in
             Expect.equal (scannerPoses updated) [1, 2]
       , test "moves each upward scanner up" <|
         \() ->
           let
-            initial = Array.fromList
+            initialLayers = Array.fromList
               [ { range = 2, scannerAt = 1, dir = Up }
               ]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
           in
             Expect.equal (scannerPoses updated) [0]
       , test "reverses scanner direction when it reaches bottom" <|
         \() ->
           let
-            initial = Array.fromList [{ range = 2, scannerAt = 1, dir = Down }]
+            initialLayers = Array.fromList [{ range = 2, scannerAt = 1, dir = Down }]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             expected = Array.fromList [{ range = 2, scannerAt = 0, dir = Up }]
               
           in
-            Expect.equal expected updated
+            Expect.equal expected updated.layers
       , test "reverses scanner direction when it reaches top" <|
         \() ->
           let
-            initial = Array.fromList [{ range = 2, scannerAt = 0, dir = Up }]
+            initialLayers = Array.fromList [{ range = 2, scannerAt = 0, dir = Up }]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             expected = Array.fromList [{ range = 2, scannerAt = 1, dir = Down }]
               
           in
-            Expect.equal expected updated
+            Expect.equal expected updated.layers
       , test "copes with a range of 1 going down" <|
         \() ->
           let
-            initial = Array.fromList [{ range = 1, scannerAt = 0, dir = Down }]
+            initialLayers = Array.fromList [{ range = 1, scannerAt = 0, dir = Down }]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
           in
@@ -59,7 +64,8 @@ suite =
       , test "copes with a range of 1 going up" <|
         \() ->
           let
-            initial = Array.fromList [{ range = 1, scannerAt = 0, dir = Up }]
+            initialLayers = Array.fromList [{ range = 1, scannerAt = 0, dir = Up }]
+            initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
           in
@@ -68,8 +74,8 @@ suite =
     ]
 
 scannerPoses : Model -> List Int
-scannerPoses layers =
+scannerPoses model =
   let
-    poses = Array.map (\(x) -> x.scannerAt) layers
+    poses = Array.map (\(x) -> x.scannerAt) model.layers
   in
     Array.toList poses
