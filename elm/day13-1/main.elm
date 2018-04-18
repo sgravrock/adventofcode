@@ -10,6 +10,7 @@ type Direction = Down | Up
 
 type alias Layer =
   { range: Int
+  , depth: Int
   , scannerRange: Int
   , dir: Direction
   }
@@ -28,12 +29,34 @@ main =
 
 model : Model
 model = 
-  { layers = List.map layerWithRange [3, 2, 4, 4]
+  { layers = List.map makeLayer [(0, 3), (1, 2), (4, 4), (6, 4)]
   , playerDepth = -1
   }
 
-layerWithRange: Int -> Layer
-layerWithRange i = { range = i, scannerRange = 0, dir = Down }
+makeLayer: (Int, Int) -> Layer
+makeLayer (depth, range) =
+  { range = range
+  , depth = depth
+  , scannerRange = 0
+  , dir = Down
+  }
+
+maxDepth: Model -> Int
+maxDepth model =
+    case List.reverse model.layers |> List.head of
+      Just deepest -> deepest.depth
+      Nothing -> Debug.crash "Error: model has no layers"
+
+layerAtDepth: Int -> List Layer -> Maybe Layer
+layerAtDepth depth layers =
+  case layers of
+    [] -> Nothing
+    f::r ->
+      if f.depth == depth then
+        Just f
+      else
+        layerAtDepth depth r
+
 
 update: Msg -> Model -> Model
 update msg model = 
@@ -77,28 +100,38 @@ bodyRows model i max =
 bodyRow : Model -> Int -> Html Msg
 bodyRow model rowIx =
   let
-    cells = List.indexedMap
-      (\i  layer -> cell rowIx model.playerDepth i layer)
-      model.layers
+    cellRange = List.range 0 (numCols model)
+    cells = List.map (\i -> cell rowIx i model) cellRange
   in
     tr [] cells
 
-cell : Int -> Int -> Int -> Layer -> Html Msg
-cell rowIx playerDepth layerIx layer = td []
-  [text (cellText rowIx playerDepth layerIx layer)]
+cell : Int -> Int -> Model -> Html Msg
+cell rowIx colIx model = td [] [text (cellText rowIx colIx model)]
 
-cellText : Int -> Int -> Int -> Layer -> String
-cellText rowIx playerDepth layerIx layer =
-  if rowIx >= layer.range then
-    ""
-  else if rowIx == 0 && layer.scannerRange == 0 && playerDepth == layerIx then
-    "(S)"
-  else if rowIx == layer.scannerRange then
-    "[S]"
-  else if rowIx == 0 && playerDepth == layerIx then
-    "( )"
-  else
-    "[ ]"
+cellText : Int -> Int -> Model -> String
+cellText rowIx colIx model =
+  case layerAtDepth colIx model.layers of
+    Nothing -> 
+      if rowIx > 0 then  
+        ""
+      else if model.playerDepth == colIx then
+        "(.)"
+      else
+        "..."
+    Just layer ->
+      let
+        playerHere = model.playerDepth == layer.depth
+      in
+        if rowIx >= layer.range then
+          ""
+        else if rowIx == 0 && layer.scannerRange == 0 && playerHere then
+          "(S)"
+        else if rowIx == layer.scannerRange then
+          "[S]"
+        else if rowIx == 0 && playerHere then
+          "( )"
+        else
+          "[ ]"
 
 numRows : Model -> Int
 numRows layers = 
@@ -106,3 +139,6 @@ numRows layers =
     ranges = List.map (\(layer) -> layer.range) model.layers
   in
     Maybe.withDefault 0 (List.maximum ranges)
+
+numCols : Model -> Int
+numCols = maxDepth
