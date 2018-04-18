@@ -17,24 +17,21 @@ suite =
               [ { depth = 0, range = 2, scannerRange = 0, dir = Down }
               , { depth = 1, range = 3, scannerRange = 1, dir = Down }
               ]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
           in
             Expect.equal (scannerPoses updated) [1, 2]
       , test "moves each upward scanner up" <|
         \() ->
           let
             initialLayers = [{ depth = 0, range = 2, scannerRange = 1, dir = Up }]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
           in
             Expect.equal (scannerPoses updated) [0]
       , test "reverses scanner direction when it reaches bottom" <|
         \() ->
           let
             initialLayers = [{ depth = 0, range = 2, scannerRange = 1, dir = Down }]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
             expected = [{ depth = 0, range = 2, scannerRange = 0, dir = Up }]
               
           in
@@ -43,8 +40,7 @@ suite =
         \() ->
           let
             initialLayers = [{ depth = 0, range = 2, scannerRange = 0, dir = Up }]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
             expected = [{ depth = 0, range = 2, scannerRange = 1, dir = Down }]
               
           in
@@ -53,8 +49,7 @@ suite =
         \() ->
           let
             initialLayers = [{ depth = 0, range = 1, scannerRange = 0, dir = Down }]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
             
           in
             Expect.equal (scannerPoses updated) [0]
@@ -62,8 +57,7 @@ suite =
         \() ->
           let
             initialLayers = [{ depth = 0, range = 1, scannerRange = 0, dir = Up }]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
             
           in
             Expect.equal (scannerPoses updated) [0]
@@ -71,10 +65,15 @@ suite =
         \() ->
           let
             initialLayers = [anyLayer 0, anyLayer 1]
-            initial = { layers = initialLayers, playerDepth = 0 }
-            updated = update Advance initial
+            updated = update Advance (makeModel initialLayers)
           in
             Expect.equal 1 updated.playerDepth
+      , test "tracks when the player is caught" <|
+        \() ->
+          let
+            updated = advanceTimes 7 model
+          in
+            Expect.equal [6, 0] updated.caughtAt
       ]
     ]
 
@@ -83,3 +82,13 @@ anyLayer depth = { depth = depth, range = 1, scannerRange = 1, dir = Down }
 
 scannerPoses : Model -> List Int
 scannerPoses model = List.map (\(x) -> x.scannerRange) model.layers
+
+advanceTimes : Int -> Model -> Model
+advanceTimes times model =
+  if times == 0 then
+    model
+  else
+    advanceTimes (times - 1) (update Advance model)
+
+makeModel : List Layer -> Model
+makeModel layers = { layers = layers, playerDepth = 0, caughtAt = [] }

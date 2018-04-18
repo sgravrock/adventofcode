@@ -18,6 +18,7 @@ type alias Layer =
 type alias Model = 
   { layers: List Layer
   , playerDepth: Int
+  , caughtAt: List Int
   }
 
 main =
@@ -31,6 +32,7 @@ model : Model
 model = 
   { layers = List.map makeLayer [(0, 3), (1, 2), (4, 4), (6, 4)]
   , playerDepth = -1
+  , caughtAt = []
   }
 
 makeLayer: (Int, Int) -> Layer
@@ -61,10 +63,17 @@ layerAtDepth depth layers =
 update: Msg -> Model -> Model
 update msg model = 
   case msg of
-    Advance -> { model |
-                 layers = List.map advanceScanner model.layers,
-                 playerDepth = model.playerDepth + 1
-               }
+    Advance ->
+      let
+        playerDepth = model.playerDepth + 1
+        caughtAt =
+          if caught playerDepth model.layers then
+            playerDepth::model.caughtAt
+          else
+            model.caughtAt
+        layers = List.map advanceScanner model.layers
+      in
+        { layers = layers, playerDepth = playerDepth, caughtAt = caughtAt }
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =
@@ -83,10 +92,18 @@ advanceScanner layer =
         else
           advanceScanner { layer | dir = Down }
 
+caught : Int -> List Layer -> Bool
+caught playerDepth layers =
+  case layerAtDepth playerDepth layers of
+    Nothing -> False
+    Just layer -> layer.scannerRange == 0
+
+
 view : Model -> Html Msg
 view model =
   div []
     [ table [] (bodyRows model 0 (numRows model))
+    , div [] [text (status model)]
     , button [ onClick Advance ] [ text "Advance" ]
     ]
 
@@ -142,3 +159,10 @@ numRows layers =
 
 numCols : Model -> Int
 numCols = maxDepth
+
+status : Model -> String
+status model =
+  if model.caughtAt == [] then
+    "OK so far"
+  else
+    "Caught at " ++ (toString (List.reverse model.caughtAt))
