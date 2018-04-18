@@ -62,6 +62,17 @@ layerAtDepth depth layers =
       else
         layerAtDepth depth r
 
+severity: Model -> Int
+severity model =
+  let
+    sevOfLayer = \depth -> 
+      case layerAtDepth depth model.layers of
+        Just layer -> layer.range * depth
+        Nothing -> Debug.crash "Can't have been caught at a non-layer"
+    severities = List.map sevOfLayer model.caughtAt
+  in
+    List.sum severities
+
 
 update: Msg -> Model -> Model
 update msg model = 
@@ -179,4 +190,4 @@ status model =
   if model.caughtAt == [] then
     "OK so far"
   else
-    "Caught at " ++ (toString (List.reverse model.caughtAt))
+    "Caught at " ++ (toString (List.reverse model.caughtAt)) ++ ". Severity: " ++ (toString (severity model))
