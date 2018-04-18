@@ -75,6 +75,14 @@ suite =
           in
             Expect.equal [6, 0] updated.caughtAt
       ]
+    , describe "Finish"
+      [ test "advances to the end" <|
+        \() ->
+          let
+            result = update Finish model
+          in
+            Expect.equal [6, 0] result.caughtAt
+      ]
     ]
 
 anyLayer : Int -> Layer

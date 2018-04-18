@@ -4,7 +4,7 @@ import Html.Events exposing (onClick)
 
 import Maybe
 
-type Msg = Advance
+type Msg = Advance | Finish
 
 type Direction = Down | Up
 
@@ -77,6 +77,11 @@ update msg model =
         layers = List.map advanceScanner model.layers
       in
         { layers = layers, playerDepth = playerDepth, caughtAt = caughtAt }
+    Finish ->
+      if isDone model then
+        model
+      else
+        update Advance model |> update Finish
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =
@@ -110,7 +115,10 @@ view model =
     , if isDone model then
         text "Done."
       else
-        button [onClick Advance] [ text "Advance" ]
+        div []
+          [ button [onClick Advance] [ text "Advance" ]
+          , button [onClick Finish] [text "Finish"]
+          ]
     ]
 
 bodyRows : Model -> Int -> Int -> List (Html Msg)
