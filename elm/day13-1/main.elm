@@ -30,7 +30,7 @@ main =
 model : Model
 model = 
   { layers = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
-  , playerDepth = 0
+  , playerDepth = -1
   }
 
 layerWithRange: Int -> Layer
@@ -39,7 +39,10 @@ layerWithRange i = { range = i, scannerAt = 0, dir = Down }
 update: Msg -> Model -> Model
 update msg model = 
   case msg of
-    Advance -> { model | layers = Array.map advanceScanner model.layers }
+    Advance -> { model |
+                 layers = Array.map advanceScanner model.layers,
+                 playerDepth = model.playerDepth + 1
+               }
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =

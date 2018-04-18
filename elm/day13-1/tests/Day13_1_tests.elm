@@ -70,8 +70,19 @@ suite =
             
           in
             Expect.equal (scannerPoses updated) [0]
+      , test "moves the player deeper" <|
+        \() ->
+          let
+            initialLayers = Array.fromList [anyLayer, anyLayer]
+            initial = { layers = initialLayers, playerDepth = 0 }
+            updated = update Advance initial
+          in
+            Expect.equal 1 updated.playerDepth
       ]
     ]
+
+anyLayer : Layer
+anyLayer = { range = 1, scannerAt = 1, dir = Down }
 
 scannerPoses : Model -> List Int
 scannerPoses model =
