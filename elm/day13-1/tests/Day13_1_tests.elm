@@ -71,7 +71,7 @@ suite =
       , test "tracks when the player is caught" <|
         \() ->
           let
-            updated = advanceTimes 7 model
+            updated = advanceTimes 7 sampleModel
           in
             Expect.equal [6, 0] updated.caughtAt
       ]
@@ -79,11 +79,19 @@ suite =
       [ test "advances to the end" <|
         \() ->
           let
-            result = update Finish model
+            result = update Finish sampleModel
           in
             Expect.equal [6, 0] result.caughtAt
       ]
     ]
+
+sampleModel : Model
+sampleModel = 
+  { layers = List.map makeLayer [(0, 3), (1, 2), (4, 4), (6, 4)]
+  , playerDepth = -1
+  , caughtAt = []
+  }
+
 
 anyLayer : Int -> Layer
 anyLayer depth = { depth = depth, range = 1, scannerRange = 1, dir = Down }
