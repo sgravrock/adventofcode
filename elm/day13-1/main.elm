@@ -1,5 +1,5 @@
 module Main exposing (..)
-import Html exposing (Html, table, tr, td, text, div, button)
+import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button)
 import Html.Events exposing (onClick)
 
 import Maybe
@@ -121,7 +121,7 @@ caught playerDepth layers =
 view : Model -> Html Msg
 view model =
   div []
-    [ table [] (bodyRows model 0 (numRows model))
+    [ firewallTable model
     , div [] [text (status model)]
     , if isDone model then
         text "Done."
@@ -131,6 +131,21 @@ view model =
           , button [onClick Finish] [text "Finish"]
           ]
     ]
+
+firewallTable : Model -> Html Msg
+firewallTable model =
+  table [] 
+    [ thead [] [(headerRow model)]
+    , tbody [] (bodyRows model 0 (numRows model))
+    ]
+
+headerRow : Model -> Html Msg
+headerRow model =
+  let
+    cellRange = List.range 0 (numCols model)
+    cells = List.map (\i -> th [] [text (toString i)]) cellRange
+  in
+    tr [] cells
 
 bodyRows : Model -> Int -> Int -> List (Html Msg)
 bodyRows model i max =
