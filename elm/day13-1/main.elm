@@ -10,7 +10,7 @@ type Direction = Down | Up
 
 type alias Layer =
   { range: Int
-  , scannerAt: Int
+  , scannerRange: Int
   , dir: Direction
   }
 
@@ -33,7 +33,7 @@ model =
   }
 
 layerWithRange: Int -> Layer
-layerWithRange i = { range = i, scannerAt = 0, dir = Down }
+layerWithRange i = { range = i, scannerRange = 0, dir = Down }
 
 update: Msg -> Model -> Model
 update msg model = 
@@ -50,13 +50,13 @@ advanceScanner layer =
   else
     case layer.dir of
       Down -> 
-        if layer.scannerAt + 1 < layer.range then
-          { layer | scannerAt = layer.scannerAt + 1 }
+        if layer.scannerRange + 1 < layer.range then
+          { layer | scannerRange = layer.scannerRange + 1 }
         else
           advanceScanner { layer | dir = Up }
       Up ->
-        if layer.scannerAt > 0 then
-          { layer | scannerAt = layer.scannerAt - 1 }
+        if layer.scannerRange > 0 then
+          { layer | scannerRange = layer.scannerRange - 1 }
         else
           advanceScanner { layer | dir = Down }
 
@@ -91,9 +91,9 @@ cellText : Int -> Int -> Int -> Layer -> String
 cellText rowIx playerDepth layerIx layer =
   if rowIx >= layer.range then
     ""
-  else if rowIx == 0 && layer.scannerAt == 0 && playerDepth == layerIx then
+  else if rowIx == 0 && layer.scannerRange == 0 && playerDepth == layerIx then
     "(S)"
-  else if rowIx == layer.scannerAt then
+  else if rowIx == layer.scannerRange then
     "[S]"
   else if rowIx == 0 && playerDepth == layerIx then
     "( )"

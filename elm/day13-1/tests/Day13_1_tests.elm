@@ -14,8 +14,8 @@ suite =
         \() ->
           let
             initialLayers = 
-              [ { range = 2, scannerAt = 0, dir = Down }
-              , { range = 3, scannerAt = 1, dir = Down }
+              [ { range = 2, scannerRange = 0, dir = Down }
+              , { range = 3, scannerRange = 1, dir = Down }
               ]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
@@ -24,7 +24,7 @@ suite =
       , test "moves each upward scanner up" <|
         \() ->
           let
-            initialLayers = [{ range = 2, scannerAt = 1, dir = Up }]
+            initialLayers = [{ range = 2, scannerRange = 1, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
           in
@@ -32,27 +32,27 @@ suite =
       , test "reverses scanner direction when it reaches bottom" <|
         \() ->
           let
-            initialLayers = [{ range = 2, scannerAt = 1, dir = Down }]
+            initialLayers = [{ range = 2, scannerRange = 1, dir = Down }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
-            expected = [{ range = 2, scannerAt = 0, dir = Up }]
+            expected = [{ range = 2, scannerRange = 0, dir = Up }]
               
           in
             Expect.equal expected updated.layers
       , test "reverses scanner direction when it reaches top" <|
         \() ->
           let
-            initialLayers = [{ range = 2, scannerAt = 0, dir = Up }]
+            initialLayers = [{ range = 2, scannerRange = 0, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
-            expected = [{ range = 2, scannerAt = 1, dir = Down }]
+            expected = [{ range = 2, scannerRange = 1, dir = Down }]
               
           in
             Expect.equal expected updated.layers
       , test "copes with a range of 1 going down" <|
         \() ->
           let
-            initialLayers = [{ range = 1, scannerAt = 0, dir = Down }]
+            initialLayers = [{ range = 1, scannerRange = 0, dir = Down }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
@@ -61,7 +61,7 @@ suite =
       , test "copes with a range of 1 going up" <|
         \() ->
           let
-            initialLayers = [{ range = 1, scannerAt = 0, dir = Up }]
+            initialLayers = [{ range = 1, scannerRange = 0, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
@@ -79,7 +79,7 @@ suite =
     ]
 
 anyLayer : Layer
-anyLayer = { range = 1, scannerAt = 1, dir = Down }
+anyLayer = { range = 1, scannerRange = 1, dir = Down }
 
 scannerPoses : Model -> List Int
-scannerPoses model = List.map (\(x) -> x.scannerAt) model.layers
+scannerPoses model = List.map (\(x) -> x.scannerRange) model.layers
