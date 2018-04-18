@@ -49,6 +49,9 @@ maxDepth model =
       Just deepest -> deepest.depth
       Nothing -> Debug.crash "Error: model has no layers"
 
+isDone: Model -> Bool
+isDone model = model.playerDepth == maxDepth model
+
 layerAtDepth: Int -> List Layer -> Maybe Layer
 layerAtDepth depth layers =
   case layers of
@@ -104,7 +107,10 @@ view model =
   div []
     [ table [] (bodyRows model 0 (numRows model))
     , div [] [text (status model)]
-    , button [ onClick Advance ] [ text "Advance" ]
+    , if isDone model then
+        text "Done."
+      else
+        button [onClick Advance] [ text "Advance" ]
     ]
 
 bodyRows : Model -> Int -> Int -> List (Html Msg)
