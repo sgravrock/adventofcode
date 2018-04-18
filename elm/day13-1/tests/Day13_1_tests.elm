@@ -3,7 +3,6 @@ module Day13_1_tests exposing (..)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
-import Array
 import Main exposing (..)
 
 
@@ -14,7 +13,7 @@ suite =
       [ test "moves each downward scanner down" <|
         \() ->
           let
-            initialLayers = Array.fromList
+            initialLayers = 
               [ { range = 2, scannerAt = 0, dir = Down }
               , { range = 3, scannerAt = 1, dir = Down }
               ]
@@ -25,9 +24,7 @@ suite =
       , test "moves each upward scanner up" <|
         \() ->
           let
-            initialLayers = Array.fromList
-              [ { range = 2, scannerAt = 1, dir = Up }
-              ]
+            initialLayers = [{ range = 2, scannerAt = 1, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
           in
@@ -35,27 +32,27 @@ suite =
       , test "reverses scanner direction when it reaches bottom" <|
         \() ->
           let
-            initialLayers = Array.fromList [{ range = 2, scannerAt = 1, dir = Down }]
+            initialLayers = [{ range = 2, scannerAt = 1, dir = Down }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
-            expected = Array.fromList [{ range = 2, scannerAt = 0, dir = Up }]
+            expected = [{ range = 2, scannerAt = 0, dir = Up }]
               
           in
             Expect.equal expected updated.layers
       , test "reverses scanner direction when it reaches top" <|
         \() ->
           let
-            initialLayers = Array.fromList [{ range = 2, scannerAt = 0, dir = Up }]
+            initialLayers = [{ range = 2, scannerAt = 0, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
-            expected = Array.fromList [{ range = 2, scannerAt = 1, dir = Down }]
+            expected = [{ range = 2, scannerAt = 1, dir = Down }]
               
           in
             Expect.equal expected updated.layers
       , test "copes with a range of 1 going down" <|
         \() ->
           let
-            initialLayers = Array.fromList [{ range = 1, scannerAt = 0, dir = Down }]
+            initialLayers = [{ range = 1, scannerAt = 0, dir = Down }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
@@ -64,7 +61,7 @@ suite =
       , test "copes with a range of 1 going up" <|
         \() ->
           let
-            initialLayers = Array.fromList [{ range = 1, scannerAt = 0, dir = Up }]
+            initialLayers = [{ range = 1, scannerAt = 0, dir = Up }]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
             
@@ -73,7 +70,7 @@ suite =
       , test "moves the player deeper" <|
         \() ->
           let
-            initialLayers = Array.fromList [anyLayer, anyLayer]
+            initialLayers = [anyLayer, anyLayer]
             initial = { layers = initialLayers, playerDepth = 0 }
             updated = update Advance initial
           in
@@ -85,8 +82,4 @@ anyLayer : Layer
 anyLayer = { range = 1, scannerAt = 1, dir = Down }
 
 scannerPoses : Model -> List Int
-scannerPoses model =
-  let
-    poses = Array.map (\(x) -> x.scannerAt) model.layers
-  in
-    Array.toList poses
+scannerPoses model = List.map (\(x) -> x.scannerAt) model.layers

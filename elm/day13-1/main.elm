@@ -2,7 +2,6 @@ module Main exposing (..)
 import Html exposing (Html, table, tr, td, text, div, button)
 import Html.Events exposing (onClick)
 
-import Array
 import Maybe
 
 type Msg = Advance
@@ -16,7 +15,7 @@ type alias Layer =
   }
 
 type alias Model = 
-  { layers: Array.Array Layer
+  { layers: List Layer
   , playerDepth: Int
   }
 
@@ -29,7 +28,7 @@ main =
 
 model : Model
 model = 
-  { layers = List.map layerWithRange [3, 2, 4, 4] |> Array.fromList
+  { layers = List.map layerWithRange [3, 2, 4, 4]
   , playerDepth = -1
   }
 
@@ -40,7 +39,7 @@ update: Msg -> Model -> Model
 update msg model = 
   case msg of
     Advance -> { model |
-                 layers = Array.map advanceScanner model.layers,
+                 layers = List.map advanceScanner model.layers,
                  playerDepth = model.playerDepth + 1
                }
 
@@ -78,11 +77,11 @@ bodyRows model i max =
 bodyRow : Model -> Int -> Html Msg
 bodyRow model rowIx =
   let
-    cells = Array.indexedMap
+    cells = List.indexedMap
       (\i  layer -> cell rowIx model.playerDepth i layer)
       model.layers
   in
-    tr [] (Array.toList cells)
+    tr [] cells
 
 cell : Int -> Int -> Int -> Layer -> Html Msg
 cell rowIx playerDepth layerIx layer = td []
@@ -104,6 +103,6 @@ cellText rowIx playerDepth layerIx layer =
 numRows : Model -> Int
 numRows layers = 
   let
-    ranges = Array.map (\(layer) -> layer.range) model.layers
+    ranges = List.map (\(layer) -> layer.range) model.layers
   in
-    Maybe.withDefault 0 (List.maximum (Array.toList ranges))
+    Maybe.withDefault 0 (List.maximum ranges)
