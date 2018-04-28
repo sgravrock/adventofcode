@@ -99,11 +99,20 @@ suite =
           in
             Expect.equal 0 updated.playerDepth
       ]
+    , describe "Auto solve"
+      [ test "finds the lowest delay that avoids being caught" <|
+        \() ->
+          let
+            result = update AutoSolve sampleModel
+          in
+            Expect.equal 10 result.delay
+      ]
     ]
 
 sampleModel : Model
 sampleModel = 
   { layers = List.map makeLayer [(0, 3), (1, 2), (4, 4), (6, 4)]
+  , clock = 0
   , delay = 0
   , playerDepth = -1
   , caughtAt = []
@@ -124,4 +133,10 @@ advanceTimes times model =
     advanceTimes (times - 1) (update Advance model)
 
 makeModel : List Layer -> Model
-makeModel layers = { layers = layers, playerDepth = 0, caughtAt = [], delay = 0 }
+makeModel layers =
+  { layers = layers
+  , delay = 0
+  , clock = 0
+  , playerDepth = 0
+  , caughtAt = []
+  }

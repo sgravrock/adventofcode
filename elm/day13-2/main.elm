@@ -1,11 +1,12 @@
 module Main exposing (..)
-import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button, label, input)
+import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button, label, input, fieldset, legend, br)
 import Html.Attributes exposing (value)
 import Html.Events exposing (onClick, onInput)
+import Debug
 
 import Maybe
 
-type Msg = Advance | Finish | SetDelay String
+type Msg = Advance | Finish | SetDelay String | AutoSolve
 
 type Direction = Down | Up
 
@@ -19,6 +20,7 @@ type alias Layer =
 type alias Model = 
   { layers: List Layer
   , delay: Int
+  , clock: Int
   , playerDepth: Int
   , caughtAt: List Int
   }
@@ -34,6 +36,7 @@ model : Model
 model = 
   { layers = List.map makeLayer puzzleInput
   , delay = 0
+  , clock = 0
   , playerDepth = -1
   , caughtAt = []
   }
@@ -87,11 +90,10 @@ update msg model =
     Advance ->
       let
         playerDepth =
-          if model.delay > 0 then
+          if model.clock < model.delay then
             model.playerDepth
           else
             model.playerDepth + 1
-        delay = max 0 (model.delay - 1)
         caughtAt =
           if caught playerDepth model.layers then
             playerDepth::model.caughtAt
@@ -100,7 +102,8 @@ update msg model =
         layers = List.map advanceScanner model.layers
       in
         { layers = layers
-        , delay = delay
+        , delay = model.delay
+        , clock = model.clock + 1
         , playerDepth = playerDepth
         , caughtAt = caughtAt
         }
@@ -109,6 +112,7 @@ update msg model =
         model
       else
         update Advance model |> update Finish
+    AutoSolve -> autoSolve model
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =
@@ -133,6 +137,26 @@ caught playerDepth layers =
     Nothing -> False
     Just layer -> layer.scannerRange == 0
 
+autoSolve : Model -> Model
+autoSolve model =
+  let
+    finished = update Finish model
+  in
+    if finished.caughtAt == [] then
+      finished
+    else
+      let
+        delay = maybeLog model.delay + 1
+      in
+       autoSolve { model | delay = delay }
+
+maybeLog: Int -> Int
+maybeLog n =
+  if n % 1000 == 0 then
+    Debug.log "trying" n
+  else
+    n
+
 
 view : Model -> Html Msg
 view model =
@@ -148,12 +172,20 @@ view model =
 controls : Model -> Html Msg
 controls model =
   div []
-    [ label []
-      [ text "Delay"
-      , input [onInput SetDelay, value (toString model.delay)] []
+    [ fieldset []
+      [ legend [] [text "Manual"]
+      , label []
+        [ text "Delay"
+        , input [onInput SetDelay, value (toString model.delay)] []
+        ]
+      , br [] []
+      , button [onClick Advance] [ text "Advance" ]
+      , button [onClick Finish] [text "Finish"]
       ]
-    , button [onClick Advance] [ text "Advance" ]
-    , button [onClick Finish] [text "Finish"]
+    , fieldset []
+      [ legend [] [text "Automatic"]
+      , button [onClick AutoSolve] [text "Solve"]
+      ]
     ]
 
 firewallTable : Model -> Html Msg
