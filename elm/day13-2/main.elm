@@ -1,10 +1,11 @@
 module Main exposing (..)
-import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button)
-import Html.Events exposing (onClick)
+import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button, label, input)
+import Html.Attributes exposing (value)
+import Html.Events exposing (onClick, onInput)
 
 import Maybe
 
-type Msg = Advance | Finish
+type Msg = Advance | Finish | SetDelay String
 
 type Direction = Down | Up
 
@@ -17,6 +18,7 @@ type alias Layer =
 
 type alias Model = 
   { layers: List Layer
+  , delay: Int
   , playerDepth: Int
   , caughtAt: List Int
   }
@@ -31,6 +33,7 @@ main =
 model : Model
 model = 
   { layers = List.map makeLayer puzzleInput
+  , delay = 0
   , playerDepth = -1
   , caughtAt = []
   }
@@ -77,9 +80,18 @@ severity model =
 update: Msg -> Model -> Model
 update msg model = 
   case msg of
+    SetDelay s ->
+      case String.toInt s of
+        Ok n -> { model | delay = n }
+        _ -> { model | delay = 0 }
     Advance ->
       let
-        playerDepth = model.playerDepth + 1
+        playerDepth =
+          if model.delay > 0 then
+            model.playerDepth
+          else
+            model.playerDepth + 1
+        delay = max 0 (model.delay - 1)
         caughtAt =
           if caught playerDepth model.layers then
             playerDepth::model.caughtAt
@@ -87,7 +99,11 @@ update msg model =
             model.caughtAt
         layers = List.map advanceScanner model.layers
       in
-        { layers = layers, playerDepth = playerDepth, caughtAt = caughtAt }
+        { layers = layers
+        , delay = delay
+        , playerDepth = playerDepth
+        , caughtAt = caughtAt
+        }
     Finish ->
       if isDone model then
         model
@@ -126,10 +142,18 @@ view model =
     , if isDone model then
         text "Done."
       else
-        div []
-          [ button [onClick Advance] [ text "Advance" ]
-          , button [onClick Finish] [text "Finish"]
-          ]
+        controls model
+    ]
+
+controls : Model -> Html Msg
+controls model =
+  div []
+    [ label []
+      [ text "Delay"
+      , input [onInput SetDelay, value (toString model.delay)] []
+      ]
+    , button [onClick Advance] [ text "Advance" ]
+    , button [onClick Finish] [text "Finish"]
     ]
 
 firewallTable : Model -> Html Msg

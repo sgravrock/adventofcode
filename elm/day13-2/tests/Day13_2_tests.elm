@@ -83,11 +83,28 @@ suite =
           in
             Expect.equal [6, 0] result.caughtAt
       ]
+    , describe "Delay handling"
+      [ test "does not move the player for delay ticks" <|
+        \() ->
+          let
+            initial = { sampleModel | delay = 2 }
+            updated = advanceTimes 2 initial
+          in
+            Expect.equal -1 updated.playerDepth
+      , test "moves the player after delay ticks" <|
+        \() ->
+          let
+            initial = { sampleModel | delay = 2 }
+            updated = advanceTimes 3 initial
+          in
+            Expect.equal 0 updated.playerDepth
+      ]
     ]
 
 sampleModel : Model
 sampleModel = 
   { layers = List.map makeLayer [(0, 3), (1, 2), (4, 4), (6, 4)]
+  , delay = 0
   , playerDepth = -1
   , caughtAt = []
   }
@@ -107,4 +124,4 @@ advanceTimes times model =
     advanceTimes (times - 1) (update Advance model)
 
 makeModel : List Layer -> Model
-makeModel layers = { layers = layers, playerDepth = 0, caughtAt = [] }
+makeModel layers = { layers = layers, playerDepth = 0, caughtAt = [], delay = 0 }
