@@ -1,5 +1,5 @@
 module Main exposing (..)
-import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button, label, input, fieldset, legend, br)
+import Html exposing (Html, table, thead, tbody, th, tr, td, text, div, button, label, input, fieldset, legend, br, pre, code)
 import Html.Attributes exposing (value)
 import Html.Events exposing (onClick, onInput)
 import Debug
@@ -79,7 +79,6 @@ severity model =
   in
     List.sum severities
 
-
 update: Msg -> Model -> Model
 update msg model = 
   case msg of
@@ -87,32 +86,38 @@ update msg model =
       case String.toInt s of
         Ok n -> { model | delay = n }
         _ -> { model | delay = 0 }
-    Advance ->
-      let
-        playerDepth =
-          if model.clock < model.delay then
-            model.playerDepth
-          else
-            model.playerDepth + 1
-        caughtAt =
-          if caught playerDepth model.layers then
-            playerDepth::model.caughtAt
-          else
-            model.caughtAt
-        layers = List.map advanceScanner model.layers
-      in
-        { layers = layers
-        , delay = model.delay
-        , clock = model.clock + 1
-        , playerDepth = playerDepth
-        , caughtAt = caughtAt
-        }
+    Advance -> advance model
     Finish ->
       if isDone model then
         model
       else
         update Advance model |> update Finish
     AutoSolve -> autoSolve model
+
+advance: Model -> Model
+advance model =
+  let
+    playerDepth = advancePlayer model
+    caughtAt =
+      if caught playerDepth model.layers then
+        playerDepth::model.caughtAt
+      else
+        model.caughtAt
+    layers = List.map advanceScanner model.layers
+  in
+    { layers = layers
+    , delay = model.delay
+    , clock = model.clock + 1
+    , playerDepth = playerDepth
+    , caughtAt = caughtAt
+    }
+
+advancePlayer : Model -> Int
+advancePlayer model =
+  if model.clock < model.delay then
+    model.playerDepth
+  else
+    model.playerDepth + 1
 
 advanceScanner : Layer -> Layer
 advanceScanner layer =
@@ -140,15 +145,29 @@ caught playerDepth layers =
 autoSolve : Model -> Model
 autoSolve model =
   let
-    finished = update Finish model
+    delayed = advanceThroughDelay model
+    finished = update Finish delayed
   in
     if finished.caughtAt == [] then
       finished
     else
       let
-        delay = maybeLog model.delay + 1
+        delay = maybeLog delayed.delay + 1
       in
-       autoSolve { model | delay = delay }
+       autoSolve { delayed | delay = delay }
+
+advanceThroughDelay : Model -> Model
+advanceThroughDelay model =
+  if model.clock < model.delay then
+    let next = 
+      { model
+      | clock = model.clock + 1
+      , layers = List.map advanceScanner model.layers
+      }
+    in
+      advanceThroughDelay next
+  else
+    model
 
 maybeLog: Int -> Int
 maybeLog n =
@@ -184,6 +203,12 @@ controls model =
       ]
     , fieldset []
       [ legend [] [text "Automatic"]
+      , text ("You probably don't want to do this in the browser. It takes "
+          ++ "a couple of hours. Youre better off running this in elm-repl:")
+      , pre []
+        [ code [] [text "> import Main exposing(..)\n> autoSolve model"] ]
+      , text "But here's the button if you really want it."
+      , br [] []
       , button [onClick AutoSolve] [text "Solve"]
       ]
     ]
