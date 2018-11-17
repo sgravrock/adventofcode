@@ -2,7 +2,42 @@
 
 require './microtest'
 
-Rule = Struct.new(:input_lines, :output_lines)
+Rule = Struct.new(:input_lines, :output_lines) do
+	def matches?(grid)
+		grid = grid.split("\n")
+		grid == input_lines ||
+			hflip(grid) == input_lines ||
+			vflip(grid) == input_lines ||
+			ror(grid) == input_lines ||
+			ror(ror(grid)) == input_lines ||
+			ror(ror(ror(grid))) == input_lines
+	end
+end
+
+def hflip(grid_lines)
+	grid_lines.map {|line| line.reverse}
+end
+
+def vflip(grid_lines)
+	grid_lines.reverse
+end
+
+def ror(grid_lines)
+	if grid_lines.length == 2
+		return [
+			grid_lines[1][0] + grid_lines[0][0],
+			grid_lines[1][1] + grid_lines[0][1]
+		]
+	elsif grid_lines.length == 3
+		return [
+			grid_lines[2][0] + grid_lines[1][0] + grid_lines[0][0],
+			grid_lines[2][1] + grid_lines[1][1] + grid_lines[0][1],
+			grid_lines[2][2] + grid_lines[1][2] + grid_lines[0][2],
+		]
+	else
+		raise "Don't know how to rotate this size (#{grid_lines.length})"
+	end
+end
 
 def parse_rules(input)
 	input.split("\n").map do |line|
@@ -12,7 +47,12 @@ def parse_rules(input)
 end
 
 def iterate(grid)
+	grid = default_grid if grid.nil?
 	grid
+end
+
+def default_grid
+	".#.\n..#\n###"
 end
 
 def split(grid)
@@ -57,19 +97,147 @@ class Tests < Microtest::Test
 		assert_equal expected, parse_rules(input)
 	end
 
-	def xtest_iterate
+	def test_rule_matches_exact
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = <<~END
+			.#.
+			..#
+			###
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_false
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = <<~END
+			.##
+			..#
+			###
+		END
+		assert_equal false, rule.matches?(grid)
+	end
+
+	def test_rule_matches_hflip
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = <<~END
+			.#.
+			#..
+			###
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_vflip
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = <<~END
+			###
+			..#
+			.#.
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_ror_3times
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = <<~END
+			#..
+			#.#
+			##.
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_1
+		rule = Rule.new(['..', '.#'], [])
+		grid = <<~END
+			#.
+			..
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_2
+		rule = Rule.new(['..', '.#'], [])
+		grid = <<~END
+			.#
+			..
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_3
+		rule = Rule.new(['..', '.#'], [])
+		grid = <<~END
+			..
+			.#
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_4
+		rule = Rule.new(['..', '.#'], [])
+		grid = <<~END
+			..
+			#.
+		END
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_ror_2
+		input = [
+			'ab',
+			'cd'
+		]
+		expected = [
+			'ca',
+			'db'
+		]
+		assert_equal expected, ror(input)
+	end
+
+	def test_ror_3
+		input = [
+			'abc',
+			'def',
+			'ghi'
+		]
+		expected = [
+			'gda',
+			'heb',
+			'ifc'
+		]
+		assert_equal expected, ror(input)
+	end
+
+	def xtest_iterate_3by3
 		input = <<~END
 			../.# => ##./#../...
 			.#./..#/### => #..#/..../..../#..#
 		END
 		rules = parse_rules(input)
-		expected1 = <<~END
+		expected = <<~END
 			#..#
 			....
 			....
 			#..#
 		END
-		expected2 = <<~END
+		actual = iterate(nil)
+		assert_equal expected, actual
+	end
+
+	def xtest_iterate_4by4
+		input = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input)
+		input = <<~END
+			#..#
+			....
+			....
+			#..#
+		END
+		expected = <<~END
 			##.##.
 			#..#..
 			......
@@ -77,10 +245,8 @@ class Tests < Microtest::Test
 			#..#..
 			......
 		END
-		actual1 = iterate(nil)
-		assert_equal expected1, actual1
-		actual2 = iterate(actual1)
-		assert_equal expected2, actual2
+		actual = iterate(input)
+		assert_equal expected, actual
 	end
 
 	def test_extract_block_3

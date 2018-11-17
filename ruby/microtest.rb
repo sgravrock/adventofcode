@@ -33,8 +33,18 @@ module Microtest
 					puts "#{state.name} failed:"
 				end
 
-				puts "   Expected #{actual} to equal #{expected}"
+				if contains_newline(actual) || contains_newline(expected)
+					puts "   Expected\n#{actual}\n   to equal\n#{expected}"
+				else
+					puts "   Expected #{actual} to equal #{expected}"
+				end
 			end
+		end
+
+		private
+
+		def contains_newline(value)
+			value.respond_to?(:include?) && value.include?("\n")
 		end
 	end
 
