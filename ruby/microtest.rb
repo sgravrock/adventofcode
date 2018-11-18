@@ -6,7 +6,7 @@ module Microtest
 			.select {|symbol| symbol.to_s.start_with? 'test_' }
 			.each do |symbol|
 				tests.state = SingleTestState.new symbol.to_s
-				tests.public_send symbol
+				tests.run_one_test symbol
 				n_tests += 1
 
 				unless tests.state.ok
@@ -25,6 +25,17 @@ module Microtest
 
 	class Test
 		attr_accessor :state
+
+		def run_one_test(symbol)
+			begin
+				public_send symbol
+			rescue => e
+				state.ok = false
+				puts "#{state.name} failed:"
+				puts e
+				puts e.backtrace
+			end
+		end
 
 		def assert_equal(expected, actual)
 			if expected != actual

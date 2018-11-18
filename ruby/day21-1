@@ -2,40 +2,90 @@
 
 require './microtest'
 
-Rule = Struct.new(:input_lines, :output_lines) do
-	def matches?(grid)
-		grid = grid.split("\n")
-		grid == input_lines ||
-			hflip(grid) == input_lines ||
-			vflip(grid) == input_lines ||
-			ror(grid) == input_lines ||
-			ror(ror(grid)) == input_lines ||
-			ror(ror(ror(grid))) == input_lines
+Grid = Struct.new(:lines) do
+	def extract_block(by, bx)
+		result_lines = (0..2).map do |y|
+			cells = (0..2).map do |x|
+				lines[by * 3 + y][bx * 3 + x]
+			end
+			cells.join
+		end
+		Grid.new(result_lines)
+	end
+
+	def split
+		blocks_per_side = lines.length / 3
+		(0..blocks_per_side - 1).map do |by|
+			(0..blocks_per_side - 1).map do |bx|
+				extract_block by, bx
+			end
+		end
+	end
+
+	def hflip
+		Grid.new(lines.map {|line| line.reverse})
+	end
+	
+	def vflip
+		Grid.new(lines.reverse)
+	end
+	
+	def ror
+		new_lines = if lines.length == 2
+			[
+				lines[1][0] + lines[0][0],
+				lines[1][1] + lines[0][1]
+			]
+		elsif lines.length == 3
+			[
+				lines[2][0] + lines[1][0] + lines[0][0],
+				lines[2][1] + lines[1][1] + lines[0][1],
+				lines[2][2] + lines[1][2] + lines[0][2],
+			]
+		else
+			raise "Don't know how to rotate this size (#{lines.length})"
+		end
+
+		Grid.new(new_lines)
 	end
 end
 
-def hflip(grid_lines)
-	grid_lines.map {|line| line.reverse}
-end
+class Rule
+	attr_reader :input, :output
 
-def vflip(grid_lines)
-	grid_lines.reverse
-end
+	def initialize(input_lines, output_lines)
+		@input = ensure_grid input_lines
+		@output = ensure_grid output_lines
+	end
 
-def ror(grid_lines)
-	if grid_lines.length == 2
-		return [
-			grid_lines[1][0] + grid_lines[0][0],
-			grid_lines[1][1] + grid_lines[0][1]
-		]
-	elsif grid_lines.length == 3
-		return [
-			grid_lines[2][0] + grid_lines[1][0] + grid_lines[0][0],
-			grid_lines[2][1] + grid_lines[1][1] + grid_lines[0][1],
-			grid_lines[2][2] + grid_lines[1][2] + grid_lines[0][2],
-		]
-	else
-		raise "Don't know how to rotate this size (#{grid_lines.length})"
+	def ==(other)
+		other.instance_of?(Rule) &&
+			other.input == input &&
+			other.output == output
+	end
+
+	def to_s
+		"#<Rule: input=#{input} output=#{output}>"
+	end
+
+	def matches?(grid)
+		raise "Not a grid" unless grid.is_a? Grid
+		grid == input ||
+			grid.hflip == input ||
+			grid.vflip == input ||
+			grid.ror == input ||
+			grid.ror.ror == input ||
+			grid.ror.ror.ror == input
+	end
+
+	private
+
+	def ensure_grid(maybe_grid)
+		if maybe_grid.is_a? Grid
+			maybe_grid
+		else
+			Grid.new maybe_grid
+		end
 	end
 end
 
@@ -55,15 +105,6 @@ def default_grid
 	".#.\n..#\n###"
 end
 
-def split(grid)
-	blocks_per_side = grid.length / 3
-	(0..blocks_per_side - 1).map do |by|
-		(0..blocks_per_side - 1).map do |bx|
-			extract_block grid, by, bx
-		end
-	end
-end
-
 def join(grids)
 	input_grid_size = grids[0][0].length
 	size = grids.length * input_grid_size
@@ -72,14 +113,6 @@ def join(grids)
 		(0..size - 1).map do |x|
 			g = grids[y / input_grid_size][x / input_grid_size]
 			g[y % input_grid_size][x % input_grid_size]
-		end
-	end
-end
-
-def extract_block(grid, by, bx)
-	(0..2).map do |y|
-		(0..2).map do |x|
-			grid[by * 3 + y][bx * 3 + x]
 		end
 	end
 end
@@ -99,114 +132,82 @@ class Tests < Microtest::Test
 
 	def test_rule_matches_exact
 		rule = Rule.new(['.#.', '..#', '###'], [])
-		grid = <<~END
-			.#.
-			..#
-			###
-		END
+		grid = Grid.new(['.#.', '..#', '###'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_false
 		rule = Rule.new(['.#.', '..#', '###'], [])
-		grid = <<~END
-			.##
-			..#
-			###
-		END
+		grid = Grid.new(['.##', '..#', '###'])
 		assert_equal false, rule.matches?(grid)
 	end
 
 	def test_rule_matches_hflip
 		rule = Rule.new(['.#.', '..#', '###'], [])
-		grid = <<~END
-			.#.
-			#..
-			###
-		END
+		grid = Grid.new(['.#.', '#..', '###'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_vflip
 		rule = Rule.new(['.#.', '..#', '###'], [])
-		grid = <<~END
-			###
-			..#
-			.#.
-		END
+		grid = Grid.new(['###', '..#', '.#.'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_ror_3times
 		rule = Rule.new(['.#.', '..#', '###'], [])
-		grid = <<~END
-			#..
-			#.#
-			##.
-		END
+		grid = Grid.new(['#..', '#.#', '##.'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_2x2_1
 		rule = Rule.new(['..', '.#'], [])
-		grid = <<~END
-			#.
-			..
-		END
+		grid = Grid.new(['#.', '..'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_2x2_2
 		rule = Rule.new(['..', '.#'], [])
-		grid = <<~END
-			.#
-			..
-		END
+		grid = Grid.new(['.#', '..'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_2x2_3
 		rule = Rule.new(['..', '.#'], [])
-		grid = <<~END
-			..
-			.#
-		END
+		grid = Grid.new(['..', '.#'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_rule_matches_2x2_4
 		rule = Rule.new(['..', '.#'], [])
-		grid = <<~END
-			..
-			#.
-		END
+		grid = Grid.new(['..', '#.'])
 		assert_equal true, rule.matches?(grid)
 	end
 
 	def test_ror_2
-		input = [
+		input = Grid.new([
 			'ab',
 			'cd'
-		]
-		expected = [
+		])
+		expected = Grid.new([
 			'ca',
 			'db'
-		]
-		assert_equal expected, ror(input)
+		])
+		assert_equal expected, input.ror
 	end
 
 	def test_ror_3
-		input = [
+		input = Grid.new([
 			'abc',
 			'def',
 			'ghi'
-		]
-		expected = [
+		])
+		expected = Grid.new([
 			'gda',
 			'heb',
 			'ifc'
-		]
-		assert_equal expected, ror(input)
+		])
+		assert_equal expected, input.ror
 	end
 
 	def xtest_iterate_3by3
@@ -250,58 +251,58 @@ class Tests < Microtest::Test
 	end
 
 	def test_extract_block_3
-		input = [
+		input = Grid.new([
 			'##.#.#',
 			'#..#..',
 			'......',
 			'##.##.',
 			'#..#..',
 			'.#...#'
-		].map {|s| s.chars}
-		expected = [
+		])
+		expected = Grid.new([
 			'##.',
 			'#..',
 			'..#'
-		].map {|s| s.chars }
-		assert_equal expected, extract_block(input, 1, 1)
+		])
+		assert_equal expected, input.extract_block(1, 1)
 	end
 
 	def test_split_3
-		input = [
+		input = Grid.new([
 			'##.#.#',
 			'#..#..',
 			'......',
 			'##.##.',
 			'#..#..',
 			'.#...#'
-		].map {|s| s.chars}
+		])
 		expected = [
 			[
-				[
+				Grid.new([
 					'##.',
 					'#..',
 					'...'
-				].map {|s| s.chars },
-				[
+				]),
+				Grid.new([
 					'#.#',
 					'#..',
 					'...'
-				].map {|s| s.chars }
+				])
 			],
 			[
-				[
+				Grid.new([
 					'##.',
 					'#..',
 					'.#.'
-				].map {|s| s.chars },
-				[
+				]),
+				Grid.new([
 					'##.',
 					'#..',
 					'..#'
-				].map {|s| s.chars }
+				])
 			]
 		]
-		assert_equal expected, split(input)
+		assert_equal expected, input.split
 	end
 
 	def test_join_3
