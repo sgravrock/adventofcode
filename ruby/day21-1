@@ -3,6 +3,10 @@
 require './microtest'
 
 class Grid
+	def self.default
+		Grid.new(['.#.', '..#', '###'])
+	end
+
 	attr_reader :lines
 
 	def initialize(lines)
@@ -62,6 +66,10 @@ class Grid
 
 		Grid.new(new_lines)
 	end
+
+	def pretty
+		lines.join("\n")
+	end
 end
 
 class Rule
@@ -83,7 +91,7 @@ class Rule
 	end
 
 	def matches?(grid)
-		raise "Not a grid" unless grid.is_a? Grid
+		raise "Not a grid: #{grid}" unless grid.is_a? Grid
 		grid == input ||
 			grid.hflip == input ||
 			grid.vflip == input ||
@@ -110,13 +118,21 @@ def parse_rules(input)
 	end
 end
 
-def iterate(grid)
-	grid = default_grid if grid.nil?
-	grid
-end
-
-def default_grid
-	".#.\n..#\n###"
+def iterate(grid, rules)
+	blocks = (grid || Grid.default)
+		.split
+		.map do |row_of_blocks|
+			row_of_blocks.map do |block|
+				rule = rules.find {|r| r.matches?(block) }
+	
+				if rule.nil?
+					raise "No rule matches block: #{block}"
+				else
+					rule.output
+				end
+			end
+		end
+	join(blocks)
 end
 
 def join(grids)
@@ -226,19 +242,19 @@ class Tests < Microtest::Test
 		assert_equal expected, input.ror
 	end
 
-	def xtest_iterate_3by3
+	def test_iterate_3by3
 		input = <<~END
 			../.# => ##./#../...
 			.#./..#/### => #..#/..../..../#..#
 		END
 		rules = parse_rules(input)
-		expected = <<~END
-			#..#
-			....
-			....
-			#..#
-		END
-		actual = iterate(nil)
+		expected = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		actual = iterate(nil, rules)
 		assert_equal expected, actual
 	end
 
@@ -262,7 +278,7 @@ class Tests < Microtest::Test
 			#..#..
 			......
 		END
-		actual = iterate(input)
+		actual = iterate(input, rules)
 		assert_equal expected, actual
 	end
 
@@ -319,6 +335,15 @@ class Tests < Microtest::Test
 			]
 		]
 		assert_equal expected, input.split
+	end
+
+	def test_split_join_single_identity
+		input = Grid.new([
+			'#..',
+			'.#.',
+			'..#'
+		])
+		assert_equal input, join(input.split)
 	end
 
 	def test_join_3
