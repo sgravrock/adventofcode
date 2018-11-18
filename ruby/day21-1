@@ -2,7 +2,21 @@
 
 require './microtest'
 
-Grid = Struct.new(:lines) do
+class Grid
+	attr_reader :lines
+
+	def initialize(lines)
+		@lines = lines
+	end
+
+	def ==(other)
+		other.instance_of?(Grid) && other.lines == lines
+	end
+
+	def to_s
+		"#<Grid: #{lines}>"
+	end
+
 	def extract_block(by, bx)
 		result_lines = (0..2).map do |y|
 			cells = (0..2).map do |x|
