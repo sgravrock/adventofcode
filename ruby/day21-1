@@ -120,15 +120,17 @@ def default_grid
 end
 
 def join(grids)
-	input_grid_size = grids[0][0].length
+	input_grid_size = grids[0][0].lines[0].length
 	size = grids.length * input_grid_size
 
-	(0..size - 1).map do |y|
-		(0..size - 1).map do |x|
+	lines = (0..size - 1).map do |y|
+		cells = (0..size - 1).map do |x|
 			g = grids[y / input_grid_size][x / input_grid_size]
-			g[y % input_grid_size][x % input_grid_size]
+			g.lines[y % input_grid_size][x % input_grid_size]
 		end
+		cells.join
 	end
+	Grid.new(lines)
 end
 
 class Tests < Microtest::Test
@@ -320,41 +322,50 @@ class Tests < Microtest::Test
 	end
 
 	def test_join_3
-		expected = [
+		expected = Grid.new([
 			'##.#.#',
 			'#..#..',
 			'......',
 			'##.##.',
 			'#..#..',
 			'.#...#'
-		].map {|s| s.chars}
+		])
 		input = [
 			[
-				[
+				Grid.new([
 					'##.',
 					'#..',
 					'...'
-				].map {|s| s.chars },
-				[
+				]),
+				Grid.new([
 					'#.#',
 					'#..',
 					'...'
-				].map {|s| s.chars }
+				])
 			],
 			[
-				[
+				Grid.new([
 					'##.',
 					'#..',
 					'.#.'
-				].map {|s| s.chars },
-				[
+				]),
+				Grid.new([
 					'##.',
 					'#..',
 					'..#'
-				].map {|s| s.chars }
+				])
 			]
 		]
 		assert_equal expected, join(input)
+	end
+
+	def test_split_join_identity
+		input = Grid.new([
+			'#..',
+			'.#.',
+			'..#'
+		])
+		assert_equal input, join(input.split)
 	end
 end
 
