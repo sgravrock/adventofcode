@@ -301,12 +301,15 @@ class Tests < Microtest::Test
 
 	def test_split_3
 		input = Grid.new([
-			'##.#.#',
-			'#..#..',
-			'......',
-			'##.##.',
-			'#..#..',
-			'.#...#'
+			'##.#.#...',
+			'#..#.....',
+			'.........',
+			'##.##....',
+			'#..#.....',
+			'.#...#...',
+			'.........',
+			'.........',
+			'.........'
 		])
 		expected = [
 			[
@@ -318,6 +321,11 @@ class Tests < Microtest::Test
 				Grid.new([
 					'#.#',
 					'#..',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
 					'...'
 				])
 			],
@@ -331,8 +339,59 @@ class Tests < Microtest::Test
 					'##.',
 					'#..',
 					'..#'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				])
+			],
+			[
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
 				])
 			]
+		]
+		assert_equal expected, input.split
+	end
+
+	def xtest_split_2_and_3
+		input = Grid.new([
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		])
+		expected = [
+			[
+				Grid.new(['##', '#.']),
+				Grid.new(['.#', '.#']),
+				Grid.new(['.#', '..']),
+			],
+			[
+				Grid.new(['..', '##']),
+				Grid.new(['.#', '.#']),
+				Grid.new(['..', '#.']),
+			],
+			[
+				Grid.new(['#.', '.#']),
+				Grid.new(['.#', '..']),
+				Grid.new(['..', '.#']),
+			],
 		]
 		assert_equal expected, input.split
 	end
