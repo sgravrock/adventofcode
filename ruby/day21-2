@@ -575,7 +575,7 @@ end
 Microtest.run(Tests.new)
 
 rules = parse_rules(DATA.read)
-puts "The puzzle solution is #{pixels_on_after_iterations(rules, 5)}."
+puts "The puzzle solution is #{pixels_on_after_iterations(rules, 18)}."
 
 __END__
 ../.. => .#./.../###
