@@ -21,23 +21,14 @@ class Grid
 		"#<Grid: #{lines}>"
 	end
 
-	def extract_block(by, bx)
-		result_lines = (0..2).map do |y|
-			cells = (0..2).map do |x|
-				lines[by * 3 + y][bx * 3 + x]
+	def extract_block(by, bx, blocksize)
+		result_lines = (0..(blocksize - 1)).map do |y|
+			cells = (0..(blocksize - 1)).map do |x|
+				lines[by * blocksize + y][bx * blocksize + x]
 			end
 			cells.join
 		end
 		Grid.new(result_lines)
-	end
-
-	def split
-		blocks_per_side = lines.length / 3
-		(0..blocks_per_side - 1).map do |by|
-			(0..blocks_per_side - 1).map do |bx|
-				extract_block by, bx
-			end
-		end
 	end
 
 	def hflip
@@ -69,6 +60,28 @@ class Grid
 
 	def pretty
 		lines.join("\n")
+	end
+
+	def split
+		if lines.length % 2 == 0
+			splitn(2)
+		elsif lines.length % 3 == 0
+			splitn(3)
+		else
+			raise "Grid size (#{lines.length}) is not divisible by 2 or 3"
+		end
+	end
+
+	private
+
+	def splitn(blocksize)
+		blocks_per_side = lines.length / blocksize
+		
+		(0..blocks_per_side - 1).map do |by|
+			(0..blocks_per_side - 1).map do |bx|
+				extract_block by, bx, blocksize
+			end
+		end
 	end
 end
 
@@ -258,28 +271,42 @@ class Tests < Microtest::Test
 		assert_equal expected, actual
 	end
 
-	def xtest_iterate_4by4
-		input = <<~END
+	def test_iterate_4by4
+		input_rules = <<~END
 			../.# => ##./#../...
 			.#./..#/### => #..#/..../..../#..#
 		END
-		rules = parse_rules(input)
-		input = <<~END
-			#..#
-			....
-			....
-			#..#
-		END
-		expected = <<~END
-			##.##.
-			#..#..
-			......
-			##.##.
-			#..#..
-			......
-		END
-		actual = iterate(input, rules)
+		rules = parse_rules(input_rules)
+		input_grid = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		expected = Grid.new([
+			'##.##.',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'......',
+		])
+		actual = iterate(input_grid, rules)
 		assert_equal expected, actual
+	end
+
+	def test_extract_block_2
+		input = Grid.new([
+			'##.#',
+			'#..#',
+			'....',
+			'##.#',
+		])
+		expected = Grid.new([
+			'..',
+			'.#'
+		])
+		assert_equal expected, input.extract_block(1, 1, 2)
 	end
 
 	def test_extract_block_3
@@ -296,7 +323,28 @@ class Tests < Microtest::Test
 			'#..',
 			'..#'
 		])
-		assert_equal expected, input.extract_block(1, 1)
+		assert_equal expected, input.extract_block(1, 1, 3)
+	end
+
+	def test_split_2
+		input = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		expected = [
+			[
+				Grid.new(['#.', '..']),
+				Grid.new(['.#', '..'])
+			],
+			[
+				Grid.new(['..', '#.']),
+				Grid.new(['..', '.#'])
+			]
+		]
+
+		assert_equal expected, input.split
 	end
 
 	def test_split_3
@@ -367,7 +415,7 @@ class Tests < Microtest::Test
 		assert_equal expected, input.split
 	end
 
-	def xtest_split_2_and_3
+	def test_split_2_and_3
 		input = Grid.new([
 			'##.#.#',
 			'#..#..',
@@ -384,7 +432,7 @@ class Tests < Microtest::Test
 			],
 			[
 				Grid.new(['..', '##']),
-				Grid.new(['.#', '.#']),
+				Grid.new(['..', '.#']),
 				Grid.new(['..', '#.']),
 			],
 			[
