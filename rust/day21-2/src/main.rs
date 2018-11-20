@@ -4,6 +4,70 @@ fn main() {
     println!("Hello, world!");
 }
 
+fn iterate(grid: &Grid, rules: &Vec<Rule>) -> Grid {
+	let new_blocks: Vec<Vec<Grid>> = grid.split()
+		.lines
+		.iter()
+		.map(|row_of_blocks| {
+			row_of_blocks.iter()
+				.map(|block| {
+					match rules.iter().find(|r| r.matches(block)) {
+						None => panic!("No matching rule for block: {:?}", block),
+						Some(rule) => rule.output.clone()
+					}
+				})
+				.collect()
+		})
+		.collect();
+
+	GridOfGrids::new(new_blocks).join()
+}
+
+#[test]
+fn test_iterate_3x3() {
+	let rules = Rule::parse("../.# => ##./#../...\n.#./..#/### => #..#/..../..../#..#");
+	let expected = Grid::parse(&strip(
+"		#..#
+		....
+		....
+		#..#"));
+	let actual = iterate(&Grid::default(), &rules);
+	assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_iterate_4x4() {
+	let rules = Rule::parse("../.# => ##./#../...\n.#./..#/### => #..#/..../..../#..#");
+	let input_grid = Grid::parse(&strip(
+"		#..#
+		....
+		....
+		#..#"));
+	let expected = Grid::parse(&strip(
+"		##.##.
+		#..#..
+		......
+		##.##.
+		#..#..
+		......"));
+	let actual = iterate(&input_grid, &rules);
+	assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_iterate_example() {
+	let rules = Rule::parse("../.# => ##./#../...\n.#./..#/### => #..#/..../..../#..#");
+	let expected = Grid::parse(&strip(
+"		##.##.
+		#..#..
+		......
+		##.##.
+		#..#..
+		......"));
+	let actual = iterate(&iterate(&Grid::default(), &rules), &rules);
+	assert_eq!(actual, expected);
+}
+
 #[derive(PartialEq, Clone)]
 struct Grid {
 	lines: Vec<Vec<bool>>
@@ -20,6 +84,13 @@ impl Grid {
 			.map(|line| line.chars().map(|c| c == '#').collect())
 			.collect();
 		Grid { lines }
+	}
+
+	fn default() -> Grid {
+		Grid::parse(&strip(
+"			.#.
+			..#
+			###"))
 	}
 
 	fn ror(&self) -> Grid {
