@@ -59,12 +59,22 @@ impl Grid {
 	}
 
 	fn split(&self) -> GridOfGrids {
-		let blocks_per_side = self.lines.len() / 2;
+		if self.lines.len() % 2 == 0 {
+			self.split_n(2)
+		} else if self.lines.len() % 3 == 0 {
+			self.split_n(3)
+		} else {
+			panic!("Grid size {} is not divisible by 2 or 3", self.lines.len());
+		}
+	}
+
+	fn split_n(&self, blocksize: usize) -> GridOfGrids {
+		let blocks_per_side = self.lines.len() / blocksize;
 		GridOfGrids::new(
 			(0..blocks_per_side)
 				.map(|y| {
 					(0..blocks_per_side)
-						.map(|x| self.extract_block(y, x, 2))
+						.map(|x| self.extract_block(y, x, blocksize))
 						.collect()
 				})
 				.collect()
@@ -202,12 +212,86 @@ fn test_grid_split_2() {
 }
 
 #[test]
-fn test_grid_split_join_identity() {
+fn test_grid_split_join_2_identity() {
 	let input = Grid::parse(&strip(
 "	#..#
 	....
 	....
 	#..#"));
+	assert_eq!(input.split().join(), input);
+}
+
+#[test]
+fn test_grid_split_3() {
+	let input = Grid::parse(&strip(
+"		##.#.#...
+		#..#.....
+		.........
+		##.##....
+		#..#.....
+		.#...#...
+		.........
+		.........
+		........."));
+	let expected = GridOfGrids::new(vec![
+		vec![
+			Grid::parse(&strip(
+"				##.
+				#..
+				...")),
+			Grid::parse(&strip(
+"				#.#
+				#..
+				...")),
+			Grid::parse(&strip(
+"				...
+				...
+				...")),
+		],
+		vec![
+			Grid::parse(&strip(
+"				##.
+				#..
+				.#.")),
+			Grid::parse(&strip(
+"				##.
+				#..
+				..#")),
+			Grid::parse(&strip(
+"				...
+				...
+				...")),
+		],
+		vec![
+			Grid::parse(&strip(
+"				...
+				...
+				...")),
+			Grid::parse(&strip(
+"				...
+				...
+				...")),
+			Grid::parse(&strip(
+"				...
+				...
+				...")),
+		]
+	]);
+	assert_eq!(input.split(), expected);
+}
+
+#[test]
+fn test_grid_split_join_3_identity() {
+	let input = Grid::parse(&strip(
+"		##.#.#...
+		#..#.....
+		.........
+		##.##....
+		#..#.....
+		.#...#...
+		.........
+		.........
+		........."));
 	assert_eq!(input.split().join(), input);
 }
 
