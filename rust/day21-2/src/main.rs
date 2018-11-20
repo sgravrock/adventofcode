@@ -404,6 +404,63 @@ fn test_grid_of_grids_join() {
 	assert_eq!(input.join(), expected);
 }
 
+
+#[derive(PartialEq, Debug)]
+struct Rule {
+	input: Grid,
+	output: Grid,
+}
+
+impl Rule {
+	fn new(input: Grid, output: Grid) -> Rule {
+		Rule { input: input, output: output }
+	}
+
+	fn parse(input: &str) -> Vec<Rule> {
+		input.split("\n")
+			.map(Rule::parse_one)
+			.collect()
+	}
+
+	fn parse_one(input: &str) -> Rule {
+		let in_out = input.split(" => ").collect::<Vec<&str>>();
+		Rule::new(
+			Rule::parse_grid(in_out[0]),
+			Rule::parse_grid(in_out[1])
+		)
+	}
+
+	fn parse_grid(input: &str) -> Grid {
+		Grid::parse(&input.replace("/", "\n"))
+	}
+}
+
+#[test]
+fn test_rule_parse() {
+	let input = "../.. => .#./.../###\n#./.. => .#./##./#..";
+	let expected = vec![
+		Rule::new(
+			Grid::parse(&strip(
+"				..
+				..")),
+			Grid::parse(&strip(
+"				.#.
+				...
+				###"))
+		),
+		Rule::new(
+			Grid::parse(&strip(
+"				#.
+				..")),
+			Grid::parse(&strip(
+"				.#.
+				##.
+				#.."))
+		)
+	];
+	assert_eq!(Rule::parse(input), expected);
+}
+
 fn strip(s: &str) -> String {
 	s.chars()
 		.filter(|c| *c == '.' || *c == '#' || *c == '\n')
