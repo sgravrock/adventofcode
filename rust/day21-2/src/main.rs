@@ -4,7 +4,7 @@ fn main() {
     println!("Hello, world!");
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 struct Grid {
 	lines: Vec<Vec<bool>>
 }
@@ -433,6 +433,20 @@ impl Rule {
 	fn parse_grid(input: &str) -> Grid {
 		Grid::parse(&input.replace("/", "\n"))
 	}
+
+	fn matches(&self, grid: &Grid) -> bool {
+		grid == &self.input ||
+			grid.hflip() == self.input ||
+			grid.vflip() == self.input ||
+			self.matches_with_rotation(grid) ||
+			self.matches_with_rotation(&grid.vflip())
+	}
+
+	fn matches_with_rotation(&self, grid: &Grid) -> bool {
+		grid.ror() == self.input ||
+			grid.ror().ror() == self.input ||
+			grid.ror().ror().ror() == self.input
+	}
 }
 
 #[test]
@@ -459,6 +473,67 @@ fn test_rule_parse() {
 		)
 	];
 	assert_eq!(Rule::parse(input), expected);
+}
+
+#[test]
+fn test_rule_matches_exact() {
+	let grid = Grid::parse(&strip(
+"		#.
+		.#"));
+	let rule = Rule::new(grid.clone(), Grid::new(vec![]));
+	assert!(rule.matches(&grid));
+}
+
+#[test]
+fn test_rule_matches_hflip() {
+	let input = Grid::parse(&strip(
+"		.#
+		#."));
+	let grid = Grid::parse(&strip(
+"		#.
+		.#"));
+	let rule = Rule::new(input, Grid::new(vec![]));
+	assert!(rule.matches(&grid));
+}
+
+#[test]
+fn test_rule_matches_vflip() {
+	let input = Grid::parse(&strip(
+"		..
+		##"));
+	let grid = Grid::parse(&strip(
+"		##
+		.."));
+	let rule = Rule::new(input, Grid::new(vec![]));
+	assert!(rule.matches(&grid));
+}
+
+#[test]
+fn test_rule_matches_ror_3times() {
+	let input = Grid::parse(&strip(
+"		.#.
+		..#
+		###"));
+	let grid = Grid::parse(&strip(
+"		#..
+		#.#
+		##."));
+	let rule = Rule::new(input, Grid::new(vec![]));
+	assert!(rule.matches(&grid));
+}
+
+#[test]
+fn test_rule_matches_vflip_plus_rotate() {
+	let input = Grid::parse(&strip(
+"		..#
+		#.#
+		.##"));
+	let grid = Grid::parse(&strip(
+"		.#.
+		..#
+		###"));
+	let rule = Rule::new(input, Grid::new(vec![]));
+	assert!(rule.matches(&grid));
 }
 
 fn strip(s: &str) -> String {
