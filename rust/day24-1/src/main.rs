@@ -89,7 +89,7 @@ fn test_strongest_bridge() {
 	assert_eq!(strongest_bridge(components), 31);
 }
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 struct Component {
 	ports: (u32, u32)
 }
@@ -115,32 +115,37 @@ impl Component {
 	}
 }
 
-// TODO: This is very, very slow. Could using a generator make it faster?
-fn generate_combinations(mut elements: Vec<Component>) -> HashSet<Vec<Component>> {
+#[derive(Clone, Debug)]
+struct GenSeqEl {
+	component: Component,
+	next_port: u32
+}
+
+fn generate_combinations(elements: Vec<Component>) -> HashSet<Vec<Component>> {
 	let mut result = HashSet::new();
-
-	permutohedron::heap_recursive(&mut elements, |permutation| {
-		combinations_by_removal(permutation.to_vec(), &mut result);
-	});
-
+	generate_combinations2(&elements, &mut vec![], &mut result);
 	result
 }
 
-fn combinations_by_removal(all_elements: Vec<Component>, mut dest: &mut HashSet<Vec<Component>>) {
-	if is_valid(&all_elements) {
-		dest.insert(all_elements.clone());
-	}
+fn generate_combinations2(elements: &Vec<Component>, prefix: &mut Vec<GenSeqEl>, mut dest: &mut HashSet<Vec<Component>>) {
+	let next_port = match prefix.last() {
+		Some(el) => el.next_port,
+		None => 0
+	};
 
-	if all_elements.len() > 1 {
-		for i in 0..all_elements.len() {
-			let mut sub = all_elements.clone();
-			sub.remove(i);
-
-			if is_valid(&sub) {
-				dest.insert(sub.clone());
+	for c in elements {
+		if !prefix.iter().any(|x| x.component == *c) {
+			if c.ports.0 == next_port {
+				prefix.push(GenSeqEl { component: *c, next_port: c.ports.1 });
+				dest.insert(prefix.iter().map(|x| x.component).collect());
+				generate_combinations2(elements, prefix, &mut dest);
+				prefix.pop();
+			} else if c.ports.1 == next_port {
+				prefix.push(GenSeqEl { component: *c, next_port: c.ports.0 });
+				dest.insert(prefix.iter().map(|x| x.component).collect());
+				generate_combinations2(elements, prefix, &mut dest);
+				prefix.pop();
 			}
-
-			combinations_by_removal(sub, &mut dest);
 		}
 	}
 }
@@ -171,20 +176,4 @@ fn test_generate_combinations() {
 
 	let actual = generate_combinations(components);
 	assert_eq!(actual, expected);
-}
-
-fn is_valid(sequence: &Vec<Component>) -> bool {
-	let mut next_port = 0;
-
-	for c in sequence {
-		if c.ports.0 == next_port {
-			next_port = c.ports.1;
-		} else if c.ports.1 == next_port {
-			next_port = c.ports.0;
-		} else {
-			return false;
-		}
-	}
-
-	true
 }
