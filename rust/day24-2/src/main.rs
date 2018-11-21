@@ -61,34 +61,20 @@ fn main() {
 	println!("Puzzle solution is {}.", strongest_longest_bridge(components));
 }
 
+// n.b. derivation of Ord and PartialOrd only DTRT if length comes first
+#[derive(Ord, PartialOrd, Eq, PartialEq)]
 struct BridgeInfo {
 	length: usize,
 	strength: u32
 }
 
 fn strongest_longest_bridge(components: Vec<Component>) -> u32 {
-	let mut best: Option<BridgeInfo> = None;
-
-	// TODO: can probably just map to BridgeInfos, implement comparison,
-	// and pick max.
-	for c in generate_combinations(components) {
-		let info = BridgeInfo {
-			length: c.len(),
-			strength: bridge_strength(&c)
-		};
-		best = Some(match best {
-			None => info,
-			Some(b) => {
-				if info.length > b.length || (info.length == b.length && info.strength > b.strength) {
-					info
-				} else {
-					b
-				}
-			}
-		})
-	}
-
-	best.unwrap().strength
+	generate_combinations(components)
+		.iter()
+		.map(|c| BridgeInfo { length: c.len(), strength: bridge_strength(&c) })
+		.max()
+		.unwrap()
+		.strength
 }
 
 fn bridge_strength(bridge: &Vec<Component>) -> u32 {
