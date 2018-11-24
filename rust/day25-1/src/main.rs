@@ -77,15 +77,13 @@ In state F:
 
 struct Machine {
 	state: char,
-	tape: VecDeque<bool>,
-	pos: usize, // note: must be updated whenever pushing to front of tape
+	tape: InfiniteTape,
+	pos: isize
 }
 
 impl Machine {
 	fn new() -> Machine {
-		let mut tape = VecDeque::new();
-		tape.push_back(false);
-		Machine { state: 'A', tape, pos: 0 }
+		Machine { state: 'A', tape: InfiniteTape::new(), pos: 0 }
 	}
 
 	fn compute_checksum(&mut self, program: &Program) -> usize {
@@ -99,29 +97,51 @@ impl Machine {
 	}
 
 	fn step(&mut self, program: &Program) {
-		let instruction = match self.tape[self.pos] {
+		let instruction = match self.tape.get(self.pos) {
 			true => &program.instructions[&self.state].1,
 			false => &program.instructions[&self.state].0,
 		};
-		self.tape[self.pos] = instruction.value_to_write;
-		self.pos = match instruction.dir {
-			Direction::Left => {
-				if self.pos == 0 {
-					self.tape.push_front(false);
-					0
-				} else {
-					self.pos - 1
-				}
-			}
-			Direction::Right => {
-				if self.pos + 1 == self.tape.len() {
-					self.tape.push_back(false);
-				}
-
-				self.pos + 1
-			}
-		};
+		self.tape.set(self.pos, instruction.value_to_write);
+		self.pos += instruction.dir;
 		self.state = instruction.next_state;
+	}
+}
+
+struct InfiniteTape {
+	data: VecDeque<bool>,
+	offset: isize
+}
+
+impl InfiniteTape {
+	fn new() -> InfiniteTape {
+		let mut data = VecDeque::new();
+		data.push_back(false);
+		InfiniteTape { data, offset: 0 }
+	}
+
+	fn iter(&self) -> std::collections::vec_deque::Iter<bool> {
+		self.data.iter()
+	}
+
+	fn get(&mut self, pos: isize) -> bool {
+		self.zero_fill(pos);
+		self.data[(self.offset + pos) as usize]
+	}
+
+	fn set(&mut self, pos: isize, value: bool) {
+		self.zero_fill(pos);
+		self.data[(self.offset + pos) as usize] = value;
+	}
+
+	fn zero_fill(&mut self, pos: isize) {
+		while self.offset + pos < 0 {
+			self.data.push_front(false);
+			self.offset += 1;
+		}
+
+		while (self.offset + pos) as usize >= self.data.len() {
+			self.data.push_back(false);
+		}
 	}
 }
 
@@ -134,14 +154,8 @@ struct Program {
 #[derive(Debug, Eq, PartialEq)]
 struct Instruction {
 	value_to_write: bool,
-	dir: Direction,
+	dir: isize,
 	next_state: char
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum Direction {
-	Left,
-	Right
 }
 
 struct LineReader<'a> {
@@ -218,7 +232,7 @@ impl <'a> ProgramReader<'a> {
 			.chars().next().unwrap() == '1';
 
 		let dir_s = self.read_re(&move_re);
-		let dir = if dir_s == "left" { Direction::Left } else { Direction::Right };
+		let dir = if dir_s == "left" { -1 } else { 1 };
 
 		let next_state = self.read_re(&next_state_re)
 			.chars().next().unwrap();
@@ -290,24 +304,24 @@ In state B:
 	expected.instructions.insert('A', (
 		Instruction {
 			value_to_write: true,
-			dir: Direction::Right,
+			dir: 1,
 			next_state: 'B'
 		},
 		Instruction {
 			value_to_write: false,
-			dir: Direction::Left,
+			dir: -1,
 			next_state: 'B'
 		},
 	));
 	expected.instructions.insert('B', (
 		Instruction {
 			value_to_write: true,
-			dir: Direction::Left,
+			dir: -1,
 			next_state: 'A'
 		},
 		Instruction {
 			value_to_write: true,
-			dir: Direction::Right,
+			dir: 1,
 			next_state: 'A'
 		},
 	));
