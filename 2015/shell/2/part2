@@ -1,0 +1,6 @@
+#!/bin/bash -e
+
+wrap=`echo "$1" | sed -r 's/([0-9]+)x([0-9]+)x([0-9]+)/\1 \2+2*p \1 \3+2*p \2 \3+2*p/' | dc | sort -n | head -1`
+bow=`echo "$1" | sed -r 's/([0-9]+)x([0-9]+)x([0-9]+)/\1 \2* \3* p/' | dc`
+
+echo $(($wrap+$bow))

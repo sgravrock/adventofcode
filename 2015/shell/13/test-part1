@@ -1,0 +1,21 @@
+#!/bin/sh -e
+
+verify() {
+	if [ " $1" != " $2" ]; then
+		echo "Expected $2 but got $1 for $3"
+		exit 1
+	fi
+}
+
+testarr() {
+	output=`./prep-input < test-input | ./happiness-for-arrangement $@`
+	verify "$output" 330 "$@"
+}
+
+testarr David Alice Bob Carol
+testarr Carol Bob Alice David
+testarr Carol David Alice Bob
+output=`./part1 test-input`
+verify "$output" 330 "best arrangement"
+
+echo ok

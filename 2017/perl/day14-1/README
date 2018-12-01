@@ -1,0 +1,2 @@
+To run tests, just do `./run-tests`. But if you want to see the output of print
+statements, run `perl Day14_1.t` instead.

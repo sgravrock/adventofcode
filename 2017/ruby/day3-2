@@ -1,0 +1,109 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+require 'set'
+
+Coord = Struct.new(:x, :y) do
+	def +(other)
+		Coord.new(x + other.x, y + other.y)
+	end
+end
+
+def dirs
+	[
+		Coord.new(1, 0),
+		Coord.new(0, -1),
+		Coord.new(-1, 0),
+		Coord.new(0, 1)
+	]
+end
+
+class ValueTracker
+	def initialize
+		@values = {}
+		@values[Coord.new(0, 0)] = 1
+	end
+
+	def set(coord)
+		if @values[coord].nil?
+			@values[coord] = neighbors(coord)
+				.map { |d| @values[coord + d] }
+				.compact
+				.sum
+		end
+
+		@values[coord]
+	end
+
+	private
+
+	def neighbors(coord)
+		[
+			Coord.new(1, 0),
+			Coord.new(0, -1),
+			Coord.new(-1, 0),
+			Coord.new(0, 1),
+			Coord.new(-1, -1),
+			Coord.new(-1, 1),
+			Coord.new(1, -1),
+			Coord.new(1, 1),
+		]
+	end
+end
+
+def values
+	dirs = [
+		Coord.new(1, 0),
+		Coord.new(0, -1),
+		Coord.new(-1, 0),
+		Coord.new(0, 1)
+	]
+	pos = Coord.new(0, 0)
+	i = 0
+	xs = Set.new([0])
+	ys = Set.new([0])
+	stored_values = ValueTracker.new
+
+	Enumerator.new do |y|
+		y << stored_values.set(pos)
+
+		loop do
+			dir = dirs[i % dirs.length]
+			pos = pos + dir
+	
+			# Turn if we just expanded the grid in any direction
+			unless xs.include?(pos.x) && ys.include?(pos.y)
+				i += 1
+				xs.add pos.x
+				ys.add pos.y
+			end
+	
+			y << stored_values.set(pos)
+		end
+	end
+end
+
+def first_greater_than(x)
+	values()
+		.lazy.select { |v| v > x }
+		.first
+end
+
+
+class Tests < Microtest::Test 
+	def test_values
+		expected = [1, 1, 2, 4, 5, 10, 11, 23, 25]
+		assert_equal(expected, values().take(expected.length))
+	end
+
+	def test_first_greater_than
+		assert_equal(351, first_greater_than(330))
+	end
+
+	def test_coord_add
+		assert_equal(Coord.new(0, 3), Coord.new(1, 1) + Coord.new(-1, 2))
+	end
+end
+
+Microtest.run(Tests.new)
+puts("#{first_greater_than(289326)}")

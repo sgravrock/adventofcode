@@ -1,0 +1,2 @@
+#!/bin/sh -e
+awk '{ s += $NF } END { print s}'

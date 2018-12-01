@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+cmd=$1
+shift
+initval=$1
+shift
+
+if [ $# -eq 0 ]; then
+	echo $initval
+	exit 0
+fi
+
+first=$1
+shift
+nextval=$("$cmd" "$initval" "$first")
+exec "$0" "$cmd" "$nextval" $@

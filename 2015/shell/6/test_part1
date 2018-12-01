@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+die() {
+	echo $@ 1>&2
+	exit 1
+}
+
+input="toggle 0,0 through 999,0"
+output=`echo $input | ./part1`
+[ "$output" = 1000 ] || die "Wrong for $input : $output"
+
+echo ok
+

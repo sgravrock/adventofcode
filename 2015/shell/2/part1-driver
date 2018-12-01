@@ -1,0 +1,3 @@
+#!/bin/sh
+
+(for e in `cat input.txt `; do ./part1 $e; done) | ./sum

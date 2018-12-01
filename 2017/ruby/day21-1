@@ -1,0 +1,688 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+def pixels_on_after_iterations(rules, n_iters)
+	grid = nil
+	n_iters.times do
+		grid = iterate(grid, rules)
+	end
+	grid.pixels_on
+end
+
+class Grid
+	def self.default
+		Grid.new(['.#.', '..#', '###'])
+	end
+
+	attr_reader :lines
+
+	def initialize(lines)
+		@lines = lines
+	end
+
+	def ==(other)
+		other.instance_of?(Grid) && other.lines == lines
+	end
+
+	def to_s
+		"#<Grid: #{lines}>"
+	end
+
+	def pixels_on
+		lines.map {|line| line.count('#') }.sum
+	end
+
+	def extract_block(by, bx, blocksize)
+		result_lines = (0..(blocksize - 1)).map do |y|
+			cells = (0..(blocksize - 1)).map do |x|
+				lines[by * blocksize + y][bx * blocksize + x]
+			end
+			cells.join
+		end
+		Grid.new(result_lines)
+	end
+
+	def hflip
+		Grid.new(lines.map {|line| line.reverse})
+	end
+	
+	def vflip
+		Grid.new(lines.reverse)
+	end
+	
+	def ror
+		new_lines = if lines.length == 2
+			[
+				lines[1][0] + lines[0][0],
+				lines[1][1] + lines[0][1]
+			]
+		elsif lines.length == 3
+			[
+				lines[2][0] + lines[1][0] + lines[0][0],
+				lines[2][1] + lines[1][1] + lines[0][1],
+				lines[2][2] + lines[1][2] + lines[0][2],
+			]
+		else
+			raise "Don't know how to rotate this size (#{lines.length})"
+		end
+
+		Grid.new(new_lines)
+	end
+
+	def pretty
+		lines.join("\n")
+	end
+
+	def split
+		if lines.length % 2 == 0
+			splitn(2)
+		elsif lines.length % 3 == 0
+			splitn(3)
+		else
+			raise "Grid size (#{lines.length}) is not divisible by 2 or 3"
+		end
+	end
+
+	private
+
+	def splitn(blocksize)
+		blocks_per_side = lines.length / blocksize
+		
+		(0..blocks_per_side - 1).map do |by|
+			(0..blocks_per_side - 1).map do |bx|
+				extract_block by, bx, blocksize
+			end
+		end
+	end
+end
+
+class Rule
+	attr_reader :input, :output
+
+	def initialize(input_lines, output_lines)
+		@input = ensure_grid input_lines
+		@output = ensure_grid output_lines
+	end
+
+	def ==(other)
+		other.instance_of?(Rule) &&
+			other.input == input &&
+			other.output == output
+	end
+
+	def to_s
+		"#<Rule: input=#{input} output=#{output}>"
+	end
+
+	def matches?(grid)
+		raise "Not a grid: #{grid}" unless grid.is_a? Grid
+		grid == input ||
+			grid.hflip == input ||
+			grid.vflip == input ||
+			matches_with_rotation?(grid) ||
+			matches_with_rotation?(grid.vflip)
+	end
+
+	private
+
+	def matches_with_rotation?(grid)
+			grid.ror == input ||
+			grid.ror.ror == input ||
+			grid.ror.ror.ror == input
+	end
+
+	def ensure_grid(maybe_grid)
+		if maybe_grid.is_a? Grid
+			maybe_grid
+		else
+			Grid.new maybe_grid
+		end
+	end
+end
+
+def parse_rules(input)
+	input.split("\n").map do |line|
+		in_out = line.split(' => ')
+		Rule.new(in_out[0].split('/'), in_out[1].split('/'))
+	end
+end
+
+def iterate(grid, rules)
+	blocks = (grid || Grid.default)
+		.split
+		.map do |row_of_blocks|
+			row_of_blocks.map do |block|
+				rule = rules.find {|r| r.matches?(block) }
+	
+				if rule.nil?
+					raise NoMatchingRuleError.new(block, rules, x, y)
+				else
+					rule.output
+				end
+			end
+		end
+	join(blocks)
+end
+
+class NoMatchingRuleError < StandardError
+	def initialize(block, rules, x, y)
+		patterns = rules
+			.select {|rule| rule.input.pixels_on == block.pixels_on}
+			.map do |rule|
+				rule.input.pretty
+					.gsub(/^/, '   ')
+					.sub(/\A /, '-')
+			end
+		msg = <<~END
+			No rule matches block at x=#{x} y=#{y}
+			Block:
+			#{block.pretty}
+
+			Rule input patterns with the right # of pixels lit:
+			#{patterns.join("\n\n")}
+		END
+		super(msg)
+	end
+end
+
+def join(grids)
+	input_grid_size = grids[0][0].lines[0].length
+	size = grids.length * input_grid_size
+
+	lines = (0..size - 1).map do |y|
+		cells = (0..size - 1).map do |x|
+			g = grids[y / input_grid_size][x / input_grid_size]
+			g.lines[y % input_grid_size][x % input_grid_size]
+		end
+		cells.join
+	end
+	Grid.new(lines)
+end
+
+class Tests < Microtest::Test
+	def test_iterate_example
+		input = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input)
+		expected = Grid.new([
+			'##.##.',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'......',
+		])
+		actual = iterate(iterate(nil, rules), rules)
+		assert_equal expected, actual
+	end
+
+	def test_pixels_on_after_iterations_example
+		input = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input)
+		assert_equal 12, pixels_on_after_iterations(rules, 2)
+	end
+
+	def test_parse_rules
+		input = <<~END
+			../.. => .#./.../###
+			#./.. => .#./##./#..
+		END
+		expected = [
+			Rule.new(['..', '..'], ['.#.', '...', '###']),
+			Rule.new(['#.', '..'], ['.#.', '##.', '#..'])
+		]
+		assert_equal expected, parse_rules(input)
+	end
+
+	def test_rule_matches_exact
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = Grid.new(['.#.', '..#', '###'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_false
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = Grid.new(['.##', '..#', '###'])
+		assert_equal false, rule.matches?(grid)
+	end
+
+	def test_rule_matches_hflip
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = Grid.new(['.#.', '#..', '###'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_vflip
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = Grid.new(['###', '..#', '.#.'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_ror_3times
+		rule = Rule.new(['.#.', '..#', '###'], [])
+		grid = Grid.new(['#..', '#.#', '##.'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_vflip_plus_rotate
+		rule = Rule.new(['..#', '#.#', '.##'], [])
+		grid = Grid.new(['.#.', '..#', '###'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_1
+		rule = Rule.new(['..', '.#'], [])
+		grid = Grid.new(['#.', '..'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_2
+		rule = Rule.new(['..', '.#'], [])
+		grid = Grid.new(['.#', '..'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_3
+		rule = Rule.new(['..', '.#'], [])
+		grid = Grid.new(['..', '.#'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_rule_matches_2x2_4
+		rule = Rule.new(['..', '.#'], [])
+		grid = Grid.new(['..', '#.'])
+		assert_equal true, rule.matches?(grid)
+	end
+
+	def test_ror_2
+		input = Grid.new([
+			'ab',
+			'cd'
+		])
+		expected = Grid.new([
+			'ca',
+			'db'
+		])
+		assert_equal expected, input.ror
+	end
+
+	def test_ror_3
+		input = Grid.new([
+			'abc',
+			'def',
+			'ghi'
+		])
+		expected = Grid.new([
+			'gda',
+			'heb',
+			'ifc'
+		])
+		assert_equal expected, input.ror
+	end
+
+	def test_iterate_3by3
+		input = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input)
+		expected = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		actual = iterate(nil, rules)
+		assert_equal expected, actual
+	end
+
+	def test_iterate_4by4
+		input_rules = <<~END
+			../.# => ##./#../...
+			.#./..#/### => #..#/..../..../#..#
+		END
+		rules = parse_rules(input_rules)
+		input_grid = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		expected = Grid.new([
+			'##.##.',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'......',
+		])
+		actual = iterate(input_grid, rules)
+		assert_equal expected, actual
+	end
+
+	def test_extract_block_2
+		input = Grid.new([
+			'##.#',
+			'#..#',
+			'....',
+			'##.#',
+		])
+		expected = Grid.new([
+			'..',
+			'.#'
+		])
+		assert_equal expected, input.extract_block(1, 1, 2)
+	end
+
+	def test_extract_block_3
+		input = Grid.new([
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		])
+		expected = Grid.new([
+			'##.',
+			'#..',
+			'..#'
+		])
+		assert_equal expected, input.extract_block(1, 1, 3)
+	end
+
+	def test_split_2
+		input = Grid.new([
+			'#..#',
+			'....',
+			'....',
+			'#..#'
+		])
+		expected = [
+			[
+				Grid.new(['#.', '..']),
+				Grid.new(['.#', '..'])
+			],
+			[
+				Grid.new(['..', '#.']),
+				Grid.new(['..', '.#'])
+			]
+		]
+
+		assert_equal expected, input.split
+	end
+
+	def test_split_3
+		input = Grid.new([
+			'##.#.#...',
+			'#..#.....',
+			'.........',
+			'##.##....',
+			'#..#.....',
+			'.#...#...',
+			'.........',
+			'.........',
+			'.........'
+		])
+		expected = [
+			[
+				Grid.new([
+					'##.',
+					'#..',
+					'...'
+				]),
+				Grid.new([
+					'#.#',
+					'#..',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				])
+			],
+			[
+				Grid.new([
+					'##.',
+					'#..',
+					'.#.'
+				]),
+				Grid.new([
+					'##.',
+					'#..',
+					'..#'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				])
+			],
+			[
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				]),
+				Grid.new([
+					'...',
+					'...',
+					'...'
+				])
+			]
+		]
+		assert_equal expected, input.split
+	end
+
+	def test_split_2_and_3
+		input = Grid.new([
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		])
+		expected = [
+			[
+				Grid.new(['##', '#.']),
+				Grid.new(['.#', '.#']),
+				Grid.new(['.#', '..']),
+			],
+			[
+				Grid.new(['..', '##']),
+				Grid.new(['..', '.#']),
+				Grid.new(['..', '#.']),
+			],
+			[
+				Grid.new(['#.', '.#']),
+				Grid.new(['.#', '..']),
+				Grid.new(['..', '.#']),
+			],
+		]
+		assert_equal expected, input.split
+	end
+
+	def test_split_join_single_identity
+		input = Grid.new([
+			'#..',
+			'.#.',
+			'..#'
+		])
+		assert_equal input, join(input.split)
+	end
+
+	def test_join_3
+		expected = Grid.new([
+			'##.#.#',
+			'#..#..',
+			'......',
+			'##.##.',
+			'#..#..',
+			'.#...#'
+		])
+		input = [
+			[
+				Grid.new([
+					'##.',
+					'#..',
+					'...'
+				]),
+				Grid.new([
+					'#.#',
+					'#..',
+					'...'
+				])
+			],
+			[
+				Grid.new([
+					'##.',
+					'#..',
+					'.#.'
+				]),
+				Grid.new([
+					'##.',
+					'#..',
+					'..#'
+				])
+			]
+		]
+		assert_equal expected, join(input)
+	end
+
+	def test_split_join_identity
+		input = Grid.new([
+			'#..',
+			'.#.',
+			'..#'
+		])
+		assert_equal input, join(input.split)
+	end
+end
+
+Microtest.run(Tests.new)
+
+rules = parse_rules(DATA.read)
+puts "The puzzle solution is #{pixels_on_after_iterations(rules, 5)}."
+
+__END__
+../.. => .#./.../###
+#./.. => .#./##./#..
+##/.. => #.#/#../###
+.#/#. => ##./..#/###
+##/#. => .#./#../..#
+##/## => #../..#/#.#
+.../.../... => .###/.#.#/.###/##.#
+#../.../... => .##./##../##../#.##
+.#./.../... => .#.#/#.#./..#./..#.
+##./.../... => ###./#.##/...#/#.##
+#.#/.../... => .#.#/.#../.###/.###
+###/.../... => ..##/#.#./..../##.#
+.#./#../... => #.../..../..../....
+##./#../... => ...#/..#./.###/#.#.
+..#/#../... => #.../#.##/###./##..
+#.#/#../... => .##./#..#/#..#/..##
+.##/#../... => .#.#/#.##/..##/.#.#
+###/#../... => #.#./.###/..#./#.#.
+.../.#./... => #..#/..../.##./.#.#
+#../.#./... => .#../.##./.#.#/...#
+.#./.#./... => ##.#/...#/.##./...#
+##./.#./... => ..#./#.#./#.##/####
+#.#/.#./... => ..##/#..#/.###/....
+###/.#./... => .#../#..#/#.../..#.
+.#./##./... => ..##/#.#./####/###.
+##./##./... => ...#/.#../####/#..#
+..#/##./... => ..##/##../###./....
+#.#/##./... => ..##/#.../.#../.##.
+.##/##./... => #.../##../#.##/...#
+###/##./... => .#../####/#.##/#.##
+.../#.#/... => #..#/####/###./#.#.
+#../#.#/... => #.../##.#/#.../.#..
+.#./#.#/... => ##.#/##.#/..#./..#.
+##./#.#/... => .###/..#./.#../.###
+#.#/#.#/... => .###/##../..#./..#.
+###/#.#/... => ##../.#../.#../.#..
+.../###/... => ..#./#.#./..#./#..#
+#../###/... => ..../#.#./##.#/..##
+.#./###/... => ..#./#.#./..##/.#..
+##./###/... => .##./..##/#..#/#.#.
+#.#/###/... => ###./###./#.##/..##
+###/###/... => ##.#/..../.##./.#..
+..#/.../#.. => .###/####/..../##.#
+#.#/.../#.. => ##../###./#..#/...#
+.##/.../#.. => ###./#..#/###./...#
+###/.../#.. => #.../#..#/##.#/.##.
+.##/#../#.. => ..##/####/..##/#...
+###/#../#.. => #.../..../...#/..##
+..#/.#./#.. => ####/#.#./..../.#.#
+#.#/.#./#.. => .##./.#.#/##.#/.##.
+.##/.#./#.. => ###./.#.#/###./##.#
+###/.#./#.. => #.##/..##/#.#./##.#
+.##/##./#.. => ..../..##/#.#./.##.
+###/##./#.. => #.#./#..#/#..#/###.
+#../..#/#.. => ..../####/#..#/.###
+.#./..#/#.. => .###/#.../#.../#.##
+##./..#/#.. => ####/##.#/###./####
+#.#/..#/#.. => .#../##.#/#..#/#..#
+.##/..#/#.. => ..##/##.#/#.##/###.
+###/..#/#.. => ##.#/####/##.#/.#..
+#../#.#/#.. => .###/#..#/.##./.###
+.#./#.#/#.. => #.##/.##./.#../..#.
+##./#.#/#.. => ###./..#./.##./##..
+..#/#.#/#.. => .###/.#.#/#.#./##..
+#.#/#.#/#.. => #..#/.###/.##./....
+.##/#.#/#.. => ###./.###/#.##/.###
+###/#.#/#.. => ####/.###/..../.##.
+#../.##/#.. => ##.#/..../#.../..#.
+.#./.##/#.. => #.../..../...#/###.
+##./.##/#.. => ###./.#../..##/...#
+#.#/.##/#.. => #.../...#/..#./.###
+.##/.##/#.. => ###./..../##.#/...#
+###/.##/#.. => ##.#/##../###./.##.
+#../###/#.. => ..#./#.../..##/#.##
+.#./###/#.. => ...#/.##./.#../.#..
+##./###/#.. => ##.#/.#.#/###./....
+..#/###/#.. => #.##/#.../####/.##.
+#.#/###/#.. => .#.#/...#/#..#/..#.
+.##/###/#.. => .##./#..#/#..#/.#.#
+###/###/#.. => ###./####/#.##/#...
+.#./#.#/.#. => ###./#..#/...#/...#
+##./#.#/.#. => #.#./#.##/#.../#..#
+#.#/#.#/.#. => .#.#/#.##/..../.#..
+###/#.#/.#. => #.#./.#../.###/#.#.
+.#./###/.#. => #.../.###/##../##.#
+##./###/.#. => .###/#.../####/.#.#
+#.#/###/.#. => #..#/####/#.#./#...
+###/###/.#. => .#../..../.##./.#.#
+#.#/..#/##. => ##../###./...#/###.
+###/..#/##. => .##./###./.###/#.##
+.##/#.#/##. => ..../##.#/#..#/#...
+###/#.#/##. => .###/##../..../..#.
+#.#/.##/##. => ####/.###/##../...#
+###/.##/##. => #.##/..##/..#./#..#
+.##/###/##. => ..../#.##/#.../#.##
+###/###/##. => ..../#..#/#.##/#.##
+#.#/.../#.# => #.../##.#/..../.#.#
+###/.../#.# => ##../##../#.#./.##.
+###/#../#.# => .##./.#../#.##/.##.
+#.#/.#./#.# => #.../.#../####/#.##
+###/.#./#.# => .###/##.#/#.../#.#.
+###/##./#.# => .##./.##./.###/.#.#
+#.#/#.#/#.# => ####/####/###./.##.
+###/#.#/#.# => #.#./.###/...#/.#.#
+#.#/###/#.# => .###/..#./..../.##.
+###/###/#.# => #.#./##.#/..#./..#.
+###/#.#/### => ###./#.../##../##..
+###/###/### => ##.#/.#.#/#.#./...#

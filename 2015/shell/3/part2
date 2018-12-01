@@ -1,0 +1,21 @@
+#!/bin/sh
+
+lineify() {
+	sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$'
+}
+
+transform() {
+	echo 'echo $x,$y'
+	sed -r -e 's/([<>])/x=$(($x\1/' -e 's/([v^])/y=$(($y\1/' -e 's/[<^]/-/' -e 's/[>v]/+/' -e 's/$/1)); echo $x,$y/'
+}
+
+makescript() {
+	echo x=0
+	echo y=0
+	lineify | transform 
+}
+
+(
+	echo $1 | sed -r 's/(.)./\1/g' | makescript 
+	echo $1 | sed -r 's/.(.)/\1/g' | makescript
+) | sh | sort | uniq | wc -l | awk '{print $1}'

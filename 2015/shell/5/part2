@@ -1,0 +1,4 @@
+#!/bin/sh
+
+egrep '(..).*\1' | egrep '(.).\1' | wc -l | awk '{print $1}'
+

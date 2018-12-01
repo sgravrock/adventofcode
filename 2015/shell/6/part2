@@ -1,0 +1,43 @@
+#!/usr/bin/awk -f
+
+BEGIN { total = 0 }
+END { print total }
+
+/^turn on / {
+	split($3, topleft, ",")
+	split($5, bottomright, ",")
+	manipulate(topleft, bottomright, "on")
+}
+
+/^turn off / {
+	split($3, topleft, ",")
+	split($5, bottomright, ",")
+	manipulate(topleft, bottomright, "off")
+}
+
+/^toggle / {
+	split($2, topleft, ",")
+	split($4, bottomright, ",")
+	manipulate(topleft, bottomright, "toggle")
+}
+
+function manipulate(topleft, bottomright, op) {
+	for (x = topleft[1]; x <= bottomright[1]; x++) {
+		for (y = topleft[2]; y <= bottomright[2]; y++) {
+			k = x "," y
+
+			if (op == "on") {
+				delta = 1
+			} else if (op == "off" && lights[k] > 0) {
+				delta = -1
+			} else if (op == "toggle") {
+				delta = 2
+			} else {
+				delta = 0
+			}
+
+			lights[k] += delta
+			total += delta
+		}
+	}
+}

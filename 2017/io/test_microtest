@@ -1,0 +1,93 @@
+#!/usr/bin/env io
+
+QuietMicrotest := Microtest clone
+QuietMicrotest init := method(
+	self writes := List clone
+)
+QuietMicrotest writeln := method(s,
+	self writes append(s)
+)
+QuietMicrotest die := method(
+)
+
+
+Microtest clone do(
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assert(true, "a true assert")
+		assert(false, "a false assert")
+	)
+	assert(
+		mtUnderTest writes == list(
+			"PASS: a true assert",
+			"FAIL: a false assert"
+		),
+		"assert with true and false"
+	)
+
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assertEqual(list(1, 2), list(1, 2), "assertEqual")
+	)
+	assert(
+		mtUnderTest writes == list(
+			"PASS: assertEqual"
+		),
+		"assertEqual yes"
+	)
+
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assertEqual(list(1), list(1, 2), "assertEqual")
+	)
+	assert(
+		mtUnderTest writes == list(
+			"FAIL: assertEqual",
+			"   list(1) != list(1, 2)"
+		),
+		"assertEqual no"
+	)
+
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assert(true, "a")
+		assert(true, "b")
+	)
+
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assert(true, "a test")
+		assertEqual(1, 1, "a test")
+	)
+	mtUnderTest summarize
+	assert(
+		mtUnderTest writes == list(
+			"PASS: a test",
+			"PASS: a test",
+			"",
+			"All 2 tests passed."
+		),
+		"summarize success"
+	)
+
+	mtUnderTest := QuietMicrotest clone
+	mtUnderTest do(
+		assert(true, "a test")
+		assert(false, "a test")
+		assertEqual(1, 0, "a test")
+	)
+	mtUnderTest summarize
+	assert(
+		mtUnderTest writes == list(
+			"PASS: a test",
+			"FAIL: a test",
+			"FAIL: a test",
+			"   1 != 0",
+			"",
+			"2 of 3 tests failed."
+		),
+		"summarize failure"
+	)
+
+	summarize
+)

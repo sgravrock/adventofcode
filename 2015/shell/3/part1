@@ -1,0 +1,16 @@
+#!/bin/sh
+
+lineify() {
+	sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$'
+}
+
+transform() {
+	echo 'echo $x,$y'
+	sed -r -e 's/([<>])/x=$(($x\1/' -e 's/([v^])/y=$(($y\1/' -e 's/[<^]/-/' -e 's/[>v]/+/' -e 's/$/1)); echo $x,$y/'
+}
+
+(
+	echo x=0
+	echo y=0
+	echo $1 | lineify | transform
+) | sh | sort | uniq | wc -l | awk '{print $1}'

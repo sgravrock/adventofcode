@@ -1,0 +1,15 @@
+#!/bin/sh
+
+lineify() {
+	sed -r 's/(.)/\1X/g' | tr X '\n' | grep -v '^$'
+}
+
+arrangements() {
+	echo "$spec" | cut -d ' ' -f 1  | sort | uniq | awk -f permute.awk
+}
+
+spec=`./prep-input < "$1"`
+arrangements | while read line; do
+	delta=`echo "$spec" | ./happiness-for-arrangement $line`
+	echo "$delta $line"
+done | sort -n | tail -1 | cut -d ' ' -f 1

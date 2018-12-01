@@ -1,0 +1,9 @@
+#!/bin/sh
+
+lineify() {
+	# Will probably fail if the input contains strings with embedded commas.
+	# Will definitely fail if the input contains underscores.
+	sed -E -e 's/([{}])/_\1_/g' -e 's/\[/_[_/' -e 's/]/_]_/' | tr '_,' '\n\n'
+}
+
+lineify | sed 's/[^0-9-]//g' | grep -v '^$' | ../2/sum | sed 's/^$/0/'
