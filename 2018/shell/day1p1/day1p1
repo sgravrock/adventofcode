@@ -1,0 +1,7 @@
+#!/bin/sh
+
+(
+	echo 0
+	sed -e 's/\([+-]\)\(.*\)/\2\1/' < input
+	echo p
+) | dc
