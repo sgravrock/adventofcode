@@ -1,0 +1,22 @@
+#!/bin/sh
+
+mkscript() {
+	echo $1
+	sed -e 's/\([+-]\)\(.*\)/\2 \1 p/' < input
+}
+
+echo "This might take 10 hours or so."
+log="0"
+
+while true; do
+	current=$(echo "$log" | tail -n 1)
+	for n in $(mkscript $current | dc); do
+		if echo "$log" | grep ^$n\$; then
+			echo "Solution is $n"
+			exit
+		fi
+
+		log=$(printf "%s\n%s\n" "$log" $n)
+		current=$n
+	done
+done
