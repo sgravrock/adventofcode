@@ -11,50 +11,43 @@ typedef struct {
 } Claim;
 
 typedef struct {
+	size_t n;
+	Claim *v;
+} ClaimVec;
+
+typedef struct {
 	int x;
 	int y;
 } Coord;
 
-Coord get_bounds(FILE *fp);
-int overlap_area(FILE *fp, Coord bounds);
-bool xparse_claim(FILE *fp, Claim *claim);
+Coord get_bounds(ClaimVec claims);
+int overlap_area(ClaimVec claims, Coord bounds);
+ClaimVec xparse_claims(FILE *fp);
+void *xmalloc(size_t size);
+void *xrealloc(void *p, size_t size);
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-int main(int argc, const char **argv) {
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s input-file\n", argv[0] ? argv[0] : "day3p1");
-		return EXIT_FAILURE;
-	}
-
-	FILE *fp = fopen(argv[1], "r");
-	if (!fp) {
-		perror(argv[1]);
-		return EXIT_FAILURE;
-	}
-
-	Coord bounds = get_bounds(fp);
-	rewind(fp);
-
-	printf("%d\n", overlap_area(fp, bounds));
-
-	fclose(fp);
+int main(void) {
+	ClaimVec claims = xparse_claims(stdin);
+	Coord bounds = get_bounds(claims);
+	printf("%d\n", overlap_area(claims, bounds));
+	free(claims.v);
 	return 0;
 }
 
-Coord get_bounds(FILE *fp) {
+Coord get_bounds(ClaimVec claims) {
 	Coord result = {0, 0};
-	Claim claim;
 
-	while (xparse_claim(fp, &claim)) {
-		result.x = max(result.x, claim.left + claim.width - 1);
-		result.y = max(result.y, claim.top + claim.height - 1);
+	for (size_t i = 0; i < claims.n; i++) {
+		result.x = max(result.x, claims.v[i].left + claims.v[i].width - 1);
+		result.y = max(result.y, claims.v[i].top + claims.v[i].height - 1);
 	}
 
 	return result;
 }
 
-int overlap_area(FILE *fp, Coord bounds) {
+int overlap_area(ClaimVec claims, Coord bounds) {
 	int counts[bounds.x + 1][bounds.y + 1];
 	int result = 0;
 
@@ -64,9 +57,10 @@ int overlap_area(FILE *fp, Coord bounds) {
 		}
 	}
 
-	Claim claim;
 
-	while (xparse_claim(fp, &claim)) {
+	for (size_t i = 0; i < claims.n; i++) {
+		Claim claim = claims.v[i];
+
 		for (int x = claim.left; x < claim.left + claim.width; x++) {
 			for (int y = claim.top; y < claim.top + claim.height; y++) {
 				if (counts[x][y]++ == 1) {
@@ -79,14 +73,23 @@ int overlap_area(FILE *fp, Coord bounds) {
 	return result;
 }
 
-bool xparse_claim(FILE *fp, Claim *claim) {
-	if (fscanf(fp, "#%*d @ %d,%d: %dx%d\n",
-			&claim->left, &claim->top, &claim->width, &claim->height)
-			== 4) {
-		return true;
-	} else if (feof(fp)) {
-		return false;
-	} else {
+ClaimVec xparse_claims(FILE *fp) {
+	size_t capacity = 16;
+	ClaimVec result = {0, xmalloc(capacity * sizeof *result.v)};
+	Claim *nc = &result.v[0];
+
+	while (fscanf(fp, "#%*d @ %d,%d: %dx%d\n",
+			&nc->left, &nc->top, &nc->width, &nc->height) == 4) {
+
+		if (++result.n >= capacity) {
+			capacity *= 2;
+			result.v = xrealloc(result.v, capacity * sizeof *result.v);
+		}
+
+		nc = &result.v[result.n];
+	}
+
+	if (!feof(fp)) {
 		char buf[80];
 		fgets(buf, sizeof buf, fp);
 		char *nl = strchr(buf, '\n');
@@ -94,4 +97,28 @@ bool xparse_claim(FILE *fp, Claim *claim) {
 		fprintf(stderr, "Parse error before '%s'\n", buf);
 		exit(EXIT_FAILURE);
 	}
+
+	return result;
+}
+
+void *xmalloc(size_t size) {
+	void *result = malloc(size);
+
+	if (!result) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	return result;
+}
+
+void *xrealloc(void *p, size_t size) {
+	void *result = realloc(p, size);
+
+	if (!result) {
+		perror("realloc");
+		exit(EXIT_FAILURE);
+	}
+
+	return result;
 }
