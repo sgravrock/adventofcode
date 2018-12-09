@@ -4,7 +4,7 @@ require 'set'
 require './microtest'
 
 def completion_time(edges, num_workers, overhead)
-	pending_steps = topological_sort(edges)
+	pending_steps = edges.flat_map(&:itself).uniq
 	total_secs = 0
 	in_progress = []
 	done = []
@@ -29,7 +29,10 @@ def completion_time(edges, num_workers, overhead)
 end
 
 def dequeue_first_actionable(steps, edges, completed_steps)
-	result = steps.select {|s| actionable?(s, edges, completed_steps)}.first
+	result = steps
+		.select {|s| actionable?(s, edges, completed_steps)}
+		.sort
+		.first
 	steps.delete result
 	result
 end
@@ -44,36 +47,6 @@ end
 
 def incoming_edges?(node, edges)
 	!edges.find {|s, e| e == node}.nil?
-end
-
-def topological_sort(edges)
-	edges = edges.clone
-	pending_nodes = Set::new(
-		edges
-			.flat_map(&:itself)
-			.reject {|n| incoming_edges? n, edges }
-	).to_a.sort
-	result = []
-
-	until pending_nodes.empty?
-		n = pending_nodes.shift
-		result.push n
-		edges
-			.select {|s, e| s == n}
-			.each do |edge|
-				edges.delete edge
-				unless incoming_edges? edge[1], edges
-					pending_nodes.push edge[1]
-					pending_nodes.sort!
-				end
-			end
-	end
-
-	unless edges.empty?
-		raise "Found a cycle"
-	end
-
-	result
 end
 
 def parse_input(input)
@@ -120,25 +93,11 @@ class Tests < Microtest::Test
 		]
 		assert_equal 15, completion_time(input, 2, 1)
 	end
-
-	def test_topological_sort
-		input = [
-			['c', 'a'],
-			['c', 'f'],
-			['a', 'b'],
-			['a', 'd'],
-			['b', 'e'],
-			['d', 'e'],
-			['f', 'e']
-		]
-		assert_equal ['c', 'a', 'b', 'd', 'f', 'e'], topological_sort(input)
-	end
 end
 
 Microtest.run(Tests.new)
 
 input = parse_input(DATA.read)
-result = topological_sort(input)
 puts completion_time(input, 5, 61)
 
 __END__
