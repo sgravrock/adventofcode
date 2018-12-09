@@ -50,4 +50,28 @@ class Tests {
         )
         assertEquals(expected, findAreas(input))
     }
+
+    @Test
+    fun TestLargestFiniteArea() {
+        val input = listOf(
+                Coord(1, 1),
+                Coord(1, 6),
+                Coord(8, 3),
+                Coord(3, 4),
+                Coord(5, 5),
+                Coord(8, 9)
+        )
+
+        assertEquals(17, largestFiniteArea(input))
+    }
+
+    @Test
+    fun TestParseInput() {
+        val input = "292, 73\n204, 176"
+        val expected = listOf(
+                Coord(292, 73),
+                Coord(204, 176)
+        )
+        assertEquals(expected, parseInput(input))
+    }
 }
