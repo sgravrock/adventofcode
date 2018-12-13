@@ -11,28 +11,40 @@ data class Coord(val x: Int, val y: Int) {
 data class Grid(val x: Int, val y: Int, val size: Int)
 
 fun mostPowerfulGrid(serial: Int): Grid {
-    return (1..300)
-            .flatMap { size ->
-                val topLeftRange = (1..(300 - size + 1))
-                topLeftRange.flatMap { x ->
-                    topLeftRange.map { y -> Grid(x, y, size)}
+    var maxPower = Int.MIN_VALUE
+    var bestGrid: Grid? = null
+
+    for (size in 1 until 300) {
+        for (x in 1 until 300 - size + 1) {
+            for (y in 1 until 300 - size + 1) {
+                val p = powerOfGrid(serial, x, y, size)
+
+                if (p > maxPower) {
+                    maxPower = p
+                    bestGrid = Grid(x, y, size)
                 }
             }
-            .maxBy { g -> powerOfGrid(serial, g) }!!
+        }
+    }
+
+    return bestGrid!!
 }
 
-fun powerOfGrid(serial: Int, grid: Grid): Int {
-    return (0..grid.size - 1)
-            .flatMap { x ->
-                (0..grid.size - 1)
-                        .map { y -> powerOfCell(serial, Coord(grid.x, grid.y) + Coord(x, y))}
-            }
-            .sum()
+fun powerOfGrid(serial: Int, topLeftX: Int, topLeftY: Int, size: Int): Int {
+    var result = 0
+
+    for (x in 0 until size) {
+        for (y in 0 until size) {
+            result += powerOfCell(serial, topLeftX + x, topLeftY + y)
+        }
+    }
+
+    return result
 }
 
-fun powerOfCell(serial: Int, cell: Coord): Int {
-    val rackId = cell.x + 10
-    return hundredsDigit((rackId * cell.y + serial) * rackId) - 5
+fun powerOfCell(serial: Int, x: Int, y: Int): Int {
+    val rackId = x + 10
+    return hundredsDigit((rackId * y + serial) * rackId) - 5
 }
 
 fun hundredsDigit(i: Int): Int {

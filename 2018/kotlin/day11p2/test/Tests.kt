@@ -9,8 +9,8 @@ class Tests {
 
     @Test
     fun testPowerOfGrid() {
-        assertEquals(113, powerOfGrid(18, Grid(x = 90, y = 269, size = 16)))
-        assertEquals(119, powerOfGrid(42, Grid(x = 232, y = 251, size = 12)))
+        assertEquals(113, powerOfGrid(18, 90, 269, 16))
+        assertEquals(119, powerOfGrid(42, 232, 251, 12))
     }
 
     @Test
