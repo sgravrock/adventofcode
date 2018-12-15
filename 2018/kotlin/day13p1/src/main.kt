@@ -6,15 +6,7 @@ fun main(args: Array<String>) {
     println(rr.crashCoord())
 }
 
-data class Coord(val x: Int, val y: Int): Comparable<Coord> {
-    override fun compareTo(other: Coord): Int {
-        val lc = y.compareTo(other.y)
-        return when(lc) {
-            0 -> x.compareTo(other.x)
-            else -> lc
-        }
-    }
-}
+data class Coord(val x: Int, val y: Int)
 
 enum class Orientation(val x: Int, val y: Int) {
     Up(0, -1),
@@ -48,7 +40,7 @@ data class MineRailroad(val tracks: Map<Coord, TrackSegment>, val carts: List<Ca
     }
 
     fun advance() {
-        carts.sortedBy { it.coord }.forEach { it.advance(tracks) }
+        carts.forEach { it.advance(tracks) }
     }
 
     fun crashCoord(): Coord? {
