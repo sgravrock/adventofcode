@@ -16,6 +16,33 @@ y=13, x=498..504"""
     }
 
     @Test
+    fun testSpacesReachable_doesNotCountAboveMinY() {
+        val input = """
+            |x=499, y=2..3
+            |x=502, y=2..3
+            |y=3, x=500..501
+        """.trimMargin()
+        val state = GroundMap.parse(input)
+
+        assertEquals("""
+            |.+..
+            |....
+            |#..#
+            |####
+        """.trimMargin(), state.toString())
+
+        /*
+            End state looks like this, but the spaces at y=1 don't count:
+            ..+...
+            ||||||
+            |#~~#|
+            |####|
+         */
+
+        assertEquals(6, state.spacesReachable())
+    }
+
+    @Test
     fun testParse() {
         val input = """x=495, y=2..7
 y=7, x=495..501

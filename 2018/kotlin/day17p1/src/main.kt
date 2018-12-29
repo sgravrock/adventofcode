@@ -7,8 +7,6 @@ fun main(args: Array<String>) {
     val map = GroundMap.parse(input)
     println(map.spacesReachable())
     println(map)
-    // 31939 is too low
-    // 31954 is wrong
 }
 
 data class GroundMap(val spaces: MutableMap<Coord, Space>) {
@@ -22,10 +20,16 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
     }
 
     fun wettedSpaces(): Int {
-        return spaces.count {
-            it.value == Space.StandingWater || it.value == Space.FlowingWater
-        }
+        val minY: Int = spaces
+            .filter { it.value == Space.Clay }
+            .minBy { it.key.y }!!
+            .key.y
 
+        return spaces
+            .filter { it.key.y >= minY }
+            .count {
+                it.value == Space.StandingWater || it.value == Space.FlowingWater
+            }
     }
 
     fun getSpace(c: Coord): Space {
