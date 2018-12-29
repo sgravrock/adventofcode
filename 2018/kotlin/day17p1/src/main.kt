@@ -14,78 +14,105 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
         while (advance()) {/*println("${this}\n")*/}
 
 //        println(this)
-        return spaces.count { it.value == Space.WetSand }
+        return wettedSpaces()
+    }
+
+    fun wettedSpaces(): Int {
+        return spaces.count {
+            it.value == Space.StandingWater || it.value == Space.FlowingWater
+        }
+
     }
 
     fun getSpace(c: Coord): Space {
         return spaces[c] ?: Space.DrySand
     }
 
-    fun advance(): Boolean {
-        // TODO: can probably save state across calls to advance()
-        val pending = Stack<Move>()
-        val visited = mutableSetOf<Coord>()
-        val ranges = range() // TODO this is probably expensive to do in a tight loop
-
-        fun pushIfVisitable(move: Move) {
-            val visitable = move.dest.x in ranges.x &&
-                    move.dest.y in ranges.y &&
-                    !visited.contains(move.dest)
-            
-            if (visitable) {
-                pending.push(move)
-            }
-        }
-
-        pending.push(Move.Vert(Coord(500, 1)))
-
-        while (!pending.isEmpty()) {
-            val move = pending.pop()
-            visited.add(move.dest)
-
-            when (getSpace(move.dest)) {
-                Space.DrySand -> {
-                    if (canWet(move)) {
-                        spaces[move.dest] = Space.WetSand
-                        return true
-                    } else {
-                        println(this)
-                        println("Pruning move $move")
-
-                    }
-                }
-                Space.WetSand -> {
-                    val below = Coord(move.dest.x, move.dest.y + 1)
-                    pushIfVisitable(Move.Horiz(
-                        Coord(move.dest.x - 1, move.dest.y),
-                        below
-                    ))
-                    pushIfVisitable(Move.Horiz(
-                        Coord(move.dest.x + 1, move.dest.y),
-                        below
-                    ))
-                    pushIfVisitable(Move.Vert(below))
-                }
-                Space.Clay -> {}
-                Space.Spring -> throw Error("Can't happen: visited the spring")
-            }
-        }
-
-        return false
-    }
-
     override fun toString(): String {
-        val r = range()
-        return r.y.map { y ->
-            r.x.map { x ->
+        return range.y.map { y ->
+            range.x.map { x ->
                 when (getSpace(Coord(x, y))) {
                     Space.Clay -> "#"
                     Space.DrySand -> "."
-                    Space.WetSand -> "~"
+                    Space.StandingWater -> "~"
+                    Space.FlowingWater -> "|"
                     Space.Spring -> "+"
                 }
             }.joinToString("")
         }.joinToString("\n")
+    }
+
+    fun advance(): Boolean {
+        // TODO: some state can and should be shared across calls
+        val numBefore = wettedSpaces()
+        val emitters = mutableListOf(Coord(500, 0))
+
+        while (!emitters.isEmpty()) {
+            val e = emitters.removeAt(emitters.lastIndex)
+            dropFrom(e, emitters)
+        }
+
+        return wettedSpaces() != numBefore
+    }
+
+    private fun dropFrom(origin: Coord, emitters: MutableList<Coord>) {
+        for (y in (origin.y + 1)..range.y.last) {
+            val c = Coord(origin.x, y)
+            val below = getSpace(Coord(origin.x, y + 1))
+
+            when (below) {
+                Space.StandingWater, Space.Clay -> {
+                    flowAcross(c, emitters)
+                    return
+                }
+                Space.DrySand -> spaces[c] = Space.FlowingWater
+                Space.FlowingWater -> {}
+                Space.Spring -> {
+                    throw Error("Can't happen: flowed down to spring")
+                }
+            }
+        }
+    }
+
+    fun flowAcross(origin: Coord, emitters: MutableList<Coord>) {
+        // TODO: special-case the bottom row
+        val (dropLeft, li) = findSpillEnd(origin, true)
+        val (dropRight, ri) = findSpillEnd(origin, false)
+        val fill = if (dropLeft || dropRight) {
+            Space.FlowingWater
+        } else {
+            Space.StandingWater
+        }
+        
+        for (i in li..ri) {
+            spaces[Coord(i, origin.y)] = fill
+        }
+
+        if (dropLeft) emitters.add(Coord(li, origin.y))
+        if (dropRight) emitters.add(Coord(ri, origin.y))
+    }
+
+    private fun findSpillEnd(origin: Coord, toLeft: Boolean): Pair<Boolean, Int> {
+        val r = if (toLeft) {
+            origin.x downTo range.x.first
+        } else {
+            origin.x..range.x.last
+        }
+
+        for (x in r) {
+            val below = getSpace(Coord(x, origin.y + 1))
+            if (below == Space.DrySand || below == Space.FlowingWater) {
+                return Pair(true, x)
+            }
+
+            val next = Coord(x + if (toLeft) -1 else 1, origin.y)
+            if (getSpace(next) == Space.Clay) {
+                return Pair(false, x)
+            }
+        }
+
+        println(this) // TODO remove
+        throw Error("Reached the edge while spilling horizontally from $origin")
     }
 
     private fun canWet(move: Move): Boolean {
@@ -100,13 +127,13 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
 
     private fun hasClayBelow(c: Coord): Boolean {
         val ymin = c.y + 1
-        val ymax = range().y.last
+        val ymax = range.y.last
         return (ymin..ymax)
             .any { y -> getSpace(Coord(c.x, y)) == Space.Clay }
     }
 
 
-    private fun range(): Ranges {
+    val range: Ranges by lazy {
         var xmin = Int.MAX_VALUE
         var xmax = Int.MIN_VALUE
         var ymin = Int.MAX_VALUE
@@ -119,7 +146,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
             ymax = max(ymax, c.y)
         }
 
-        return Ranges(x = xmin..xmax, y = ymin..ymax)
+        Ranges(x = xmin..xmax, y = ymin..ymax)
     }
 
     companion object {
@@ -182,5 +209,6 @@ enum class Space {
     Spring,
     Clay,
     DrySand,
-    WetSand
+    StandingWater,
+    FlowingWater
 }

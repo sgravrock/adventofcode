@@ -74,6 +74,9 @@ y=13, x=498..504"""
         assertEquals(expected, GroundMap.parse(input).toString())
     }
 
+    // Note: This test is more diagnostic than descriptive. It exercises implementation
+    // details rather than any well-defined external behavior. If the other tests pass
+    // and this one fails, then this one is probably "wrong".
     @Test
     fun testAdvance() {
         val input = """x=497, y=1..5
@@ -83,51 +86,44 @@ y=5, x=497..500"""
         val state = GroundMap.parse(input)
         state.advance()
         assertEquals("""...+.
-#..~#
-#.#.#
-#.#.#
-#...#
+#..|#
+#.#|#
+#.#|#
+#~~~#
 #####""", state.toString())
         state.advance()
         assertEquals("""...+.
-#..~#
+#..|#
+#.#|#
 #.#~#
-#.#.#
-#...#
+#~~~#
 #####""", state.toString())
         state.advance()
         assertEquals("""...+.
-#..~#
-#.#~#
-#.#~#
-#...#
-#####""", state.toString())
-        state.advance()
-        assertEquals("""...+.
-#..~#
-#.#~#
-#.#~#
-#..~#
-#####""", state.toString())
-        state.advance()
-        assertEquals("""...+.
-#..~#
-#.#~#
-#.#~#
-#.~~#
-#####""", state.toString())
-        state.advance()
-        assertEquals("""...+.
-#..~#
+#..|#
 #.#~#
 #.#~#
 #~~~#
 #####""", state.toString())
         state.advance()
         assertEquals("""...+.
-#.~~#
-#.#~#
-#.#~#
+#|||#
+#|#~#
+#~#~#
+#~~~#
+#####""", state.toString())
+        state.advance()
+        assertEquals("""...+.
+#|||#
+#~#~#
+#~#~#
+#~~~#
+#####""", state.toString())
+        state.advance()
+        assertEquals("""...+.
+#~~~#
+#~#~#
+#~#~#
 #~~~#
 #####""", state.toString())
     }
@@ -150,20 +146,14 @@ y=5, x=497..500"""
             |..###..
         """.trimMargin(), state.toString())
 
-        for (i in 0..12) {
-            state.advance()
-        }
-
-        state.advance() // TODO remove
-        state.advance() // TODO remove
-        state.advance() // TODO remove
-        state.advance() // TODO remove
+        state.advance()
+        state.advance()
 
         assertEquals("""
             |...+...
-            |~~~~~~~
-            |#~#~#~#
-            |.~###~.
+            |.|||||.
+            |#|#~#|#
+            |.|###|.
         """.trimMargin(), state.toString())
     }
 
@@ -176,9 +166,6 @@ y=5, x=497..500"""
             |x=501, y=2..2
             |y=3, x=499..501
         """.trimMargin()
-//            |y=3, x=499..501
-//            |x=497, y=2..2
-//            |x=503, y=2..2
         val state = GroundMap.parse(input)
 
         assertEquals("""
@@ -188,13 +175,14 @@ y=5, x=497..500"""
             |...###...
         """.trimMargin(), state.toString())
 
-        while (state.advance()) {}
+        state.advance()
+        state.advance()
 
         assertEquals("""
             |....+....
-            |..~~~~~..
-            |#.~#~#~.#
-            |..~###~..
+            |..|||||..
+            |#.|#~#|.#
+            |..|###|..
         """.trimMargin(), state.toString())
     }
 }
