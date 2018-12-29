@@ -13,9 +13,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
     private var range: Ranges = findRange()
 
     fun spacesReachable(): Int {
-        while (advance()) {/*println("${this}\n")*/}
-
-//        println(this)
+        while (advance()) {}
         return wettedSpaces()
     }
 
@@ -125,19 +123,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
             }
         }
 
-//        println(this) // TODO remove
         return Spill.Drop(if (toLeft) r.last - 1 else r.last + 1)
-//        throw Error("Reached the edge while spilling horizontally from $origin")
-    }
-
-    private fun canWet(move: Move): Boolean {
-        return when (move) {
-            is Move.Vert -> true
-            is Move.Horiz -> {
-                val belowPredecessor = getSpace(move.belowPredecessor)
-                return belowPredecessor == Space.Clay || hasClayBelow(move.dest)
-            }
-        }
     }
 
     private fun hasClayBelow(c: Coord): Boolean {

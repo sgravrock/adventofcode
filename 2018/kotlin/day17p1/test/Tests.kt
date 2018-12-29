@@ -4,14 +4,16 @@ import kotlin.test.assertEquals
 class Tests {
     @Test
     fun testSpacesReachable() {
-        val input = """x=495, y=2..7
-y=7, x=495..501
-x=501, y=3..7
-x=498, y=2..4
-x=506, y=1..2
-x=498, y=10..13
-x=504, y=10..13
-y=13, x=498..504"""
+        val input = """
+            |x=495, y=2..7
+            |y=7, x=495..501
+            |x=501, y=3..7
+            |x=498, y=2..4
+            |x=506, y=1..2
+            |x=498, y=10..13
+            |x=504, y=10..13
+            |y=13, x=498..504
+        """.trimMargin()
         assertEquals(57, GroundMap.parse(input).spacesReachable())
     }
 
@@ -44,10 +46,12 @@ y=13, x=498..504"""
 
     @Test
     fun testParse() {
-        val input = """x=495, y=2..7
-y=7, x=495..501
-x=501, y=3..7
-x=498, y=2..4"""
+        val input = """
+            |x=495, y=2..7
+            |y=7, x=495..501
+            |x=501, y=3..7
+            |x=498, y=2..4
+        """.trimMargin()
         val expected = mapOf(
             Coord(495, 2) to Space.Clay,
             Coord(495, 3) to Space.Clay,
@@ -76,28 +80,32 @@ x=498, y=2..4"""
 
     @Test
     fun testToString() {
-        val input = """x=495, y=2..7
-y=7, x=495..501
-x=501, y=3..7
-x=498, y=2..4
-x=506, y=1..2
-x=498, y=10..13
-x=504, y=10..13
-y=13, x=498..504"""
-        val expected = """.....+......
-...........#
-#..#.......#
-#..#..#.....
-#..#..#.....
-#.....#.....
-#.....#.....
-#######.....
-............
-............
-...#.....#..
-...#.....#..
-...#.....#..
-...#######.."""
+        val input = """
+            |x=495, y=2..7
+            |y=7, x=495..501
+            |x=501, y=3..7
+            |x=498, y=2..4
+            |x=506, y=1..2
+            |x=498, y=10..13
+            |x=504, y=10..13
+            |y=13, x=498..504
+        """.trimMargin()
+        val expected = """
+            |.....+......
+            |...........#
+            |#..#.......#
+            |#..#..#.....
+            |#..#..#.....
+            |#.....#.....
+            |#.....#.....
+            |#######.....
+            |............
+            |............
+            |...#.....#..
+            |...#.....#..
+            |...#.....#..
+            |...#######..
+        """.trimMargin()
         assertEquals(expected, GroundMap.parse(input).toString())
     }
 
@@ -106,53 +114,67 @@ y=13, x=498..504"""
     // and this one fails, then this one is probably "wrong".
     @Test
     fun testAdvance() {
-        val input = """x=497, y=1..5
-x=501, y=1..5
-x=499, y=2..3
-y=5, x=497..500"""
+        val input = """
+            |x=497, y=1..5
+            |x=501, y=1..5
+            |x=499, y=2..3
+            |y=5, x=497..500
+        """.trimMargin()
         val state = GroundMap.parse(input)
         state.advance()
-        assertEquals("""...+.
-#..|#
-#.#|#
-#.#|#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#..|#
+            |#.#|#
+            |#.#|#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
         state.advance()
-        assertEquals("""...+.
-#..|#
-#.#|#
-#.#~#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#..|#
+            |#.#|#
+            |#.#~#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
         state.advance()
-        assertEquals("""...+.
-#..|#
-#.#~#
-#.#~#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#..|#
+            |#.#~#
+            |#.#~#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
         state.advance()
-        assertEquals("""...+.
-#|||#
-#|#~#
-#~#~#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#|||#
+            |#|#~#
+            |#~#~#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
         state.advance()
-        assertEquals("""...+.
-#|||#
-#~#~#
-#~#~#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#|||#
+            |#~#~#
+            |#~#~#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
         state.advance()
-        assertEquals("""...+.
-#~~~#
-#~#~#
-#~#~#
-#~~~#
-#####""", state.toString())
+        assertEquals("""
+            |...+.
+            |#~~~#
+            |#~#~#
+            |#~#~#
+            |#~~~#
+            |#####
+        """.trimMargin(), state.toString())
     }
 
     @Test
