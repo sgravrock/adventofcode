@@ -8,9 +8,12 @@ fun main(args: Array<String>) {
     println(map.spacesReachable())
     println(map)
     // 31939 is too low
+    // 31954 is wrong
 }
 
 data class GroundMap(val spaces: MutableMap<Coord, Space>) {
+    private var range: Ranges = findRange()
+
     fun spacesReachable(): Int {
         while (advance()) {/*println("${this}\n")*/}
 
@@ -87,6 +90,14 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
             spaces[Coord(i, origin.y)] = fill
         }
 
+        if (!range.x.contains(left.x)) {
+            range = range.withXMin(left.x)
+        }
+
+        if (!range.x.contains(right.x)) {
+            range = range.withXMax(right.x)
+        }
+
         if (left is Spill.Drop) emitters.add(Coord(left.x, origin.y))
         if (right is Spill.Drop) emitters.add(Coord(right.x, origin.y))
     }
@@ -111,7 +122,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
         }
 
 //        println(this) // TODO remove
-        return Spill.Unbounded(r.last)
+        return Spill.Drop(if (toLeft) r.last - 1 else r.last + 1)
 //        throw Error("Reached the edge while spilling horizontally from $origin")
     }
 
@@ -133,7 +144,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
     }
 
 
-    val range: Ranges by lazy {
+    private fun findRange(): Ranges {
         var xmin = Int.MAX_VALUE
         var xmax = Int.MIN_VALUE
         var ymin = Int.MAX_VALUE
@@ -146,7 +157,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
             ymax = max(ymax, c.y)
         }
 
-        Ranges(x = xmin..xmax, y = ymin..ymax)
+        return Ranges(x = xmin..xmax, y = ymin..ymax)
     }
 
     companion object {
@@ -203,7 +214,15 @@ sealed class Move() {
     data class Horiz(override val dest: Coord, val belowPredecessor: Coord): Move()
 }
 
-data class Ranges(val x: IntRange, val y: IntRange)
+data class Ranges(val x: IntRange, val y: IntRange) {
+    fun withXMin(xMin: Int): Ranges {
+        return Ranges(xMin..x.last, y)
+    }
+
+    fun withXMax(xMax: Int): Ranges {
+        return Ranges(x.first..xMax, y)
+    }
+}
 
 enum class Space {
     Spring,
@@ -217,6 +236,5 @@ sealed class Spill {
     abstract val x: Int
 
     data class Bounded(override val x: Int): Spill()
-    data class Unbounded(override val x: Int): Spill()
     data class Drop(override val x: Int): Spill()
 }
