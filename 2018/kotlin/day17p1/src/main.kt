@@ -7,7 +7,7 @@ fun main(args: Array<String>) {
     val map = GroundMap.parse(input)
     println(map.spacesReachable())
     println(map)
-    // 31928 is too low
+    // 31939 is too low
 }
 
 data class GroundMap(val spaces: MutableMap<Coord, Space>) {
@@ -66,8 +66,7 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
                     flowAcross(c, emitters)
                     return
                 }
-                Space.DrySand -> spaces[c] = Space.FlowingWater
-                Space.FlowingWater -> {}
+                Space.DrySand, Space.FlowingWater -> spaces[c] = Space.FlowingWater
                 Space.Spring -> {
                     throw Error("Can't happen: flowed down to spring")
                 }

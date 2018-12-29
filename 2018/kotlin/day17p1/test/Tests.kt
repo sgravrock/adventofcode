@@ -240,4 +240,49 @@ y=5, x=497..500"""
             |####
         """.trimMargin(), state.toString())
     }
+
+    @Test
+    fun testAdvance_dropOntoWater() {
+        val input = """
+            |x=499, y=2..2
+            |x=501, y=2..2
+            |y=3, x=499..501
+            |x=503, y=5..7
+            |x=501, y=6..7
+            |x=502, y=7..7
+            |y=9, x=497..501
+        """.trimMargin()
+        val state = GroundMap.parse(input)
+
+        assertEquals("""
+            |...+...
+            |.......
+            |..#.#..
+            |..###..
+            |.......
+            |......#
+            |....#.#
+            |....###
+            |.......
+            |#####..
+        """.trimMargin(), state.toString())
+
+        state.advance()
+        state.advance()
+        state.advance()
+
+        assertEquals("""
+            |...+...
+            |.|||||.
+            |.|#~#|.
+            |.|###|.
+            |.|...|.
+            |.|.|||#
+            |.|.|#~#
+            |.|.|###
+            |||||||.
+            |#####|.
+        """.trimMargin(), state.toString())
+
+    }
 }
