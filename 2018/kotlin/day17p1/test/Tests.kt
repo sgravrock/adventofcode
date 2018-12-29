@@ -185,4 +185,59 @@ y=5, x=497..500"""
             |..|###|..
         """.trimMargin(), state.toString())
     }
+
+    @Test
+    fun testAdvance_spillToEdge() {
+        val input = """
+            |x=499, y=2..3
+            |x=502, y=2..3
+            |y=3, x=500..501
+            |y=3, x=497..497
+        """.trimMargin()
+        val state = GroundMap.parse(input)
+
+        assertEquals("""
+            |...+..
+            |......
+            |..#..#
+            |#.####
+        """.trimMargin(), state.toString())
+
+        state.advance()
+        state.advance()
+
+        assertEquals("""
+            |...+..
+            |.|||||
+            |.|#~~#
+            |#|####
+        """.trimMargin(), state.toString())
+    }
+
+    @Test
+    fun testAdvance_spillToBothEdges() {
+        val input = """
+            |x=499, y=2..3
+            |x=502, y=2..3
+            |y=3, x=500..501
+        """.trimMargin()
+        val state = GroundMap.parse(input)
+
+        assertEquals("""
+            |.+..
+            |....
+            |#..#
+            |####
+        """.trimMargin(), state.toString())
+
+        state.advance()
+        state.advance()
+
+        assertEquals("""
+            |.+..
+            |||||
+            |#~~#
+            |####
+        """.trimMargin(), state.toString())
+    }
 }

@@ -1,4 +1,3 @@
-import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
@@ -7,6 +6,8 @@ fun main(args: Array<String>) {
     val input = classLoader.getResource("input.txt").readText()
     val map = GroundMap.parse(input)
     println(map.spacesReachable())
+    println(map)
+    // 31928 is too low
 }
 
 data class GroundMap(val spaces: MutableMap<Coord, Space>) {
@@ -75,24 +76,23 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
     }
 
     fun flowAcross(origin: Coord, emitters: MutableList<Coord>) {
-        // TODO: special-case the bottom row
-        val (dropLeft, li) = findSpillEnd(origin, true)
-        val (dropRight, ri) = findSpillEnd(origin, false)
-        val fill = if (dropLeft || dropRight) {
-            Space.FlowingWater
-        } else {
+        val left = findSpillEnd(origin, true)
+        val right = findSpillEnd(origin, false)
+        val fill = if (left is Spill.Bounded && right is Spill.Bounded) {
             Space.StandingWater
+        } else {
+            Space.FlowingWater
         }
         
-        for (i in li..ri) {
+        for (i in left.x..right.x) {
             spaces[Coord(i, origin.y)] = fill
         }
 
-        if (dropLeft) emitters.add(Coord(li, origin.y))
-        if (dropRight) emitters.add(Coord(ri, origin.y))
+        if (left is Spill.Drop) emitters.add(Coord(left.x, origin.y))
+        if (right is Spill.Drop) emitters.add(Coord(right.x, origin.y))
     }
 
-    private fun findSpillEnd(origin: Coord, toLeft: Boolean): Pair<Boolean, Int> {
+    private fun findSpillEnd(origin: Coord, toLeft: Boolean): Spill {
         val r = if (toLeft) {
             origin.x downTo range.x.first
         } else {
@@ -102,17 +102,18 @@ data class GroundMap(val spaces: MutableMap<Coord, Space>) {
         for (x in r) {
             val below = getSpace(Coord(x, origin.y + 1))
             if (below == Space.DrySand || below == Space.FlowingWater) {
-                return Pair(true, x)
+                return Spill.Drop(x)
             }
 
             val next = Coord(x + if (toLeft) -1 else 1, origin.y)
             if (getSpace(next) == Space.Clay) {
-                return Pair(false, x)
+                return Spill.Bounded(x)
             }
         }
 
-        println(this) // TODO remove
-        throw Error("Reached the edge while spilling horizontally from $origin")
+//        println(this) // TODO remove
+        return Spill.Unbounded(r.last)
+//        throw Error("Reached the edge while spilling horizontally from $origin")
     }
 
     private fun canWet(move: Move): Boolean {
@@ -211,4 +212,12 @@ enum class Space {
     DrySand,
     StandingWater,
     FlowingWater
+}
+
+sealed class Spill {
+    abstract val x: Int
+
+    data class Bounded(override val x: Int): Spill()
+    data class Unbounded(override val x: Int): Spill()
+    data class Drop(override val x: Int): Spill()
 }
