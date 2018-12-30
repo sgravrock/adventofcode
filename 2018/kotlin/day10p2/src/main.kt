@@ -1,8 +1,10 @@
 import java.lang.Exception
+import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
+    val start = Date()
     val input = "position=< 54347, -32361> velocity=<-5,  3>\n" +
             "position=<-21463, -32354> velocity=< 2,  3>\n" +
             "position=< 54347,  32630> velocity=<-5, -3>\n" +
@@ -367,6 +369,7 @@ fun main(args: Array<String>) {
     }
 
     println(secs)
+    println("in ${Date().time - start.time}ms")
 }
 
 data class XY(val x: Int, val y: Int) {

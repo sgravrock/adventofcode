@@ -1,11 +1,14 @@
 import java.lang.Exception
+import java.util.*
 
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = Time::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     val s = sleepiestGuardAndMinute(parseInput(input))
     println(s)
     println("Solution is ${s.guard * s.minute}")
+    println("in ${Date().time - start.time}ms")
 }
 
 data class Sleepiness(val guard: Int, val minute: Int, val timesAsleep: Int)

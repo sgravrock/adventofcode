@@ -1,9 +1,13 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = Coord::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     val rr = MineRailroad.parse(input)
     rr.advanceUntilCrash()
     println(rr.crashCoord())
+    println("in ${Date().time - start.time}ms")
 }
 
 data class Coord(val x: Int, val y: Int)

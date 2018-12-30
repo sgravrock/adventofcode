@@ -1,5 +1,10 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     println(mostPowerful3x3(2568))
+    println("in ${Date().time - start.time}ms")
+
 }
 
 data class Coord(val x: Int, val y: Int) {

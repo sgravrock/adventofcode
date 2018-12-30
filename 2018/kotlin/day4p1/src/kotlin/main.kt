@@ -1,9 +1,12 @@
 import java.lang.Exception
+import java.util.*
 
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = Time::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     println(puzzleSolution(parseInput(input)))
+    println("in ${Date().time - start.time}ms")
 }
 
 data class Time(val hour: Int, val minute: Int) {

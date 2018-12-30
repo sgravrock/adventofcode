@@ -1,5 +1,9 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     println(findHighScore(476, 71657))
+    println("in ${Date().time - start.time}ms")
 }
 
 // A fully constructed Node should always have non-null prev and next,

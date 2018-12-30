@@ -1,11 +1,14 @@
+import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = GroundMap::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     val map = GroundMap.parse(input)
     println(map.spacesReachable())
+    println("in ${Date().time - start.time}ms")
     println(map)
 }
 

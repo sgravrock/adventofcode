@@ -1,9 +1,13 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = Opcode::class.java.classLoader
     val puzzle = PuzzleInput.parse(classLoader.getResource("input.txt").readText())
     val opcodeMap = findOpcodes(puzzle.hints)
     val result = execute(puzzle.program, opcodeMap)
     println(result[0])
+    println("in ${Date().time - start.time}ms")
 }
 
 fun findOpcodes(instructionHints: List<InstructionHint>): Map<Int, Opcode> {

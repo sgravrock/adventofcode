@@ -1,5 +1,9 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     println(next10ScoresAfter(920831))
+    println("in ${Date().time - start.time}ms")
 }
 
 fun next10ScoresAfter(numRecipes: Int): String {

@@ -1,4 +1,4 @@
-import java.util.HashSet
+import java.util.*
 import kotlin.math.abs
 
 data class Coord(val x: Int, val y: Int)
@@ -9,6 +9,7 @@ sealed class Area {
 }
 
 fun main(args: Array<String>) {
+    val start = Date()
     val input = "292, 73\n" +
             "204, 176\n" +
             "106, 197\n" +
@@ -60,6 +61,7 @@ fun main(args: Array<String>) {
             "356, 207\n" +
             "83, 97"
     println(largestFiniteArea(parseInput(input)))
+    println("in ${Date().time - start.time}ms")
 }
 
 fun parseInput(input: String): List<Coord> {

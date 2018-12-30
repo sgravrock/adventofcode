@@ -1,8 +1,8 @@
 import java.util.*
 
 fun main(args: Array<String>) {
-    val input = puzzleInput()
     val start = Date()
+    val input = puzzleInput()
     val result = scoreAfter(1000000000, input)
     val end = Date()
     println(result)

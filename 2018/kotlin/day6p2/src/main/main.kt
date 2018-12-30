@@ -6,6 +6,7 @@ import kotlin.math.min
 data class Coord(val x: Int, val y: Int)
 
 fun main(args: Array<String>) {
+    val start = Date()
     val input = "292, 73\n" +
             "204, 176\n" +
             "106, 197\n" +
@@ -57,6 +58,7 @@ fun main(args: Array<String>) {
             "356, 207\n" +
             "83, 97"
     println(regionWithinDistance(parseInput(input), 9999).size)
+    println("in ${Date().time - start.time}ms")
 }
 
 fun regionWithinDistance(coords: List<Coord>, maxDistance: Int): Set<Coord> {

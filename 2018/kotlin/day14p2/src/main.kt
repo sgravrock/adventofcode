@@ -1,5 +1,9 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     println(firstIndexOf(listOf(9, 2, 0, 8, 3, 1)))
+    println("in ${Date().time - start.time}ms")
 }
 
 fun firstIndexOf(digits: List<Int>): Int {

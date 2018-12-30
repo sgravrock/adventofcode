@@ -1,9 +1,13 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = Opcode::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     val instructions = Instruction.parse(input)
     val matches = instructions.filter { it.behavesLike().size >= 3 }
     println(matches.size)
+    println("in ${Date().time - start.time}ms")
 }
 
 enum class Opcode {

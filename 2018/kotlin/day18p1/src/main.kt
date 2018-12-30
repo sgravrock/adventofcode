@@ -1,8 +1,12 @@
+import java.util.*
+
 fun main(args: Array<String>) {
+    val start = Date()
     val classLoader = World::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     val result = scoreAfter10(World.parse(input))
     println(result)
+    println("in ${Date().time - start.time} ms")
 }
 
 enum class Acre { Open, Wooded, LumberYard }
