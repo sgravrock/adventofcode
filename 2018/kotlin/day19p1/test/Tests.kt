@@ -3,6 +3,23 @@ import kotlin.test.assertEquals
 
 class Tests {
     @Test
+    fun testProgramParse() {
+        val input = """
+            #ip 4
+            addi 4 16 4
+            seti 1 3 5
+        """.trimIndent()
+        val expected = Program(
+                ipReg = 4,
+                instructions = listOf(
+                        Instruction(Opcode.addi, Triple(4, 16, 4)),
+                        Instruction(Opcode.seti, Triple(1, 3, 5))
+                )
+        )
+        assertEquals(expected, Program.parse(input))
+    }
+
+    @Test
     fun testAddr() {
         assertEquals(
                 listOf(0, 2, 1, 3),
