@@ -20,9 +20,26 @@ class Tests {
     }
 
     @Test
+    fun testMachineExecute() {
+        val input = """
+            #ip 0
+            seti 5 0 1
+            seti 6 0 2
+            addi 0 1 0
+            addr 1 2 3
+            setr 1 0 0
+            seti 8 0 4
+            seti 9 0 5
+        """.trimIndent()
+        val subject = Machine()
+        subject.execute(Program.parse(input))
+        assertEquals(listOf(7, 5, 6, 0, 0, 9), subject.registers)
+    }
+
+    @Test
     fun testAddr() {
         assertEquals(
-                listOf(0, 2, 1, 3),
+                listOf(0, 2, 1, 3, 0, 0),
                 evaluate(Opcode.addr, listOf(0, 2, 1, 0), 2, 1, 3)
         )
     }
@@ -30,7 +47,7 @@ class Tests {
     @Test
     fun testAddi() {
         assertEquals(
-                listOf(0, 0, 1, 4),
+                listOf(0, 0, 1, 4, 0, 0),
                 evaluate(Opcode.addi, listOf(0, 0, 1, 0), 2, 3, 3)
         )
     }
@@ -38,7 +55,7 @@ class Tests {
     @Test
     fun testMulr() {
         assertEquals(
-                listOf(0, 2, 1, 2),
+                listOf(0, 2, 1, 2, 0, 0),
                 evaluate(Opcode.mulr, listOf(0, 2, 1, 0), 2, 1, 3)
         )
     }
@@ -46,7 +63,7 @@ class Tests {
     @Test
     fun testMuli() {
         assertEquals(
-                listOf(0, 0, 1, 3),
+                listOf(0, 0, 1, 3, 0, 0),
                 evaluate(Opcode.muli, listOf(0, 0, 1, 0), 2, 3, 3)
         )
     }
@@ -54,7 +71,7 @@ class Tests {
     @Test
     fun testBanr() {
         assertEquals(
-                listOf(0, 1, 3, 1),
+                listOf(0, 1, 3, 1, 0, 0),
                 evaluate(Opcode.banr, listOf(0, 1, 3, 0), 2, 1, 3)
         )
     }
@@ -62,7 +79,7 @@ class Tests {
     @Test
     fun testBani() {
         assertEquals(
-                listOf(0, 0, 3, 1),
+                listOf(0, 0, 3, 1, 0, 0),
                 evaluate(Opcode.bani, listOf(0, 0, 3, 0), 2, 1, 3)
         )
     }
@@ -70,7 +87,7 @@ class Tests {
     @Test
     fun testBorr() {
         assertEquals(
-                listOf(0, 1, 2, 3),
+                listOf(0, 1, 2, 3, 0, 0),
                 evaluate(Opcode.borr, listOf(0, 1, 2, 0), 2, 1, 3)
         )
     }
@@ -79,7 +96,7 @@ class Tests {
     @Test
     fun testBori() {
         assertEquals(
-                listOf(0, 0, 2, 3),
+                listOf(0, 0, 2, 3, 0, 0),
                 evaluate(Opcode.bori, listOf(0, 0, 2, 0), 2, 1, 3)
         )
     }
@@ -87,7 +104,7 @@ class Tests {
     @Test
     fun testSetr() {
         assertEquals(
-                listOf(0, 0, 1, 1),
+                listOf(0, 0, 1, 1, 0, 0),
                 evaluate(Opcode.setr, listOf(0, 0, 1, 0), 2, -1, 3)
         )
     }
@@ -95,7 +112,7 @@ class Tests {
     @Test
     fun testSeti() {
         assertEquals(
-                listOf(0, 0, 0, 2),
+                listOf(0, 0, 0, 2, 0, 0),
                 evaluate(Opcode.seti, listOf(0, 0, 0, 0), 2, -1, 3)
         )
     }
@@ -103,11 +120,11 @@ class Tests {
     @Test
     fun testGtir() {
         assertEquals(
-                listOf(0, 1, 0, 1),
+                listOf(0, 1, 0, 1, 0, 0),
                 evaluate(Opcode.gtir, listOf(0, 1, 0, 0), 2, 1, 3)
         )
         assertEquals(
-                listOf(0, 1, 0, 0),
+                listOf(0, 1, 0, 0, 0, 0),
                 evaluate(Opcode.gtir, listOf(0, 1, 0, 0), 1, 1, 3)
         )
     }
@@ -115,11 +132,11 @@ class Tests {
     @Test
     fun testGtri() {
         assertEquals(
-                listOf(0, 2, 0, 1),
+                listOf(0, 2, 0, 1, 0, 0),
                 evaluate(Opcode.gtri, listOf(0, 2, 0, 0), 1, 1, 3)
         )
         assertEquals(
-                listOf(0, 1, 0, 0),
+                listOf(0, 1, 0, 0, 0, 0),
                 evaluate(Opcode.gtri, listOf(0, 1, 0, 0), 1, 1, 3)
         )
     }
@@ -127,11 +144,11 @@ class Tests {
     @Test
     fun testGtrr() {
         assertEquals(
-                listOf(0, 2, 1, 1),
+                listOf(0, 2, 1, 1, 0, 0),
                 evaluate(Opcode.gtrr, listOf(0, 2, 1, 0), 1, 2, 3)
         )
         assertEquals(
-                listOf(0, 1, 2, 0),
+                listOf(0, 1, 2, 0, 0, 0),
                 evaluate(Opcode.gtrr, listOf(0, 1, 2, 0), 1, 2, 3)
         )
     }
@@ -139,11 +156,11 @@ class Tests {
     @Test
     fun testEqir() {
         assertEquals(
-                listOf(0, 0, 1, 1),
+                listOf(0, 0, 1, 1, 0, 0),
                 evaluate(Opcode.eqir, listOf(0, 0, 1, 0), 1, 2, 3)
         )
         assertEquals(
-                listOf(0, 0, 1, 0),
+                listOf(0, 0, 1, 0, 0, 0),
                 evaluate(Opcode.eqir, listOf(0, 0, 1, 0), 2, 2, 3)
         )
     }
@@ -151,11 +168,11 @@ class Tests {
     @Test
     fun testEqri() {
         assertEquals(
-                listOf(0, 0, 1, 1),
+                listOf(0, 0, 1, 1, 0, 0),
                 evaluate(Opcode.eqri, listOf(0, 0, 1, 0), 2, 1, 3)
         )
         assertEquals(
-                listOf(0, 0, 1, 0),
+                listOf(0, 0, 1, 0, 0, 0),
                 evaluate(Opcode.eqri, listOf(0, 0, 1, 0), 2, 2, 3)
         )
     }
@@ -163,12 +180,23 @@ class Tests {
     @Test
     fun testEqrr() {
         assertEquals(
-                listOf(0, 1, 1, 1),
+                listOf(0, 1, 1, 1, 0, 0),
                 evaluate(Opcode.eqrr, listOf(0, 1, 1, 0), 2, 1, 3)
         )
         assertEquals(
-                listOf(0, 0, 1, 0),
+                listOf(0, 0, 1, 0, 0, 0),
                 evaluate(Opcode.eqrr, listOf(0, 0, 1, 0), 2, 1, 3)
         )
+    }
+
+    fun evaluate(
+            opcode: Opcode,
+            regsBefore: List<Int>,
+            i1: Int, i2: Int, o: Int
+    ): List<Int> {
+        val subject = Machine()
+        regsBefore.indices.forEach { i -> subject.registers[i] = regsBefore[i] }
+        subject.evaluate(Instruction(opcode, Triple(i1, i2, o)))
+        return subject.registers
     }
 }
