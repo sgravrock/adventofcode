@@ -12,8 +12,8 @@ class Tests {
         val expected = Program(
                 ipReg = 4,
                 instructions = listOf(
-                        Instruction(Opcode.addi, Triple(4, 16, 4)),
-                        Instruction(Opcode.seti, Triple(1, 3, 5))
+                        Instruction(Opcode.addi, 4, 16, 4),
+                        Instruction(Opcode.seti, 1, 3, 5)
                 )
         )
         assertEquals(expected, Program.parse(input))
@@ -196,7 +196,7 @@ class Tests {
     ): List<Int> {
         val subject = Machine()
         regsBefore.indices.forEach { i -> subject.registers[i] = regsBefore[i] }
-        subject.evaluate(Instruction(opcode, Triple(i1, i2, o)))
+        subject.evaluate(Instruction(opcode, i1, i2, o))
         return subject.registers
     }
 }

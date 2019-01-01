@@ -24,25 +24,23 @@ class Machine() {
     }
 
     fun evaluate(ins: Instruction) {
-        val i1 = ins.operands.first
-        val i2 = ins.operands.second
-        registers[ins.operands.third] = when (ins.opcode) {
-            Opcode.addr -> registers[i1] + registers[i2]
-            Opcode.addi -> registers[i1] + i2
-            Opcode.mulr -> registers[i1] * registers[i2]
-            Opcode.muli -> registers[i1] * i2
-            Opcode.banr -> registers[i1] and registers[i2]
-            Opcode.bani -> registers[i1] and i2
-            Opcode.borr -> registers[i1] or registers[i2]
-            Opcode.bori -> registers[i1] or i2
-            Opcode.setr -> registers[i1]
-            Opcode.seti -> i1
-            Opcode.gtir -> if (i1 > registers[i2]) 1 else 0
-            Opcode.gtri -> if (registers[i1] > i2) 1 else 0
-            Opcode.gtrr -> if (registers[i1] > registers[i2]) 1 else 0
-            Opcode.eqir -> if (i1 == registers[i2]) 1 else 0
-            Opcode.eqri -> if (registers[i1] == i2) 1 else 0
-            Opcode.eqrr -> if (registers[i1] == registers[i2]) 1 else 0
+        registers[ins.o] = when (ins.opcode) {
+            Opcode.addr -> registers[ins.i1] + registers[ins.i2]
+            Opcode.addi -> registers[ins.i1] + ins.i2
+            Opcode.mulr -> registers[ins.i1] * registers[ins.i2]
+            Opcode.muli -> registers[ins.i1] * ins.i2
+            Opcode.banr -> registers[ins.i1] and registers[ins.i2]
+            Opcode.bani -> registers[ins.i1] and ins.i2
+            Opcode.borr -> registers[ins.i1] or registers[ins.i2]
+            Opcode.bori -> registers[ins.i1] or ins.i2
+            Opcode.setr -> registers[ins.i1]
+            Opcode.seti -> ins.i1
+            Opcode.gtir -> if (ins.i1 > registers[ins.i2]) 1 else 0
+            Opcode.gtri -> if (registers[ins.i1] > ins.i2) 1 else 0
+            Opcode.gtrr -> if (registers[ins.i1] > registers[ins.i2]) 1 else 0
+            Opcode.eqir -> if (ins.i1 == registers[ins.i2]) 1 else 0
+            Opcode.eqri -> if (registers[ins.i1] == ins.i2) 1 else 0
+            Opcode.eqrr -> if (registers[ins.i1] == registers[ins.i2]) 1 else 0
         }
     }
 }
@@ -89,17 +87,15 @@ data class Program(val ipReg: Int, val instructions: List<Instruction>) {
             }
             return Instruction(
                     opcode,
-                    Triple(
-                            m.groupValues[2].toInt(),
-                            m.groupValues[3].toInt(),
-                            m.groupValues[4].toInt()
-                    )
+                    m.groupValues[2].toInt(),
+                    m.groupValues[3].toInt(),
+                    m.groupValues[4].toInt()
             )
         }
     }
 }
 
-data class Instruction(val opcode: Opcode, val operands: Triple<Int, Int, Int>)
+data class Instruction(val opcode: Opcode, val i1: Int, val i2: Int, val o: Int)
 
 enum class Opcode {
     addr,
