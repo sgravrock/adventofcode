@@ -4,10 +4,37 @@ fun main(args: Array<String>) {
     val start = Date()
     val classLoader = RoomEx::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
+    println(shortestPathToFarthestRoom(input))
     println("in ${Date().time - start.time}ms")
 }
 
+data class Coord(val x: Int, val y: Int)
 enum class Dir { N, E, W, S }
+
+fun shortestPathToFarthestRoom(input: String): Int {
+    val allPaths = RoomEx.parse(input).paths()
+    val longestPath = allPaths.maxBy { it.size }!!
+    val farthestRoom = destination(longestPath)
+    return allPaths
+        .filter { destination(it) == farthestRoom }
+        .map {
+            println("${it.size}: $it")
+            it
+        }
+        .map { it.size }
+        .min()!!
+}
+
+fun destination(path: List<Dir>): Coord {
+    return path.fold(Coord(0, 0), { acc, dir ->
+        when (dir) {
+            Dir.N -> Coord(acc.x, acc.y - 1)
+            Dir.S -> Coord(acc.x, acc.y + 1)
+            Dir.W -> Coord(acc.x - 1, acc.y)
+            Dir.E -> Coord(acc.x + 1, acc.y)
+        }
+    })
+}
 
 sealed class RoomEx {
     abstract fun paths(): Set<List<Dir>>
@@ -159,5 +186,4 @@ fun <T> concat(a: List<T>, b: List<T>): List<T> {
     val r = a.toMutableList()
     r.addAll(b)
     return r
-
 }

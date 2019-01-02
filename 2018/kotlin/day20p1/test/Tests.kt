@@ -3,6 +3,15 @@ import kotlin.test.assertEquals
 
 class Tests {
     @Test
+    fun testShortestPathToFarthestRoom() {
+        assertEquals(3, shortestPathToFarthestRoom("^WNE\$"))
+        assertEquals(10, shortestPathToFarthestRoom("^ENWWW(NEEE|SSE(EE|N))\$"))
+        assertEquals(18, shortestPathToFarthestRoom("^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN\$"))
+        assertEquals(23, shortestPathToFarthestRoom("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))\$"))
+        assertEquals(31, shortestPathToFarthestRoom("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))\$"))
+    }
+
+    @Test
     fun testRoomExParse_simple() {
         val input = "^NSEW\$"
         val expected = RoomEx.Expression(
