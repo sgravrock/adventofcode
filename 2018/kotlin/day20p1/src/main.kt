@@ -1,4 +1,5 @@
 import java.util.*
+import kotlin.math.min
 
 fun main(args: Array<String>) {
     val start = Date()
@@ -12,17 +13,24 @@ data class Coord(val x: Int, val y: Int)
 enum class Dir { N, E, W, S }
 
 fun shortestPathToFarthestRoom(input: String): Int {
-    val allPaths = RoomEx.parse(input).paths()
-    val longestPath = allPaths.maxBy { it.size }!!
-    val farthestRoom = destination(longestPath)
-    return allPaths
-        .filter { destination(it) == farthestRoom }
-        .map {
-            println("${it.size}: $it")
-            it
+    var farthestDistance = Int.MIN_VALUE
+    var shortestDistance = Int.MAX_VALUE
+    var farthestRoom: Coord? = null
+    RoomEx.parse(input).paths(null, {
+        // TODO: is conversion to list really useful here?
+        val path = it.toList()
+        val dest = destination(path)
+
+        if (path.size > farthestDistance) {
+            farthestDistance = path.size
+            shortestDistance = path.size
+            farthestRoom = dest
+        } else if (dest == farthestRoom) {
+            shortestDistance = min(shortestDistance, path.size)
         }
-        .map { it.size }
-        .min()!!
+    })
+    assert(farthestRoom != null)
+    return shortestDistance
 }
 
 fun destination(path: List<Dir>): Coord {
@@ -37,38 +45,35 @@ fun destination(path: List<Dir>): Coord {
 }
 
 sealed class RoomEx {
-    abstract fun paths(): Set<List<Dir>>
+    abstract fun paths(
+        prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit)
 
     data class Expression(val els: List<Term>) : RoomEx() {
-        override fun paths(): Set<List<Dir>> {
-            return pathsForSubList(els, 0)
+        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
+            pathsForSublist(prefix, 0, emit)
         }
 
-        private fun pathsForSubList(l: List<Term>, start: Int): Set<List<Dir>> {
-            if (!(start in l.indices)) {
-                return setOf(emptyList())
+        private fun pathsForSublist(prefix: PersistentList<Dir>?, start: Int, emit: (PersistentList<Dir>) -> Unit) {
+            if (start in els.indices) {
+                els[start].paths(prefix, { pathsForSublist(it, start + 1, emit) })
+            } else if (prefix != null) {
+                emit(prefix)
             }
-
-            val prefixes = l[start].paths()
-            assert(!prefixes.isEmpty())
-            val suffixes = pathsForSubList(l, start + 1)
-            assert(!suffixes.isEmpty())
-            return crossProduct(prefixes, suffixes)
         }
     }
 
     sealed class Term : RoomEx() {
         data class Atom(val d: Dir) : Term() {
-            override fun paths(): Set<List<Dir>> {
-                return setOf(listOf(d))
+            override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
+                emit(PersistentList(d, prefix))
             }
         }
 
         data class Options(val opts: List<Expression>) : Term() {
-            override fun paths(): Set<List<Dir>> {
-                val result = mutableSetOf<List<Dir>>()
-                opts.forEach { result.addAll(it.paths()) }
-                return result
+            override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
+                for (option in opts) {
+                    option.paths(prefix, emit)
+                }
             }
         }
     }
@@ -169,21 +174,13 @@ sealed class Token {
     data class Atom(val dir: Dir) : Token()
 }
 
-
-fun <T> crossProduct(a: Set<List<T>>, b: Set<List<T>>): Set<List<T>> {
-    val result = mutableSetOf<List<T>>()
-
-    for (aEl in a) {
-        for (bEl in b) {
-            result.add(concat(aEl, bEl))
+data class PersistentList<T>(val el: T, val prev: PersistentList<T>?) {
+    fun toList(): MutableList<T> {
+        val result = when (prev) {
+            null -> mutableListOf()
+            else -> prev.toList()
         }
+        result.add(el)
+        return result
     }
-
-    return result
-}
-
-fun <T> concat(a: List<T>, b: List<T>): List<T> {
-    val r = a.toMutableList()
-    r.addAll(b)
-    return r
 }

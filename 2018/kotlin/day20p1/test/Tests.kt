@@ -56,34 +56,19 @@ class Tests {
             listOf(Dir.E, Dir.N, Dir.S, Dir.E),
             listOf(Dir.E, Dir.N, Dir.S)
         )
-        assertEquals(expected, subject.paths())
+        val actual = mutableSetOf<List<Dir>>()
+        subject.paths(null, { actual.add(it!!.toList()) })
+        assertEquals(expected, actual)
     }
 
     @Test
-    fun testOptionsPaths_handlesEmpty() {
-        val subject = RoomEx.Term.Options(listOf(
-            RoomEx.Expression(listOf(RoomEx.Term.Atom(Dir.E))),
-            RoomEx.Expression(emptyList())
-        ))
+    fun testExpressionPaths_basic() {
+        val subject = RoomEx.parse("^ENS\$")
         val expected = setOf(
-            listOf(Dir.E),
-            listOf()
+            listOf(Dir.E, Dir.N, Dir.S)
         )
-        assertEquals(expected, subject.paths())
-    }
-
-    @Test
-    fun testCrossProduct() {
-        val a = setOf(listOf(1, 2), listOf(3))
-        val b = setOf(listOf(4), listOf(), listOf(5, 6))
-        val expected = setOf(
-            listOf(1, 2, 4),
-            listOf(1, 2),
-            listOf(1, 2, 5, 6),
-            listOf(3, 4),
-            listOf(3),
-            listOf(3, 5, 6)
-        )
-        assertEquals(expected, crossProduct(a, b))
+        val actual = mutableSetOf<List<Dir>>()
+        subject.paths(null, { actual.add(it.toList()) })
+        assertEquals(expected, actual)
     }
 }
