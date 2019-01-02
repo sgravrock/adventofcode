@@ -7,13 +7,43 @@ fun main(args: Array<String>) {
     println("in ${Date().time - start.time}ms")
 }
 
-enum class Dir { N, E, W, S}
+enum class Dir { N, E, W, S }
 
 sealed class RoomEx {
-    data class Expression(val els: List<Term>)
-    sealed class Term: RoomEx() {
-        data class Atom(val d: Dir): Term()
-        data class Options(val opts: List<Expression>): Term()
+    abstract fun paths(): Set<List<Dir>>
+
+    data class Expression(val els: List<Term>) : RoomEx() {
+        override fun paths(): Set<List<Dir>> {
+            return pathsForSubList(els, 0)
+        }
+
+        private fun pathsForSubList(l: List<Term>, start: Int): Set<List<Dir>> {
+            if (!(start in l.indices)) {
+                return setOf(emptyList())
+            }
+
+            val prefixes = l[start].paths()
+            assert(!prefixes.isEmpty())
+            val suffixes = pathsForSubList(l, start + 1)
+            assert(!suffixes.isEmpty())
+            return crossProduct(prefixes, suffixes)
+        }
+    }
+
+    sealed class Term : RoomEx() {
+        data class Atom(val d: Dir) : Term() {
+            override fun paths(): Set<List<Dir>> {
+                return setOf(listOf(d))
+            }
+        }
+
+        data class Options(val opts: List<Expression>) : Term() {
+            override fun paths(): Set<List<Dir>> {
+                val result = mutableSetOf<List<Dir>>()
+                opts.forEach { result.addAll(it.paths()) }
+                return result
+            }
+        }
     }
 
     companion object {
@@ -42,7 +72,7 @@ sealed class RoomEx {
         // Term: atom | lparen options
         private fun parseTerm(lexer: Lexer): Term? {
             val token = lexer.get()
-            return when(token) {
+            return when (token) {
                 is Token.Atom -> Term.Atom(token.dir)
                 Token.Lparen -> parseOptions(lexer)
                 else -> {
@@ -104,10 +134,30 @@ class Lexer(private val input: String) {
 }
 
 sealed class Token {
-    object Begin: Token()
-    object End: Token()
-    object Pipe: Token()
-    object Lparen: Token()
-    object Rparen: Token()
-    data class Atom(val dir: Dir): Token()
+    object Begin : Token()
+    object End : Token()
+    object Pipe : Token()
+    object Lparen : Token()
+    object Rparen : Token()
+    data class Atom(val dir: Dir) : Token()
+}
+
+
+fun <T> crossProduct(a: Set<List<T>>, b: Set<List<T>>): Set<List<T>> {
+    val result = mutableSetOf<List<T>>()
+
+    for (aEl in a) {
+        for (bEl in b) {
+            result.add(concat(aEl, bEl))
+        }
+    }
+
+    return result
+}
+
+fun <T> concat(a: List<T>, b: List<T>): List<T> {
+    val r = a.toMutableList()
+    r.addAll(b)
+    return r
+
 }
