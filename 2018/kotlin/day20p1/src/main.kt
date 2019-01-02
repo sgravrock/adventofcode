@@ -48,7 +48,7 @@ sealed class RoomEx {
     abstract fun paths(
         prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit)
 
-    data class Expression(val els: List<Term>) : RoomEx() {
+    data class Expression(val els: List<RoomEx>) : RoomEx() {
         override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
             pathsForSublist(prefix, 0, emit)
         }
@@ -62,18 +62,16 @@ sealed class RoomEx {
         }
     }
 
-    sealed class Term : RoomEx() {
-        data class Atom(val d: Dir) : Term() {
-            override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
-                emit(PersistentList(d, prefix))
-            }
+    data class Atom(val d: Dir) : RoomEx() {
+        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
+            emit(PersistentList(d, prefix))
         }
+    }
 
-        data class Options(val opts: List<Expression>) : Term() {
-            override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
-                for (option in opts) {
-                    option.paths(prefix, emit)
-                }
+    data class Options(val opts: List<Expression>) : RoomEx() {
+        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
+            for (option in opts) {
+                option.paths(prefix, emit)
             }
         }
     }
@@ -90,7 +88,7 @@ sealed class RoomEx {
 
         // Expression: term expression | nothing
         private fun parseExpression(lexer: Lexer): Expression {
-            val terms = mutableListOf<Term>()
+            val terms = mutableListOf<RoomEx>()
             var t = parseTerm(lexer)
 
             while (t != null) {
@@ -102,10 +100,10 @@ sealed class RoomEx {
         }
 
         // Term: atom | lparen options
-        private fun parseTerm(lexer: Lexer): Term? {
+        private fun parseTerm(lexer: Lexer): RoomEx? {
             val token = lexer.get()
             return when (token) {
-                is Token.Atom -> Term.Atom(token.dir)
+                is Token.Atom -> Atom(token.dir)
                 Token.Lparen -> parseOptions(lexer)
                 else -> {
                     lexer.unget()
@@ -115,7 +113,7 @@ sealed class RoomEx {
         }
 
         // options: expression pipe options | rparen
-        private fun parseOptions(lexer: Lexer): Term.Options {
+        private fun parseOptions(lexer: Lexer): Options {
             val expressions = mutableListOf<Expression>()
 
             while (true) {
@@ -129,7 +127,7 @@ sealed class RoomEx {
                 }
             }
 
-            return Term.Options(expressions)
+            return Options(expressions)
         }
     }
 }

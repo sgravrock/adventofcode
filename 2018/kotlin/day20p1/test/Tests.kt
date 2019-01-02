@@ -16,10 +16,10 @@ class Tests {
         val input = "^NSEW\$"
         val expected = RoomEx.Expression(
             listOf(
-                RoomEx.Term.Atom(Dir.N),
-                RoomEx.Term.Atom(Dir.S),
-                RoomEx.Term.Atom(Dir.E),
-                RoomEx.Term.Atom(Dir.W)
+                RoomEx.Atom(Dir.N),
+                RoomEx.Atom(Dir.S),
+                RoomEx.Atom(Dir.E),
+                RoomEx.Atom(Dir.W)
             )
         )
         assertEquals(expected, RoomEx.parse(input))
@@ -29,17 +29,17 @@ class Tests {
     fun testRoomExParse_nested() {
         val input = "^EN(NW|S(E|))\$"
         val expected = RoomEx.Expression(listOf(
-            RoomEx.Term.Atom(Dir.E),
-            RoomEx.Term.Atom(Dir.N),
-            RoomEx.Term.Options(listOf(
+            RoomEx.Atom(Dir.E),
+            RoomEx.Atom(Dir.N),
+            RoomEx.Options(listOf(
                 RoomEx.Expression(listOf(
-                    RoomEx.Term.Atom(Dir.N),
-                    RoomEx.Term.Atom(Dir.W)
+                    RoomEx.Atom(Dir.N),
+                    RoomEx.Atom(Dir.W)
                 )),
                 RoomEx.Expression(listOf(
-                    RoomEx.Term.Atom(Dir.S),
-                    RoomEx.Term.Options(listOf(
-                        RoomEx.Expression(listOf(RoomEx.Term.Atom(Dir.E))),
+                    RoomEx.Atom(Dir.S),
+                    RoomEx.Options(listOf(
+                        RoomEx.Expression(listOf(RoomEx.Atom(Dir.E))),
                         RoomEx.Expression(emptyList())
                     ))
                 ))
