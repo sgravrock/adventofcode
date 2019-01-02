@@ -16,7 +16,12 @@ fun shortestPathToFarthestRoom(input: String): Int {
     var farthestDistance = Int.MIN_VALUE
     var shortestDistance = Int.MAX_VALUE
     var farthestRoom: Coord? = null
+    var i = 0
     RoomEx.parse(input).paths(null, {
+        i++
+        if (i % 1000 == 0) {
+            println(i)
+        }
         // TODO: is conversion to list really useful here?
         val path = it.toList()
         val dest = destination(path)
@@ -29,6 +34,7 @@ fun shortestPathToFarthestRoom(input: String): Int {
             shortestDistance = min(shortestDistance, path.size)
         }
     })
+    println("Considered ${i} paths")
     assert(farthestRoom != null)
     return shortestDistance
 }
@@ -62,13 +68,16 @@ sealed class RoomEx {
         }
     }
 
-    data class Atom(val d: Dir) : RoomEx() {
-        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
-            emit(PersistentList(d, prefix))
+    data class AtomList(val els: List<Dir>): RoomEx() {
+        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>) -> Unit) {
+            val path = els.fold(prefix, {acc: PersistentList<Dir>?, el: Dir ->
+                PersistentList(el, acc)
+            })!!
+            emit(path)
         }
     }
 
-    data class Options(val opts: List<Expression>) : RoomEx() {
+    data class Options(val opts: List<RoomEx>) : RoomEx() {
         override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
             for (option in opts) {
                 option.paths(prefix, emit)
@@ -78,7 +87,7 @@ sealed class RoomEx {
 
     companion object {
         // RoomEx: BEGIN expression END
-        fun parse(input: String): RoomEx.Expression {
+        fun parse(input: String): RoomEx {
             val lexer = Lexer(input)
             lexer.require(Token.Begin)
             val result = parseExpression(lexer)
@@ -87,7 +96,7 @@ sealed class RoomEx {
         }
 
         // Expression: term expression | nothing
-        private fun parseExpression(lexer: Lexer): Expression {
+        private fun parseExpression(lexer: Lexer): RoomEx {
             val terms = mutableListOf<RoomEx>()
             var t = parseTerm(lexer)
 
@@ -96,14 +105,26 @@ sealed class RoomEx {
                 t = parseTerm(lexer)
             }
 
-            return Expression(terms)
+            if (terms.size == 1) {
+                return terms[0] // elide unnecessary non-terminals
+            } else {
+                return Expression(terms)
+            }
         }
 
-        // Term: atom | lparen options
+        // Term: atomList | lparen options
         private fun parseTerm(lexer: Lexer): RoomEx? {
-            val token = lexer.get()
+            var token = lexer.get()
             return when (token) {
-                is Token.Atom -> Atom(token.dir)
+                is Token.Atom -> {
+                    val atoms = mutableListOf<Dir>()
+                    while (token is Token.Atom) {
+                        atoms.add(token.dir)
+                        token = lexer.get()
+                    }
+                    lexer.unget()
+                    AtomList(atoms)
+                }
                 Token.Lparen -> parseOptions(lexer)
                 else -> {
                     lexer.unget()
@@ -114,7 +135,7 @@ sealed class RoomEx {
 
         // options: expression pipe options | rparen
         private fun parseOptions(lexer: Lexer): Options {
-            val expressions = mutableListOf<Expression>()
+            val expressions = mutableListOf<RoomEx>()
 
             while (true) {
                 expressions.add(parseExpression(lexer))

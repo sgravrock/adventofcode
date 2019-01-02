@@ -14,32 +14,39 @@ class Tests {
     @Test
     fun testRoomExParse_simple() {
         val input = "^NSEW\$"
-        val expected = RoomEx.Expression(
-            listOf(
-                RoomEx.Atom(Dir.N),
-                RoomEx.Atom(Dir.S),
-                RoomEx.Atom(Dir.E),
-                RoomEx.Atom(Dir.W)
-            )
+        val expected = RoomEx.AtomList(
+            listOf(Dir.N, Dir.S, Dir.E, Dir.W)
         )
         assertEquals(expected, RoomEx.parse(input))
     }
 
     @Test
+    fun testRoomExParse_option() {
+        val input = "^NS(E|W)\$"
+        val expected = RoomEx.Expression(
+            listOf(
+                RoomEx.AtomList(listOf(Dir.N, Dir.S)),
+                RoomEx.Options(listOf(
+                    RoomEx.AtomList(listOf(Dir.E)),
+                    RoomEx.AtomList(listOf(Dir.W))
+                ))
+            )
+        )
+        assertEquals(expected, RoomEx.parse(input))
+    }
+
+
+    @Test
     fun testRoomExParse_nested() {
         val input = "^EN(NW|S(E|))\$"
         val expected = RoomEx.Expression(listOf(
-            RoomEx.Atom(Dir.E),
-            RoomEx.Atom(Dir.N),
+            RoomEx.AtomList(listOf(Dir.E, Dir.N)),
             RoomEx.Options(listOf(
+                RoomEx.AtomList(listOf(Dir.N, Dir.W)),
                 RoomEx.Expression(listOf(
-                    RoomEx.Atom(Dir.N),
-                    RoomEx.Atom(Dir.W)
-                )),
-                RoomEx.Expression(listOf(
-                    RoomEx.Atom(Dir.S),
+                    RoomEx.AtomList(listOf(Dir.S)),
                     RoomEx.Options(listOf(
-                        RoomEx.Expression(listOf(RoomEx.Atom(Dir.E))),
+                        RoomEx.AtomList(listOf(Dir.E)),
                         RoomEx.Expression(emptyList())
                     ))
                 ))
