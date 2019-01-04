@@ -7,81 +7,78 @@ fun main(args: Array<String>) {
     val input = classLoader.getResource("input.txt").readText()
     println(shortestPathToFarthestRoom(input))
     println("in ${Date().time - start.time}ms")
+    // 3964 is too low
 }
 
-data class Coord(val x: Int, val y: Int)
+data class Coord(val x: Int, val y: Int) {
+    fun add(other: Coord): Coord {
+        return Coord(x + other.x, y + other.y)
+    }
+
+    fun neighbor(dir: Dir): Coord {
+        return when (dir) {
+            Dir.N -> Coord(x, y - 1)
+            Dir.S -> Coord(x, y + 1)
+            Dir.W -> Coord(x - 1, y)
+            Dir.E -> Coord(x + 1, y)
+        }
+    }
+}
+
 enum class Dir { N, E, W, S }
+data class Path(val dest: Coord, val len: Int) {
+    fun append(other: Path): Path {
+        return Path(dest.add(other.dest), len + other.len)
+    }
+
+    companion object {
+        fun crossProduct(a: Set<Path>, b: Set<Path>): Set<Path> {
+            return a.flatMap { aE -> b.map { bE -> aE.append(bE)} }
+                .toSet()
+        }
+    }
+}
 
 fun shortestPathToFarthestRoom(input: String): Int {
-    var farthestDistance = Int.MIN_VALUE
-    var shortestDistance = Int.MAX_VALUE
-    var farthestRoom: Coord? = null
-    var i = 0
-    RoomEx.parse(input).paths(null, {
-        i++
-        if (i % 1000 == 0) {
-            println(i)
-        }
-        // TODO: is conversion to list really useful here?
-        val path = it.toList()
-        val dest = destination(path)
+    val distancesToRooms = mutableMapOf<Coord, Int>()
+    val paths = RoomEx.parse(input).paths()
+    println("Found ${paths.size} paths")
 
-        if (path.size > farthestDistance) {
-            farthestDistance = path.size
-            shortestDistance = path.size
-            farthestRoom = dest
-        } else if (dest == farthestRoom) {
-            shortestDistance = min(shortestDistance, path.size)
-        }
-    })
-    println("Considered ${i} paths")
-    assert(farthestRoom != null)
-    return shortestDistance
+    for (path in paths) {
+        distancesToRooms[path.dest] = min(
+            path.len,
+            distancesToRooms.getOrDefault(path.dest, Int.MAX_VALUE)
+        )
+    }
+
+    println("Found ${distancesToRooms.size} rooms")
+    return distancesToRooms.values.max()!!
 }
 
-fun destination(path: List<Dir>): Coord {
-    return path.fold(Coord(0, 0), { acc, dir ->
-        when (dir) {
-            Dir.N -> Coord(acc.x, acc.y - 1)
-            Dir.S -> Coord(acc.x, acc.y + 1)
-            Dir.W -> Coord(acc.x - 1, acc.y)
-            Dir.E -> Coord(acc.x + 1, acc.y)
-        }
-    })
-}
 
 sealed class RoomEx {
-    abstract fun paths(
-        prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit)
-
+    abstract fun paths(): Set<Path>
     data class Expression(val els: List<RoomEx>) : RoomEx() {
-        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
-            pathsForSublist(prefix, 0, emit)
-        }
-
-        private fun pathsForSublist(prefix: PersistentList<Dir>?, start: Int, emit: (PersistentList<Dir>) -> Unit) {
-            if (start in els.indices) {
-                els[start].paths(prefix, { pathsForSublist(it, start + 1, emit) })
-            } else if (prefix != null) {
-                emit(prefix)
-            }
+        override fun paths(): Set<Path> {
+            val start = setOf(Path(Coord(0, 0), 0))
+            return els.fold(start, { prev, el ->
+                Path.crossProduct(prev, el.paths())
+            })
         }
     }
 
     data class AtomList(val els: List<Dir>): RoomEx() {
-        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>) -> Unit) {
-            val path = els.fold(prefix, {acc: PersistentList<Dir>?, el: Dir ->
-                PersistentList(el, acc)
-            })!!
-            emit(path)
+        override fun paths(): Set<Path> {
+            val dest = els.fold(Coord(0, 0), { prev, el -> prev.neighbor(el)})
+            return setOf(Path(dest, els.size))
         }
     }
 
     data class Options(val opts: List<RoomEx>) : RoomEx() {
-        override fun paths(prefix: PersistentList<Dir>?, emit: (PersistentList<Dir>)->Unit) {
-            for (option in opts) {
-                option.paths(prefix, emit)
-            }
+        override fun paths(): Set<Path> {
+            val result = mutableSetOf<Path>()
+            opts.forEach { result.addAll(it.paths()) }
+            return result
         }
     }
 
@@ -191,15 +188,4 @@ sealed class Token {
     object Lparen : Token()
     object Rparen : Token()
     data class Atom(val dir: Dir) : Token()
-}
-
-data class PersistentList<T>(val el: T, val prev: PersistentList<T>?) {
-    fun toList(): MutableList<T> {
-        val result = when (prev) {
-            null -> mutableListOf()
-            else -> prev.toList()
-        }
-        result.add(el)
-        return result
-    }
 }
