@@ -14,10 +14,6 @@ fun answerForPuzzleInput(): Int {
 }
 
 data class Coord(val x: Int, val y: Int) {
-    fun add(other: Coord): Coord {
-        return Coord(x + other.x, y + other.y)
-    }
-
     fun neighbor(dir: Dir): Coord {
         return when (dir) {
             Dir.N -> Coord(x, y - 1)
@@ -29,18 +25,6 @@ data class Coord(val x: Int, val y: Int) {
 }
 
 enum class Dir { N, E, W, S }
-data class Path(val dest: Coord, val len: Int) {
-    fun append(other: Path): Path {
-        return Path(dest.add(other.dest), len + other.len)
-    }
-
-    companion object {
-        fun crossProduct(a: Set<Path>, b: Set<Path>): Set<Path> {
-            return a.flatMap { aE -> b.map { bE -> aE.append(bE)} }
-                .toSet()
-        }
-    }
-}
 
 fun shortestPathToFarthestRoom(input: String): Int {
     val world = World.build(RoomEx.parse(input))

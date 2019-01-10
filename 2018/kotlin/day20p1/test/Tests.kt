@@ -169,26 +169,6 @@ class Tests {
     }
 
     @Test
-    fun testCrossProduct() {
-        val a = setOf(
-            Path(Coord(0, 0), 0),
-            Path(Coord(1, 1), 1)
-        )
-        val b = setOf(
-            Path(Coord(3, 3), 3),
-            Path(Coord(5, 5), 5)
-        )
-        val expected = setOf(
-            Path(Coord(3, 3), 3),
-            Path(Coord(5, 5), 5),
-            Path(Coord(4, 4), 4),
-            Path(Coord(6, 6), 6)
-
-        )
-        assertEquals(expected, Path.crossProduct(a, b))
-    }
-
-    @Test
     fun testWorldToString() {
         val input = mapOf(
             Coord(0, 0) to Tile.Room,
