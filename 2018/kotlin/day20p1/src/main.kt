@@ -3,11 +3,14 @@ import kotlin.math.min
 
 fun main(args: Array<String>) {
     val start = Date()
+    println(answerForPuzzleInput())
+    println("in ${Date().time - start.time}ms")
+}
+
+fun answerForPuzzleInput(): Int {
     val classLoader = RoomEx::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
-    println(shortestPathToFarthestRoom(input))
-    println("in ${Date().time - start.time}ms")
-    // 3964 is too low
+    return shortestPathToFarthestRoom(input)
 }
 
 data class Coord(val x: Int, val y: Int) {
@@ -40,45 +43,119 @@ data class Path(val dest: Coord, val len: Int) {
 }
 
 fun shortestPathToFarthestRoom(input: String): Int {
+    val world = World.build(RoomEx.parse(input))
     val distancesToRooms = mutableMapOf<Coord, Int>()
-    val paths = RoomEx.parse(input).paths()
-    println("Found ${paths.size} paths")
+    var nPaths = 0
 
-    for (path in paths) {
-        distancesToRooms[path.dest] = min(
-            path.len,
-            distancesToRooms.getOrDefault(path.dest, Int.MAX_VALUE)
+    world.paths { dest, len ->
+        nPaths++
+        distancesToRooms[dest] = min(
+            len,
+            distancesToRooms.getOrDefault(dest, Int.MAX_VALUE)
         )
     }
 
+    println("Found ${nPaths} paths")
     println("Found ${distancesToRooms.size} rooms")
     return distancesToRooms.values.max()!!
 }
 
+enum class Tile {
+    Room,
+    Wall,
+    Hdoor,
+    Vdoor
+}
+
+class World(private val grid: Map<Coord, Tile>) {
+    fun paths(emit: (Coord, Int) -> Unit) {
+        dfs(mutableListOf(Coord(0, 0)), emit)
+    }
+
+    private fun dfs(rooms: MutableList<Coord>, emit: (Coord, Int) -> Unit) {
+        for (d in Dir.values()) {
+            val doorCoord = rooms.last().neighbor(d)
+
+            when (grid.getOrDefault(doorCoord, Tile.Wall)) {
+                Tile.Hdoor, Tile.Vdoor -> {
+                    val nextRoomCoord = doorCoord.neighbor(d)
+
+                    if (!rooms.contains(nextRoomCoord)) {
+                        rooms.add(nextRoomCoord)
+                        emit(rooms.last(), rooms.size - 1)
+                        dfs(rooms, emit)
+                        rooms.removeAt(rooms.size - 1)
+                    }
+                }
+                Tile.Wall -> {}
+                Tile.Room -> throw Exception("Can't happen: two adjacent rooms")
+            }
+        }
+    }
+
+
+    override fun toString(): String {
+        val minX = grid.keys.asSequence().map { it.x }.min()!! - 1
+        val maxX = grid.keys.asSequence().map { it.x }.max()!! + 1
+        val minY = grid.keys.asSequence().map { it.y }.min()!! - 1
+        val maxY = grid.keys.asSequence().map { it.y }.max()!! + 1
+
+        return (minY..maxY).map { y ->
+            (minX..maxX).map { x ->
+                when (grid.getOrDefault(Coord(x, y), Tile.Wall)) {
+                    Tile.Room -> if (y == 0 && x == 0) 'X' else '.'
+                    Tile.Wall -> '#'
+                    Tile.Vdoor -> '|'
+                    Tile.Hdoor -> '-'
+                }
+            }.joinToString("")
+        }.joinToString("\n")
+    }
+
+    companion object {
+        fun build(input: RoomEx): World {
+            val origin = Coord(0, 0)
+            val tiles = mutableMapOf(origin to Tile.Room)
+            input.walk(origin, { c, t -> tiles[c] = t })
+            return World(tiles)
+        }
+    }
+}
+
 
 sealed class RoomEx {
-    abstract fun paths(): Set<Path>
+    abstract fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord>
+
     data class Expression(val els: List<RoomEx>) : RoomEx() {
-        override fun paths(): Set<Path> {
-            val start = setOf(Path(Coord(0, 0), 0))
-            return els.fold(start, { prev, el ->
-                Path.crossProduct(prev, el.paths())
+        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+            return els.fold(setOf(start), { prevDests, el ->
+                prevDests
+                    .flatMap { prev -> el.walk(prev, visit) }
+                    .toSet()
             })
         }
     }
 
     data class AtomList(val els: List<Dir>): RoomEx() {
-        override fun paths(): Set<Path> {
-            val dest = els.fold(Coord(0, 0), { prev, el -> prev.neighbor(el)})
-            return setOf(Path(dest, els.size))
+        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+            val dest = els.fold(start, { prev, dir ->
+                val door = prev.neighbor(dir)
+                visit(door, when(dir) {
+                    Dir.N, Dir.S -> Tile.Hdoor
+                    Dir.W, Dir.E -> Tile.Vdoor
+                })
+                val room = door.neighbor(dir)
+                visit(room, Tile.Room)
+                room
+            })
+
+            return setOf(dest)
         }
     }
 
     data class Options(val opts: List<RoomEx>) : RoomEx() {
-        override fun paths(): Set<Path> {
-            val result = mutableSetOf<Path>()
-            opts.forEach { result.addAll(it.paths()) }
-            return result
+        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+            return opts.flatMap { it.walk(start, visit) }.toSet()
         }
     }
 
