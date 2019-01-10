@@ -29,18 +29,14 @@ enum class Dir { N, E, W, S }
 fun shortestPathToFarthestRoom(input: String): Int {
     val world = World.build(RoomExParser.parse(input))
     val distancesToRooms = mutableMapOf<Coord, Int>()
-    var nPaths = 0
 
     world.paths { dest, len ->
-        nPaths++
         distancesToRooms[dest] = min(
             len,
             distancesToRooms.getOrDefault(dest, Int.MAX_VALUE)
         )
     }
 
-    println("Found ${nPaths} paths")
-    println("Found ${distancesToRooms.size} rooms")
     return distancesToRooms.values.max()!!
 }
 
@@ -142,111 +138,93 @@ data class Options(val opts: List<RoomEx>) : RoomEx {
     }
 }
 
-class RoomExParser {
+class RoomExParser(private val input: String) {
     companion object {
-        // RoomEx: BEGIN expression END
         fun parse(input: String): RoomEx {
-            val lexer = Lexer(input)
-            lexer.require(Token.Begin)
-            val result = parseExpression(lexer)
-            lexer.require(Token.End)
-            return result
-        }
-
-        // Expression: term expression | nothing
-        private fun parseExpression(lexer: Lexer): RoomEx {
-            val terms = mutableListOf<RoomEx>()
-            var t = parseTerm(lexer)
-
-            while (t != null) {
-                terms.add(t)
-                t = parseTerm(lexer)
-            }
-
-            if (terms.size == 1) {
-                return terms[0] // elide unnecessary non-terminals
-            } else {
-                return Expression(terms)
-            }
-        }
-
-        // Term: atomList | lparen options
-        private fun parseTerm(lexer: Lexer): RoomEx? {
-            var token = lexer.get()
-            return when (token) {
-                is Token.Atom -> {
-                    val atoms = mutableListOf<Dir>()
-                    while (token is Token.Atom) {
-                        atoms.add(token.dir)
-                        token = lexer.get()
-                    }
-                    lexer.unget()
-                    AtomList(atoms)
-                }
-                Token.Lparen -> parseOptions(lexer)
-                else -> {
-                    lexer.unget()
-                    null
-                }
-            }
-        }
-
-        // options: expression pipe options | rparen
-        private fun parseOptions(lexer: Lexer): Options {
-            val expressions = mutableListOf<RoomEx>()
-
-            while (true) {
-                expressions.add(parseExpression(lexer))
-                val t = lexer.get()
-
-                if (t == Token.Rparen) {
-                    break
-                } else if (t != Token.Pipe) {
-                    throw Error("Expected Rparen or Pipe but got $t")
-                }
-            }
-
-            return Options(expressions)
+            return RoomExParser(input).parse()
         }
     }
-}
+    var i: Int = 0
 
-class Lexer(private val input: String) {
-    private var i = 0
+    // RoomEx: BEGIN expression END
+    fun parse(): RoomEx {
+        require('^')
+        val result = parseExpression()
+        require('$')
+        return result
+    }
 
-    fun get(): Token {
-        val c = input[i++]
-        return when (c) {
-            '^' -> Token.Begin
-            '$' -> Token.End
-            '|' -> Token.Pipe
-            '(' -> Token.Lparen
-            ')' -> Token.Rparen
-            'N' -> Token.Atom(Dir.N)
-            'E' -> Token.Atom(Dir.E)
-            'W' -> Token.Atom(Dir.W)
-            'S' -> Token.Atom(Dir.S)
-            else -> throw Exception("Unrecognized: $c")
+    // Expression: term expression | nothing
+    private fun parseExpression(): RoomEx {
+        val terms = mutableListOf<RoomEx>()
+        var t = parseTerm()
+
+        while (t != null) {
+            terms.add(t)
+            t = parseTerm()
+        }
+
+        if (terms.size == 1) {
+            return terms[0] // elide unnecessary non-terminals
+        } else {
+            return Expression(terms)
         }
     }
 
-    fun unget() {
-        i--
+    // Term: atomList | lparen options
+    private fun parseTerm(): RoomEx? {
+        var token = input[i++]
+        return when (token) {
+            'N', 'E', 'W', 'S' -> {
+                val atoms = mutableListOf<Dir>()
+                while (token in listOf('N', 'E', 'W', 'S')) {
+                    atoms.add(dirFromChar(token))
+                    token = input[i++]
+                }
+                i--
+                AtomList(atoms)
+            }
+            '(' -> parseOptions()
+            else -> {
+                i--
+                null
+            }
+        }
     }
 
-    fun require(expected: Token) {
-        val actual = get()
+    // options: expression pipe options | rparen
+    private fun parseOptions(): Options {
+        val expressions = mutableListOf<RoomEx>()
+
+        while (true) {
+            expressions.add(parseExpression())
+            val t = input[i++]
+
+            if (t == ')') {
+                break
+            } else if (t != '|') {
+                throw Error("Expected Rparen or Pipe but got $t")
+            }
+        }
+
+        return Options(expressions)
+    }
+
+    private fun require(expected: Char) {
+        val actual = input[i++]
+
         if (actual != expected) {
             throw Error("Expected $expected but got $actual")
         }
     }
-}
 
-sealed class Token {
-    object Begin : Token()
-    object End : Token()
-    object Pipe : Token()
-    object Lparen : Token()
-    object Rparen : Token()
-    data class Atom(val dir: Dir) : Token()
+    private fun dirFromChar(c: Char): Dir {
+        return when(c) {
+            'N' -> Dir.N
+            'E' -> Dir.E
+            'S' -> Dir.S
+            'W' -> Dir.W
+            else -> throw Exception("Invalid direction char: $c")
+        }
+    }
 }
