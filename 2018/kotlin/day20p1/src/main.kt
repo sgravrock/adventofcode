@@ -27,7 +27,7 @@ data class Coord(val x: Int, val y: Int) {
 enum class Dir { N, E, W, S }
 
 fun shortestPathToFarthestRoom(input: String): Int {
-    val world = World.build(RoomEx.parse(input))
+    val world = World.build(RoomExParser.parse(input))
     val distancesToRooms = mutableMapOf<Coord, Int>()
     var nPaths = 0
 
@@ -77,7 +77,6 @@ class World(private val grid: Map<Coord, Tile>) {
         }
     }
 
-
     override fun toString(): String {
         val minX = grid.keys.asSequence().map { it.x }.min()!! - 1
         val maxX = grid.keys.asSequence().map { it.x }.max()!! + 1
@@ -106,43 +105,44 @@ class World(private val grid: Map<Coord, Tile>) {
     }
 }
 
+interface RoomEx {
+    fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord>
+}
 
-sealed class RoomEx {
-    abstract fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord>
+data class Expression(val els: List<RoomEx>) : RoomEx {
+    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+        return els.fold(setOf(start), { prevDests, el ->
+            prevDests
+                .flatMap { prev -> el.walk(prev, visit) }
+                .toSet()
+        })
+    }
+}
 
-    data class Expression(val els: List<RoomEx>) : RoomEx() {
-        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-            return els.fold(setOf(start), { prevDests, el ->
-                prevDests
-                    .flatMap { prev -> el.walk(prev, visit) }
-                    .toSet()
+data class AtomList(val els: List<Dir>): RoomEx {
+    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+        val dest = els.fold(start, { prev, dir ->
+            val door = prev.neighbor(dir)
+            visit(door, when(dir) {
+                Dir.N, Dir.S -> Tile.Hdoor
+                Dir.W, Dir.E -> Tile.Vdoor
             })
-        }
+            val room = door.neighbor(dir)
+            visit(room, Tile.Room)
+            room
+        })
+
+        return setOf(dest)
     }
+}
 
-    data class AtomList(val els: List<Dir>): RoomEx() {
-        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-            val dest = els.fold(start, { prev, dir ->
-                val door = prev.neighbor(dir)
-                visit(door, when(dir) {
-                    Dir.N, Dir.S -> Tile.Hdoor
-                    Dir.W, Dir.E -> Tile.Vdoor
-                })
-                val room = door.neighbor(dir)
-                visit(room, Tile.Room)
-                room
-            })
-
-            return setOf(dest)
-        }
+data class Options(val opts: List<RoomEx>) : RoomEx {
+    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
+        return opts.flatMap { it.walk(start, visit) }.toSet()
     }
+}
 
-    data class Options(val opts: List<RoomEx>) : RoomEx() {
-        override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-            return opts.flatMap { it.walk(start, visit) }.toSet()
-        }
-    }
-
+class RoomExParser {
     companion object {
         // RoomEx: BEGIN expression END
         fun parse(input: String): RoomEx {

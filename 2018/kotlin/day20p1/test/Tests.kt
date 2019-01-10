@@ -17,52 +17,52 @@ class Tests {
     }
 
     @Test
-    fun testRoomExParse_simple() {
+    fun testRoomExParserParse_simple() {
         val input = "^NSEW\$"
-        val expected = RoomEx.AtomList(
+        val expected = AtomList(
             listOf(Dir.N, Dir.S, Dir.E, Dir.W)
         )
-        assertEquals(expected, RoomEx.parse(input))
+        assertEquals(expected, RoomExParser.parse(input))
     }
 
     @Test
-    fun testRoomExParse_option() {
+    fun ttestRoomExParserParse_option() {
         val input = "^NS(E|W)\$"
-        val expected = RoomEx.Expression(
+        val expected = Expression(
             listOf(
-                RoomEx.AtomList(listOf(Dir.N, Dir.S)),
-                RoomEx.Options(listOf(
-                    RoomEx.AtomList(listOf(Dir.E)),
-                    RoomEx.AtomList(listOf(Dir.W))
+                AtomList(listOf(Dir.N, Dir.S)),
+                Options(listOf(
+                    AtomList(listOf(Dir.E)),
+                    AtomList(listOf(Dir.W))
                 ))
             )
         )
-        assertEquals(expected, RoomEx.parse(input))
+        assertEquals(expected, RoomExParser.parse(input))
     }
 
 
     @Test
-    fun testRoomExParse_nested() {
+    fun testRoomExParserParse_nested() {
         val input = "^EN(NW|S(E|))\$"
-        val expected = RoomEx.Expression(listOf(
-            RoomEx.AtomList(listOf(Dir.E, Dir.N)),
-            RoomEx.Options(listOf(
-                RoomEx.AtomList(listOf(Dir.N, Dir.W)),
-                RoomEx.Expression(listOf(
-                    RoomEx.AtomList(listOf(Dir.S)),
-                    RoomEx.Options(listOf(
-                        RoomEx.AtomList(listOf(Dir.E)),
-                        RoomEx.Expression(emptyList())
+        val expected = Expression(listOf(
+            AtomList(listOf(Dir.E, Dir.N)),
+            Options(listOf(
+                AtomList(listOf(Dir.N, Dir.W)),
+                Expression(listOf(
+                    AtomList(listOf(Dir.S)),
+                    Options(listOf(
+                        AtomList(listOf(Dir.E)),
+                        Expression(emptyList())
                     ))
                 ))
             ))
         ))
-        assertEquals(expected, RoomEx.parse(input))
+        assertEquals(expected, RoomExParser.parse(input))
     }
 
     @Test
     fun testRoomExWalk_nested() {
-        val subject = RoomEx.parse("^E(N|S(E|))\$")
+        val subject = RoomExParser.parse("^E(N|S(E|))\$")
         val expectedTiles = mapOf(
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
@@ -86,7 +86,7 @@ class Tests {
 
     @Test
     fun testRoomExWalk_moreAfterOptions() {
-        val subject = RoomEx.parse("^E(N|S)W$")
+        val subject = RoomExParser.parse("^E(N|S)W$")
         val expectedTiles = mapOf(
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
@@ -111,7 +111,7 @@ class Tests {
 
     @Test
     fun testAtomListWalk() {
-        val subject = RoomEx.parse("^EN\$")
+        val subject = RoomExParser.parse("^EN\$")
         val expectedTiles = mapOf(
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
@@ -127,9 +127,9 @@ class Tests {
 
     @Test
     fun testExpressionWalk() {
-        val subject = RoomEx.Expression(listOf(
-            RoomEx.AtomList(listOf(Dir.E)),
-            RoomEx.AtomList(listOf(Dir.N))
+        val subject = Expression(listOf(
+            AtomList(listOf(Dir.E)),
+            AtomList(listOf(Dir.N))
         ))
         val expectedTiles = mapOf(
             Coord(1, 0) to Tile.Vdoor,
@@ -146,9 +146,9 @@ class Tests {
 
     @Test
     fun testOptionsWalk_basic() {
-        val subject = RoomEx.Options(listOf(
-            RoomEx.AtomList(listOf(Dir.N, Dir.W)),
-            RoomEx.AtomList(listOf(Dir.S))
+        val subject = Options(listOf(
+            AtomList(listOf(Dir.N, Dir.W)),
+            AtomList(listOf(Dir.S))
         ))
         val expectedTiles = mapOf(
             Coord(0, -1) to Tile.Hdoor,
@@ -193,7 +193,7 @@ class Tests {
 
     @Test
     fun testWorldBuild() {
-        val input = RoomEx.parse("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))\$")
+        val input = RoomExParser.parse("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))\$")
         val expected = """
             #############
             #.|.|.|.|.|.#
