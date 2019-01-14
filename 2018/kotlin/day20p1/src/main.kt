@@ -8,7 +8,7 @@ fun main(args: Array<String>) {
 }
 
 fun answerForPuzzleInput(): Int {
-    val classLoader = RoomEx::class.java.classLoader
+    val classLoader = Coord::class.java.classLoader
     val input = classLoader.getResource("input.txt").readText()
     return shortestPathToFarthestRoom(input)
 }
@@ -27,7 +27,7 @@ data class Coord(val x: Int, val y: Int) {
 enum class Dir { N, E, W, S }
 
 fun shortestPathToFarthestRoom(input: String): Int {
-    val world = World.build(RoomExParser.parse(input))
+    val world = World(parseRoomEx(input))
     val distancesToRooms = mutableMapOf<Coord, Int>()
 
     world.paths { dest, len ->
@@ -90,141 +90,143 @@ class World(private val grid: Map<Coord, Tile>) {
             }.joinToString("")
         }.joinToString("\n")
     }
-
-    companion object {
-        fun build(input: RoomEx): World {
-            val origin = Coord(0, 0)
-            val tiles = mutableMapOf(origin to Tile.Room)
-            input.walk(origin, { c, t -> tiles[c] = t })
-            return World(tiles)
-        }
-    }
 }
 
-interface RoomEx {
-    fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord>
-}
+fun parseRoomEx(input: String): Map<Coord, Tile> {
+    val tiles = mutableMapOf(Coord(0, 0) to Tile.Room)
+    val contextStack = mutableListOf<ParsingContext>(
+        ParsingContext.NonOptionGroup(listOf(Coord(0, 0)))
+    )
 
-data class Expression(val els: List<RoomEx>) : RoomEx {
-    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-        return els.fold(setOf(start), { prevDests, el ->
-            prevDests
-                .flatMap { prev -> el.walk(prev, visit) }
-                .toSet()
-        })
-    }
-}
+    require(input, 0, '^')
 
-data class AtomList(val els: List<Dir>): RoomEx {
-    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-        val dest = els.fold(start, { prev, dir ->
-            val door = prev.neighbor(dir)
-            visit(door, when(dir) {
-                Dir.N, Dir.S -> Tile.Hdoor
-                Dir.W, Dir.E -> Tile.Vdoor
-            })
-            val room = door.neighbor(dir)
-            visit(room, Tile.Room)
-            room
-        })
+    for (i in 1..(input.length - 2)) {
+        val c = input[i];
+        val top = contextStack.last()
 
-        return setOf(dest)
-    }
-}
-
-data class Options(val opts: List<RoomEx>) : RoomEx {
-    override fun walk(start: Coord, visit: (Coord, Tile) -> Unit): Set<Coord> {
-        return opts.flatMap { it.walk(start, visit) }.toSet()
-    }
-}
-
-class RoomExParser(private val input: String) {
-    companion object {
-        fun parse(input: String): RoomEx {
-            return RoomExParser(input).parse()
-        }
-    }
-    var i: Int = 0
-
-    // RoomEx: BEGIN expression END
-    fun parse(): RoomEx {
-        require('^')
-        val result = parseExpression()
-        require('$')
-        return result
-    }
-
-    // Expression: term expression | nothing
-    private fun parseExpression(): RoomEx {
-        val terms = mutableListOf<RoomEx>()
-        var t = parseTerm()
-
-        while (t != null) {
-            terms.add(t)
-            t = parseTerm()
-        }
-
-        if (terms.size == 1) {
-            return terms[0] // elide unnecessary non-terminals
-        } else {
-            return Expression(terms)
-        }
-    }
-
-    // Term: atomList | lparen options
-    private fun parseTerm(): RoomEx? {
-        var token = input[i++]
-        return when (token) {
+        when (c) {
             'N', 'E', 'W', 'S' -> {
-                val atoms = mutableListOf<Dir>()
-                while (token in listOf('N', 'E', 'W', 'S')) {
-                    atoms.add(dirFromChar(token))
-                    token = input[i++]
+                val dir = when (c) {
+                    'N' -> Dir.N
+                    'E' -> Dir.E
+                    'W' -> Dir.W
+                    'S' -> Dir.S
+                    else -> throw Error("Can't happen")
                 }
-                i--
-                AtomList(atoms)
+                top.advance(dir)
+                val door = when (c) {
+                    'N', 'S' -> Tile.Hdoor
+                    'E', 'W' -> Tile.Vdoor
+                    else -> throw Error("Can't happen")
+                }
+                top.markPos(door, tiles)
+                top.advance(dir)
+                top.markPos(Tile.Room, tiles)
             }
-            '(' -> parseOptions()
-            else -> {
-                i--
-                null
+            '(' -> {
+                val initialPoses = when (input[i - 1]) {
+                    '(' -> {
+                        assert(contextStack.size > 1)
+                        contextStack[contextStack.size - 2].positions()
+                    }
+                    else -> when (top) {
+                        is ParsingContext.NonOptionGroup -> top.positions()
+                        is ParsingContext.OptionGroup -> top.options.last()
+                    }
+                }
+                contextStack.add(ParsingContext.OptionGroup(initialPoses))
             }
+            '|' -> {
+                when (top) {
+                    is ParsingContext.OptionGroup -> {
+                        assert(contextStack.size > 1)
+                        val nextDown = contextStack[contextStack.size - 2]
+                        top.options.add(nextDown.positions())
+                    }
+                    is ParsingContext.NonOptionGroup -> {
+                        throw Error("Unexpected | when not in an option group")
+                    }
+                }
+            }
+            ')' -> {
+                if (top is ParsingContext.NonOptionGroup) {
+                    throw Error("Unexpected ) when not in an option group")
+                }
+
+                val positions = top.positions()
+                contextStack.removeAt(contextStack.size - 1)
+                contextStack.last().receiveNestedPositions(positions)
+            }
+            else -> throw Error("Unexpected: $c")
         }
     }
 
-    // options: expression pipe options | rparen
-    private fun parseOptions(): Options {
-        val expressions = mutableListOf<RoomEx>()
 
-        while (true) {
-            expressions.add(parseExpression())
-            val t = input[i++]
+    if (contextStack.size != 1) {
+        throw Error("Expected )")
+    }
 
-            if (t == ')') {
-                break
-            } else if (t != '|') {
-                throw Error("Expected Rparen or Pipe but got $t")
+    require(input, input.length - 1, '$')
+    return tiles
+}
+
+fun require(input: String, i: Int, expected: Char) {
+    if (input[i] != expected) {
+        throw Exception("Expected $expected but got ${input[i]}.")
+    }
+}
+
+sealed class ParsingContext {
+    abstract fun positions(): List<Coord>
+    abstract fun markPos(tile: Tile, tiles: MutableMap<Coord, Tile>)
+    abstract fun advance(dir: Dir)
+    abstract fun receiveNestedPositions(nested: List<Coord>)
+
+    data class NonOptionGroup(var positions: List<Coord>): ParsingContext() {
+        override fun positions(): List<Coord> {
+            return positions
+        }
+
+        override fun markPos(tile: Tile, tiles: MutableMap<Coord, Tile>) {
+            for (pos in positions) {
+                tiles[pos] = tile
             }
         }
 
-        return Options(expressions)
-    }
+        override fun advance(dir: Dir) {
+            positions = positions.map { it.neighbor(dir) }
+        }
 
-    private fun require(expected: Char) {
-        val actual = input[i++]
-
-        if (actual != expected) {
-            throw Error("Expected $expected but got $actual")
+        override fun receiveNestedPositions(nested: List<Coord>) {
+            positions = nested
         }
     }
 
-    private fun dirFromChar(c: Char): Dir {
-        return when(c) {
-            'N' -> Dir.N
-            'E' -> Dir.E
-            'S' -> Dir.S
-            'W' -> Dir.W
-            else -> throw Exception("Invalid direction char: $c")
+    data class OptionGroup(val predecessorPositions: List<Coord>): ParsingContext() {
+        val options: MutableList<List<Coord>>
+
+        init {
+            options = mutableListOf(predecessorPositions)
+        }
+
+        override fun positions(): List<Coord> {
+            return options.flatMap { it }
+        }
+
+        override fun markPos(tile: Tile, tiles: MutableMap<Coord, Tile>) {
+            for (pos in options.last()) {
+                tiles[pos] = tile
+            }
+        }
+
+        override fun advance(dir: Dir) {
+            options[options.size - 1] = options[options.size - 1].map {
+                it.neighbor(dir)
+            }
+        }
+
+        override fun receiveNestedPositions(nested: List<Coord>) {
+            options[options.size - 1] = nested
         }
     }
 }

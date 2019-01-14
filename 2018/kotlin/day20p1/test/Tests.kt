@@ -11,59 +11,86 @@ class Tests {
         assertEquals(31, shortestPathToFarthestRoom("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))\$"))
     }
 
+//    @Test
+//    fun testAnswerForPuzzleInput() {
+//        assertEquals(3966, answerForPuzzleInput())
+//    }
+//
+//    @Test
+//    fun testRoomExParserParse_simple() {
+//        val input = "^NSEW\$"
+//        val expected = mapOf(
+//            Coord(0, 0) to Tile.Room,
+//            Coord(1, 0) to Tile.Vdoor,
+//            Coord(0, -1) to Tile.Hdoor,
+//            Coord(0, -2) to Tile.Room
+//        )
+//        assertEquals(expected, RoomExParser.parse(input))
+//    }
+//
+//    @Test
+//    fun testRoomExParserParse_option() {
+//        val input = "^NS(E|W)\$"
+//        /*
+//            .
+//            _
+//          .|X|.
+//         */
+//        val expected = mapOf(
+//            Coord(-2, 0) to Tile.Room,
+//            Coord(-1, 0) to Tile.Vdoor,
+//            Coord(0, 0) to Tile.Room,
+//            Coord(1, 0) to Tile.Vdoor,
+//            Coord(0, -1) to Tile.Hdoor,
+//            Coord(0, -2) to Tile.Room
+//        )
+//        assertEquals(expected, RoomExParser.parse(input))
+//    }
+//
+//
+//    @Test
+//    fun testRoomExParserParse_nested() {
+//        val input = "^EN(NW|S(E|))\$"
+//        /*
+//            .|.
+//              -
+//              .
+//              -
+//            X|.|.
+//         */
+//        val expected = mapOf(
+//            Coord(0, 0) to Tile.Room,
+//            Coord(1, 0) to Tile.Vdoor,
+//            Coord(2, 0) to Tile.Room,
+//            Coord(3, 0) to Tile.Vdoor,
+//            Coord(4, 0) to Tile.Room,
+//            Coord(2, -1) to Tile.Hdoor,
+//            Coord(2, -2) to Tile.Room,
+//            Coord(2, -3) to Tile.Hdoor,
+//            Coord(2, -4) to Tile.Room,
+//            Coord(1, -4) to Tile.Vdoor,
+//            Coord(0, -4) to Tile.Room
+//        )
+//        assertEquals(expected, RoomExParser.parse(input))
+//    }
+
     @Test
-    fun testAnswerForPuzzleInput() {
-        assertEquals(3966, answerForPuzzleInput())
+    fun testHelpMeDebugThisThing() {
+        val actualTiles = parseRoomEx("^(N|(E))$")
+        val expectedStr = """
+            #####
+            #.###
+            #-###
+            #X|.#
+            #####
+        """.trimIndent()
+        assertEquals(expectedStr, World(actualTiles).toString())
     }
 
     @Test
-    fun testRoomExParserParse_simple() {
-        val input = "^NSEW\$"
-        val expected = AtomList(
-            listOf(Dir.N, Dir.S, Dir.E, Dir.W)
-        )
-        assertEquals(expected, RoomExParser.parse(input))
-    }
-
-    @Test
-    fun ttestRoomExParserParse_option() {
-        val input = "^NS(E|W)\$"
-        val expected = Expression(
-            listOf(
-                AtomList(listOf(Dir.N, Dir.S)),
-                Options(listOf(
-                    AtomList(listOf(Dir.E)),
-                    AtomList(listOf(Dir.W))
-                ))
-            )
-        )
-        assertEquals(expected, RoomExParser.parse(input))
-    }
-
-
-    @Test
-    fun testRoomExParserParse_nested() {
-        val input = "^EN(NW|S(E|))\$"
-        val expected = Expression(listOf(
-            AtomList(listOf(Dir.E, Dir.N)),
-            Options(listOf(
-                AtomList(listOf(Dir.N, Dir.W)),
-                Expression(listOf(
-                    AtomList(listOf(Dir.S)),
-                    Options(listOf(
-                        AtomList(listOf(Dir.E)),
-                        Expression(emptyList())
-                    ))
-                ))
-            ))
-        ))
-        assertEquals(expected, RoomExParser.parse(input))
-    }
-
-    @Test
-    fun testRoomExWalk_nested() {
-        val subject = RoomExParser.parse("^E(N|S(E|))\$")
+    fun testParseRoomEx_nestedOptions() {
         val expectedTiles = mapOf(
+            Coord(0, 0) to Tile.Room,
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
             Coord(2, -1) to Tile.Hdoor,
@@ -73,21 +100,15 @@ class Tests {
             Coord(3, 2) to Tile.Vdoor,
             Coord(4, 2) to Tile.Room
         )
-        val expectedDests = setOf(
-            Coord(2, -2),
-            Coord(2, 2),
-            Coord(4, 2)
-        )
-        val actualTiles = mutableMapOf<Coord, Tile>()
-        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
+
+        val actualTiles = parseRoomEx("^E(N|S(E|))\$")
         assertEquals(expectedTiles, actualTiles)
-        assertEquals(expectedDests, actualDests)
     }
 
     @Test
-    fun testRoomExWalk_moreAfterOptions() {
-        val subject = RoomExParser.parse("^E(N|S)W$")
+    fun testParseRoomEx_moreAfterOptions() {
         val expectedTiles = mapOf(
+            Coord(0, 0) to Tile.Room,
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
             Coord(2, -1) to Tile.Hdoor,
@@ -99,58 +120,46 @@ class Tests {
             Coord(1, 2) to Tile.Vdoor,
             Coord(0, 2) to Tile.Room
         )
-        val expectedDests = setOf(
-            Coord(0, -2),
-            Coord(0, 2)
-        )
-        val actualTiles = mutableMapOf<Coord, Tile>()
-        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
+        val actualTiles = parseRoomEx("^E(N|S)W$")
         assertEquals(expectedTiles, actualTiles)
-        assertEquals(expectedDests, actualDests)
     }
 
     @Test
-    fun testAtomListWalk() {
-        val subject = RoomExParser.parse("^EN\$")
+    fun testParseRoomEx_justAtoms() {
         val expectedTiles = mapOf(
+            Coord(0, 0) to Tile.Room,
             Coord(1, 0) to Tile.Vdoor,
             Coord(2, 0) to Tile.Room,
             Coord(2, -1) to Tile.Hdoor,
             Coord(2, -2) to Tile.Room
         )
-        val expectedDests = setOf(Coord(2, -2))
-        val actualTiles = mutableMapOf<Coord, Tile>()
-        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
+        val actualTiles = parseRoomEx("^EN\$")
         assertEquals(expectedTiles, actualTiles)
-        assertEquals(expectedDests, actualDests)
     }
 
-    @Test
-    fun testExpressionWalk() {
-        val subject = Expression(listOf(
-            AtomList(listOf(Dir.E)),
-            AtomList(listOf(Dir.N))
-        ))
-        val expectedTiles = mapOf(
-            Coord(1, 0) to Tile.Vdoor,
-            Coord(2, 0) to Tile.Room,
-            Coord(2, -1) to Tile.Hdoor,
-            Coord(2, -2) to Tile.Room
-        )
-        val expectedDests = setOf(Coord(2, -2))
-        val actualTiles = mutableMapOf<Coord, Tile>()
-        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
-        assertEquals(expectedTiles, actualTiles)
-        assertEquals(expectedDests, actualDests)
-    }
+//    @Test
+//    fun testExpressionWalk() {
+//        val subject = Expression(listOf(
+//            AtomList(listOf(Dir.E)),
+//            AtomList(listOf(Dir.N))
+//        ))
+//        val expectedTiles = mapOf(
+//            Coord(1, 0) to Tile.Vdoor,
+//            Coord(2, 0) to Tile.Room,
+//            Coord(2, -1) to Tile.Hdoor,
+//            Coord(2, -2) to Tile.Room
+//        )
+//        val expectedDests = setOf(Coord(2, -2))
+//        val actualTiles = mutableMapOf<Coord, Tile>()
+//        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
+//        assertEquals(expectedTiles, actualTiles)
+//        assertEquals(expectedDests, actualDests)
+//    }
 
     @Test
-    fun testOptionsWalk_basic() {
-        val subject = Options(listOf(
-            AtomList(listOf(Dir.N, Dir.W)),
-            AtomList(listOf(Dir.S))
-        ))
+    fun testParseRoomEx_basicOptions() {
         val expectedTiles = mapOf(
+            Coord(0, 0) to Tile.Room,
             Coord(0, -1) to Tile.Hdoor,
             Coord(0, -2) to Tile.Room,
             Coord(-1, -2) to Tile.Vdoor,
@@ -158,14 +167,8 @@ class Tests {
             Coord(0, 1) to Tile.Hdoor,
             Coord(0, 2) to Tile.Room
         )
-        val expectedDests = setOf(
-            Coord(-2, -2),
-            Coord(0, 2)
-        )
-        val actualTiles = mutableMapOf<Coord, Tile>()
-        val actualDests = subject.walk(Coord(0, 0), { c, t -> actualTiles[c] = t })
+        val actualTiles = parseRoomEx("^(NW|S)$")
         assertEquals(expectedTiles, actualTiles)
-        assertEquals(expectedDests, actualDests)
     }
 
     @Test
@@ -191,24 +194,24 @@ class Tests {
         assertEquals(expected, World(input).toString())
     }
 
-    @Test
-    fun testWorldBuild() {
-        val input = RoomExParser.parse("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))\$")
-        val expected = """
-            #############
-            #.|.|.|.|.|.#
-            #-#####-###-#
-            #.#.|.#.#.#.#
-            #-#-###-#-#-#
-            #.#.#.|.#.|.#
-            #-#-#-#####-#
-            #.#.#.#X|.#.#
-            #-#-#-###-#-#
-            #.|.#.|.#.#.#
-            ###-#-###-#-#
-            #.|.#.|.|.#.#
-            #############
-        """.trimIndent()
-        assertEquals(expected, World.build(input).toString())
-    }
+//    @Test
+//    fun testWorldBuild() {
+//        val input = RoomExParser.parse("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))\$")
+//        val expected = """
+//            #############
+//            #.|.|.|.|.|.#
+//            #-#####-###-#
+//            #.#.|.#.#.#.#
+//            #-#-###-#-#-#
+//            #.#.#.|.#.|.#
+//            #-#-#-#####-#
+//            #.#.#.#X|.#.#
+//            #-#-#-###-#-#
+//            #.|.#.|.#.#.#
+//            ###-#-###-#-#
+//            #.|.#.|.|.#.#
+//            #############
+//        """.trimIndent()
+//        assertEquals(expected, World.build(input).toString())
+//    }
 }
