@@ -23,6 +23,18 @@ class Tests {
         whenever(world2.fight(any())).then { i++ <= 1 }
         assertEquals(2, runGame(world2))
     }
+
+    @Test
+    fun runGameDoesNotFightDeadCombatants() {
+        val world = World.parse("""
+            ####
+            #GE#
+            ####
+        """.trimIndent())
+        (world.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints = 3
+        runGame(world)
+        assertEquals(200, (world.grid[Coord(1, 1)] as Space.Occupied).combatant.hitPoints)
+    }
 }
 
 class WorldTests {
@@ -96,6 +108,7 @@ class WorldTests {
         """.trimIndent())
         assertEquals(expected, subject)
     }
+
     @Test
     fun advanceBreaksTiesInReadingOrder() {
         val subject = World.parse("""
@@ -116,11 +129,6 @@ class WorldTests {
         assertEquals(expected, subject)
     }
 
-
-
-
-    // TODO: Tie-breaking when there are two or more equally short paths
-
     @Test
     fun advanceIgnoresSameRace() {
         val subject = World.parse("""
@@ -137,6 +145,73 @@ class WorldTests {
             #G.#
             #..#
             #G.#
+            #E.#
+            ####
+        """.trimIndent())
+        assertEquals(expected, subject)
+    }
+
+    @Test
+    fun fightDoesNothingIfNoTargetInRange() {
+        val input = """
+            #####
+            #G.E#
+            #####
+        """.trimIndent()
+        val subject = World.parse(input)
+        val expected = World.parse(input)
+        assertEquals(false, subject.fight(Coord(1, 1)))
+        assertEquals(expected, subject)
+    }
+
+    @Test
+    fun fightAttacksTargetInRange() {
+        val subject = World.parse("""
+            #####
+            #GEE#
+            #####
+        """.trimIndent())
+        assertEquals(true, subject.fight(Coord(1, 1)))
+        assertEquals(
+            197,
+            (subject.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints
+        )
+        assertEquals(
+            200,
+            (subject.grid[Coord(3, 1)] as Space.Occupied).combatant.hitPoints
+        )
+    }
+
+    @Test
+    fun fightIgnoresSameRace() {
+        val subject = World.parse("""
+            #####
+            #GGE#
+            #####
+        """.trimIndent())
+        assertEquals(false, subject.fight(Coord(1, 1)))
+        assertEquals(true, subject.fight(Coord(2, 1)))
+        assertEquals(
+            197,
+            (subject.grid[Coord(3, 1)] as Space.Occupied).combatant.hitPoints
+        )
+        assertEquals(
+            200,
+            (subject.grid[Coord(1, 1)] as Space.Occupied).combatant.hitPoints
+        )
+    }
+
+    @Test
+    fun fightRemovesDeadCombatant() {
+        val subject = World.parse("""
+            ####
+            #EG#
+            ####
+        """.trimIndent())
+        (subject.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints = 3
+        subject.fight(Coord(1, 1))
+        val expected = World.parse("""
+            ####
             #E.#
             ####
         """.trimIndent())
@@ -228,7 +303,6 @@ class WorldTests {
             )
         )
         assertEquals(expected, subject.toString())
-
     }
 }
 

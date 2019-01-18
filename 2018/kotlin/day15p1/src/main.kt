@@ -1,4 +1,3 @@
-import com.sun.org.apache.xpath.internal.operations.Bool
 import java.lang.Exception
 import java.util.*
 
@@ -56,6 +55,8 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             return false
         }
 
+        // TODO: Is this right? Might need to consider all squares adjacent
+        // to combatants, not the combatants themselves.
         val paths = combatantsInOrder()
             .filter { it.second.race != combatantRace }
             .map { shortestPath(combatant, it.first) }
@@ -82,7 +83,20 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
     }
 
     override fun fight(attacker: Coord): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val attackerRace = (grid[attacker] as Space.Occupied).combatant.race
+        val target = attacker.neighborsInOrder().firstOrNull {
+            val space = grid[it]
+            space is Space.Occupied && space.combatant.race != attackerRace
+        } ?: return false
+
+        val opponent = (grid[target] as Space.Occupied).combatant
+        opponent.hitPoints -= 3
+
+        if (opponent.hitPoints <= 0) {
+            grid.remove(target)
+        }
+
+        return true
     }
 
     fun shortestPath(src: Coord, dest: Coord): Path? {
@@ -166,7 +180,8 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
                         '#' -> grid[coord] = Space.Wall
                         'G' -> grid[coord] = Space.Occupied(Combatant(Race.Goblin, 200))
                         'E' -> grid[coord] = Space.Occupied(Combatant(Race.Elf, 200))
-                        '.' -> {}
+                        '.' -> {
+                        }
                         else -> throw Exception("Unexpected '${c}'")
                     }
                 }
@@ -182,7 +197,10 @@ class RangePair(val x: IntRange, val y: IntRange)
 fun runGame(world: IWorld): Int {
     for (i in 0..Int.MAX_VALUE) {
         val advanced = world.combatantsInOrder().all { world.advance(it.first) }
-        val fought = world.combatantsInOrder().all { world.fight(it.first) }
+        val fought = world.combatantsInOrder().all {
+            // May have died since combatantsInOrder() was called
+            it.second.hitPoints > 0 && world.fight(it.first)
+        }
 
         if (!advanced && !fought) {
             return i
