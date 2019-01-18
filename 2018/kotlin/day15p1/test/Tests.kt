@@ -33,7 +33,12 @@ class Tests {
         """.trimIndent())
         (world.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints = 3
         runGame(world)
-        assertEquals(200, (world.grid[Coord(1, 1)] as Space.Occupied).combatant.hitPoints)
+        val expected = World.parse("""
+            ####
+            #G.#   200
+            ####
+        """.trimIndent())
+        assertEquals(expected, world)
     }
 }
 
@@ -172,14 +177,12 @@ class WorldTests {
             #####
         """.trimIndent())
         assertEquals(true, subject.fight(Coord(1, 1)))
-        assertEquals(
-            197,
-            (subject.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints
-        )
-        assertEquals(
-            200,
-            (subject.grid[Coord(3, 1)] as Space.Occupied).combatant.hitPoints
-        )
+        val expected = World.parse("""
+            #####
+            #GEE#   200,197,200
+            #####
+        """.trimIndent())
+        assertEquals(expected, subject)
     }
 
     @Test
@@ -191,14 +194,12 @@ class WorldTests {
         """.trimIndent())
         assertEquals(false, subject.fight(Coord(1, 1)))
         assertEquals(true, subject.fight(Coord(2, 1)))
-        assertEquals(
-            197,
-            (subject.grid[Coord(3, 1)] as Space.Occupied).combatant.hitPoints
-        )
-        assertEquals(
-            200,
-            (subject.grid[Coord(1, 1)] as Space.Occupied).combatant.hitPoints
-        )
+        val expected = World.parse("""
+            #####
+            #GGE#   200,200,197
+            #####
+        """.trimIndent())
+        assertEquals(expected, subject)
     }
 
     @Test
@@ -277,12 +278,40 @@ class WorldTests {
     }
 
     @Test
+    fun parseWithHitPoints() {
+        val input = """
+            #####
+            #G.E#   100,150
+            #####
+        """.trimIndent()
+        val expected = World(
+            mutableMapOf(
+                Coord(0, 0) to Space.Wall,
+                Coord(1, 0) to Space.Wall,
+                Coord(2, 0) to Space.Wall,
+                Coord(3, 0) to Space.Wall,
+                Coord(4, 0) to Space.Wall,
+                Coord(0, 1) to Space.Wall,
+                Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 100)),
+                Coord(3, 1) to Space.Occupied(Combatant(Race.Elf, 150)),
+                Coord(4, 1) to Space.Wall,
+                Coord(0, 2) to Space.Wall,
+                Coord(1, 2) to Space.Wall,
+                Coord(2, 2) to Space.Wall,
+                Coord(3, 2) to Space.Wall,
+                Coord(4, 2) to Space.Wall
+            )
+        )
+        assertEquals(expected, World.parse(input))
+    }
+
+    @Test
     fun testToString() {
         val expected = """
-            ####
-            #G.#
-            #.E#
-            ####
+            #####
+            #G..#   200
+            #.EG#   100,150
+            #####
         """.trimIndent()
         val subject = World(
             mutableMapOf(
@@ -290,16 +319,19 @@ class WorldTests {
                 Coord(1, 0) to Space.Wall,
                 Coord(2, 0) to Space.Wall,
                 Coord(3, 0) to Space.Wall,
+                Coord(4, 0) to Space.Wall,
                 Coord(0, 1) to Space.Wall,
                 Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 200)),
-                Coord(3, 1) to Space.Wall,
+                Coord(4, 1) to Space.Wall,
                 Coord(0, 2) to Space.Wall,
-                Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 200)),
-                Coord(3, 2) to Space.Wall,
+                Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 100)),
+                Coord(3, 2) to Space.Occupied(Combatant(Race.Goblin, 150)),
+                Coord(4, 2) to Space.Wall,
                 Coord(0, 3) to Space.Wall,
                 Coord(1, 3) to Space.Wall,
                 Coord(2, 3) to Space.Wall,
-                Coord(3, 3) to Space.Wall
+                Coord(3, 3) to Space.Wall,
+                Coord(4, 3) to Space.Wall
             )
         )
         assertEquals(expected, subject.toString())
@@ -327,5 +359,3 @@ class CoordTests {
 
 val arbitraryCoord = Coord(-1, -1)
 val arbitraryCombatant = Combatant(Race.Goblin, Int.MAX_VALUE)
-val arbitraryGoblin = Combatant(Race.Goblin, Int.MAX_VALUE)
-val arbitraryElf = Combatant(Race.Elf, Int.MAX_VALUE)

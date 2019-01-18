@@ -139,7 +139,7 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
 
     private fun gridRange(): RangePair {
         val xs = grid.asSequence().map { it.key.x }
-        val ys = grid.asSequence().map { it.key.x }
+        val ys = grid.asSequence().map { it.key.y }
         return RangePair(
             xs.min()!!..xs.max()!!,
             ys.min()!!..ys.max()!!
@@ -150,7 +150,7 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         val r = gridRange()
         return r.y.asSequence()
             .map { y ->
-                r.x.asSequence()
+                val gridLine = r.x.asSequence()
                     .map { x ->
                         val s = grid[Coord(x, y)]
                         when (s) {
@@ -165,6 +165,17 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
                         }
                     }
                     .joinToString("")
+                val hitPoints = r.x.asSequence()
+                    .map { x -> grid[Coord(x, y)] }
+                    .filter { it is Space.Occupied }
+                    .map { (it as Space.Occupied).combatant.hitPoints }
+                    .joinToString(",")
+
+                if (hitPoints == "") {
+                    gridLine
+                } else {
+                    "$gridLine   $hitPoints"
+                }
             }
             .joinToString("\n")
     }
@@ -174,12 +185,28 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             val grid = mutableMapOf<Coord, Space>()
 
             input.lineSequence().forEachIndexed { y, line ->
-                line.forEachIndexed { x, c ->
+                val chunks = line.split("   ")
+                val hitPoints = if (chunks.size > 1) {
+                    chunks[1].split(",").map { it.toInt() }
+                } else {
+                    emptyList()
+                }
+                var nextCombatant = 0
+
+                fun getHp(): Int {
+                    return hitPoints.getOrNull(nextCombatant++) ?: 200
+                }
+
+                chunks[0].forEachIndexed { x, c ->
                     val coord = Coord(x, y)
                     when (c) {
                         '#' -> grid[coord] = Space.Wall
-                        'G' -> grid[coord] = Space.Occupied(Combatant(Race.Goblin, 200))
-                        'E' -> grid[coord] = Space.Occupied(Combatant(Race.Elf, 200))
+                        'G' -> grid[coord] = Space.Occupied(
+                            Combatant(Race.Goblin, getHp())
+                        )
+                        'E' -> grid[coord] = Space.Occupied(
+                            Combatant(Race.Elf, getHp())
+                        )
                         '.' -> {
                         }
                         else -> throw Exception("Unexpected '${c}'")
