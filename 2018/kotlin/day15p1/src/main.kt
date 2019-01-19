@@ -67,24 +67,17 @@ sealed class Space {
     data class Occupied(val combatant: Combatant) : Space()
 }
 
-interface IWorld {
-    fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>>
-    fun takeTurn(combatant: Coord): Boolean
-    fun advance(combatant: Coord): Coord
-    fun fight(attacker: Coord)
-}
-
 data class Path(val length: Int, val start: Coord, val dest: Coord)
 
-data class World(val grid: MutableMap<Coord, Space>) : IWorld {
-    override fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>> {
+data class World(val grid: MutableMap<Coord, Space>)  {
+    fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>> {
         return grid.asSequence()
             .filter { it.value is Space.Occupied }
             .map { Pair(it.key, (it.value as Space.Occupied).combatant) }
             .sortedBy { it.first }
     }
 
-    override fun takeTurn(combatant: Coord): Boolean {
+    fun takeTurn(combatant: Coord): Boolean {
         if (!anyOpponents(combatant)) {
             return false
         }
@@ -101,7 +94,7 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         }
     }
 
-    override fun advance(combatant: Coord): Coord {
+    fun advance(combatant: Coord): Coord {
         val combatantRace = (grid[combatant] as Space.Occupied).combatant.race
 
         if (hasEnemyInRange(combatant, combatantRace)) {
@@ -134,7 +127,7 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         return path.start
     }
 
-    override fun fight(attacker: Coord) {
+    fun fight(attacker: Coord) {
         val attackerRace = (grid[attacker] as Space.Occupied).combatant.race
         val target = attacker.neighborsInOrder()
             .filter {
@@ -285,7 +278,7 @@ fun <T, R> Sequence<T>.filterMap(transform: (T) -> R?): Sequence<R> {
 
 class RangePair(val x: IntRange, val y: IntRange)
 
-fun runGame(world: IWorld): Int {
+fun runGame(world: World): Int {
     for (i in 0..Int.MAX_VALUE) {
         if (!doRound(world)) return i
     }
@@ -293,14 +286,14 @@ fun runGame(world: IWorld): Int {
     throw Error("Game failed to end")
 }
 
-fun doRound(world: IWorld): Boolean {
+fun doRound(world: World): Boolean {
     val allFoundTargets = world.combatantsInOrder()
         .filter { it.second.hitPoints > 0 }
         .all { world.takeTurn(it.first) }
     return allFoundTargets
 }
 
-fun battleOutcome(world: IWorld): Int {
+fun battleOutcome(world: World): Int {
     val nTurns = runGame(world)
     val hitPoints = world.combatantsInOrder().sumBy { it.second.hitPoints }
     return nTurns * hitPoints
