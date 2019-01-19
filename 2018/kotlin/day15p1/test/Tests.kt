@@ -1,6 +1,3 @@
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -8,20 +5,12 @@ import kotlin.test.assertNull
 class Tests {
     @Test
     fun runGameReturnsTurnsUntilCompletion() {
-        var i = 0
-        val world1 = mock<IWorld>()
-        val combatants = sequenceOf(Pair(arbitraryCoord, arbitraryCombatant))
-        whenever(world1.combatantsInOrder()).thenReturn(combatants)
-        whenever(world1.advance(any())).then { i++ == 0 }
-        whenever(world1.fight(any())).thenReturn(false)
-        assertEquals(1, runGame(world1))
-
-        i = 0
-        val world2 = mock<IWorld>()
-        whenever(world2.combatantsInOrder()).thenReturn(combatants)
-        whenever(world2.advance(any())).thenReturn(false)
-        whenever(world2.fight(any())).then { i++ <= 1 }
-        assertEquals(2, runGame(world2))
+        val world = World.parse("""
+            ####
+            #EG#   200,6
+            ####
+        """.trimIndent())
+        assertEquals(2, runGame(world))
     }
 
     @Test
@@ -39,6 +28,58 @@ class Tests {
             ####
         """.trimIndent())
         assertEquals(expected, world)
+    }
+
+    @Test
+    fun runGame_example_rightNumberOfTurns() {
+        val world = World.parse("""
+            #######
+            #.G...#
+            #...EG#
+            #.#.#G#
+            #..G#E#
+            #.....#
+            #######
+        """.trimIndent())
+        assertEquals(47, runGame(world))
+    }
+
+    @Test
+    fun runGame_example_rightEndState() {
+        val world = World.parse("""
+            #######
+            #.G...#
+            #...EG#
+            #.#.#G#
+            #..G#E#
+            #.....#
+            #######
+        """.trimIndent())
+        runGame(world)
+        val expected = World.parse("""
+            #######
+            #G....#   200
+            #.G...#   131
+            #.#.#G#   59
+            #...#.#
+            #....G#   200
+            #######
+        """.trimIndent())
+        assertEquals(expected, world)
+    }
+
+    @Test
+    fun battleOutcome_example() {
+        val world = World.parse("""
+            #######
+            #.G...#
+            #...EG#
+            #.#.#G#
+            #..G#E#
+            #.....#
+            #######
+        """.trimIndent())
+        assertEquals(27730, battleOutcome(world))
     }
 }
 
@@ -70,7 +111,7 @@ class WorldTests {
             #####
         """.trimIndent()
         val subject = World.parse(input)
-        assertEquals(false, subject.advance(Coord(1, 1)))
+        assertEquals(Coord(1, 1), subject.advance(Coord(1, 1)))
         assertEquals(World.parse(input), subject)
     }
 
@@ -83,7 +124,7 @@ class WorldTests {
             #E...#
             ######
         """.trimIndent())
-        assertEquals(true, subject.advance(Coord(1, 1)))
+        assertEquals(Coord(1, 2), subject.advance(Coord(1, 1)))
         val expected = World.parse("""
             ######
             #...E#
@@ -103,7 +144,7 @@ class WorldTests {
             #..G...#
             ########
         """.trimIndent())
-        assertEquals(true, subject.advance(Coord(1, 1)))
+        assertEquals(Coord(1, 2), subject.advance(Coord(1, 1)))
         val expected = World.parse("""
             ########
             #......#
@@ -115,7 +156,7 @@ class WorldTests {
     }
 
     @Test
-    fun advanceBreaksTiesInReadingOrder() {
+    fun advanceBreaksTiesBetweenOpponentsInReadingOrder() {
         val subject = World.parse("""
             #####
             #E.G#
@@ -123,13 +164,31 @@ class WorldTests {
             #G..#
             #####
         """.trimIndent())
-        assertEquals(true, subject.advance(Coord(1, 1)))
+        assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
         val expected = World.parse("""
             #####
             #.EG#
             #...#
             #G..#
             #####
+        """.trimIndent())
+        assertEquals(expected, subject)
+    }
+
+    @Test
+    fun advanceBreaksTiesBetweenSameOpponentPathsInReadingOrder() {
+        val subject = World.parse("""
+            ####
+            #E.#
+            #.G#
+            ####
+        """.trimIndent())
+        assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
+        val expected = World.parse("""
+            ####
+            #.E#
+            #.G#
+            ####
         """.trimIndent())
         assertEquals(expected, subject)
     }
@@ -144,7 +203,7 @@ class WorldTests {
             #E.#
             ####
         """.trimIndent())
-        assertEquals(true, subject.advance(Coord(1, 2)))
+        assertEquals(Coord(1, 3), subject.advance(Coord(1, 2)))
         val expected = World.parse("""
             ####
             #G.#
@@ -157,6 +216,30 @@ class WorldTests {
     }
 
     @Test
+    fun advanceExample() {
+        val subject = World.parse("""
+            #######
+            #G...#
+            #..EG#
+            #....#
+            #....#
+            #E...#
+            #######
+        """.trimIndent())
+        val expected = World.parse("""
+            #######
+            #.G..#
+            #..EG#
+            #....#
+            #....#
+            #E...#
+            #######
+        """.trimIndent())
+        assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
+        assertEquals(expected, subject)
+    }
+
+    @Test
     fun fightDoesNothingIfNoTargetInRange() {
         val input = """
             #####
@@ -165,7 +248,7 @@ class WorldTests {
         """.trimIndent()
         val subject = World.parse(input)
         val expected = World.parse(input)
-        assertEquals(false, subject.fight(Coord(1, 1)))
+        subject.fight(Coord(1, 1))
         assertEquals(expected, subject)
     }
 
@@ -176,7 +259,7 @@ class WorldTests {
             #GEE#
             #####
         """.trimIndent())
-        assertEquals(true, subject.fight(Coord(1, 1)))
+        subject.fight(Coord(1, 1))
         val expected = World.parse("""
             #####
             #GEE#   200,197,200
@@ -192,8 +275,8 @@ class WorldTests {
             #GGE#
             #####
         """.trimIndent())
-        assertEquals(false, subject.fight(Coord(1, 1)))
-        assertEquals(true, subject.fight(Coord(2, 1)))
+        subject.fight(Coord(1, 1))
+        subject.fight(Coord(2, 1))
         val expected = World.parse("""
             #####
             #GGE#   200,200,197
@@ -231,7 +314,7 @@ class WorldTests {
         """.trimIndent()
         )
         assertEquals(
-            Path(3, Coord(1, 2)),
+            Path(2, Coord(1, 2)),
             subject.shortestPath(Coord(1, 1), Coord(1, 4))
         )
     }

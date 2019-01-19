@@ -2,7 +2,42 @@ import java.lang.Exception
 import java.util.*
 
 fun main(args: Array<String>) {
-
+    val input = """
+        ################################
+        ###################........#####
+        ###################..G..#G..####
+        ####################........####
+        ##..G###############G......#####
+        ###..G###############.....######
+        #####.######..######....G##..###
+        #####.........####............##
+        #########...#####.............##
+        #########...####..............##
+        #########E#####.......GE......##
+        #########............E...G...###
+        ######.###....#####..G........##
+        #.G#....##...#######.........###
+        ##.#....##GG#########.........##
+        #....G#....E#########....#....##
+        #...........#########.......####
+        #####..G....#########...##....##
+        #####....G..#########.#.......##
+        #######...G..#######G.....#...##
+        ######....E...#####............#
+        ######...GG.......E......#...E.#
+        #######.G...#....#..#...#.....##
+        #######..........#####..####.###
+        ########.......E################
+        #######..........###############
+        ########.............###########
+        #########...#...##....##########
+        #########.....#.#..E..##########
+        ################.....###########
+        ################.##E.###########
+        ################################
+    """.trimIndent()
+    println(battleOutcome(World.parse(input)))
+    // 186124 is too low
 }
 
 enum class Race { Goblin, Elf }
@@ -34,8 +69,9 @@ sealed class Space {
 
 interface IWorld {
     fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>>
-    fun advance(combatant: Coord): Boolean
-    fun fight(attacker: Coord): Boolean
+    fun takeTurn(combatant: Coord): Boolean
+    fun advance(combatant: Coord): Coord
+    fun fight(attacker: Coord)
 }
 
 data class Path(val length: Int, val start: Coord)
@@ -48,11 +84,29 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             .sortedBy { it.first }
     }
 
-    override fun advance(combatant: Coord): Boolean {
+    override fun takeTurn(combatant: Coord): Boolean {
+        if (!anyOpponents(combatant)) {
+            return false
+        }
+
+        fight(advance(combatant))
+        return true
+    }
+
+    private fun anyOpponents(combatant: Coord): Boolean {
+        val combatantRace = (grid[combatant] as Space.Occupied).combatant.race
+        return grid.any {
+            val space = it.value
+            space is Space.Occupied && space.combatant.race != combatantRace
+        }
+    }
+
+    override fun advance(combatant: Coord): Coord {
         val combatantRace = (grid[combatant] as Space.Occupied).combatant.race
 
         if (hasEnemyInRange(combatant, combatantRace)) {
-            return false
+            println("Not advancing $combatant because an enemy is in range")
+            return combatant
         }
 
         // TODO: Is this right? Might need to consider all squares adjacent
@@ -64,7 +118,8 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             .sortedBy { it!!.length }
 
         if (!paths.any()) {
-            return false
+            println("Not advancing $combatant because no paths were found")
+            return combatant
         }
 
         val minLength = paths.map { it!!.length }.min()!!
@@ -74,20 +129,21 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             .minBy { it!!.start }!!
 
         if (grid[path.start] is Space.Occupied) {
-            return false
+            println("Not advancing $combatant because ${path.start} was occupied")
+            return combatant
         }
 
         assert(!grid.containsKey(path.start))
         grid[path.start] = grid.remove(combatant)!!
-        return true
+        return path.start
     }
 
-    override fun fight(attacker: Coord): Boolean {
+    override fun fight(attacker: Coord) {
         val attackerRace = (grid[attacker] as Space.Occupied).combatant.race
         val target = attacker.neighborsInOrder().firstOrNull {
             val space = grid[it]
             space is Space.Occupied && space.combatant.race != attackerRace
-        } ?: return false
+        } ?: return
 
         val opponent = (grid[target] as Space.Occupied).combatant
         opponent.hitPoints -= 3
@@ -95,20 +151,25 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         if (opponent.hitPoints <= 0) {
             grid.remove(target)
         }
-
-        return true
     }
 
+    // TODO: rename to shortestPathToNeighbor?
     fun shortestPath(src: Coord, dest: Coord): Path? {
+//        println("shortestPath($src, $dest)")
         data class PathStub(val length: Int, val start: Coord, val pos: Coord)
 
         val queue: Queue<PathStub> = LinkedList<PathStub>()
         val added = mutableSetOf(src)
+        val candidates = mutableListOf<Path>()
 
         fun maybeEnqueue(p: PathStub) {
-            if (!added.contains(p.pos)) {
+            if (grid.containsKey(p.pos)) {
+//                println("Not enqueueing $p because ${p.pos} is not vacant")
+            } else if (added.add(p.pos)) {
+//                println("Enqueueing $p")
                 queue.add(p)
-                added.add(p.pos)
+            } else {
+//                println("Not enqueueing $p because ${p.pos} was already added")
             }
         }
 
@@ -118,17 +179,22 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
 
         while (!queue.isEmpty()) {
             val p = queue.remove()
+//            println("Visiting ${p}")
 
-            if (p.pos == dest) {
-                return Path(p.length, p.start)
-            } else if (!grid.containsKey(p.pos)) {
+            // TODO: optimize?
+            if (p.pos.neighborsInOrder().contains(dest)) {
+                // TODO: May be able to exit early if longer.
+                if (candidates.size == 0 || p.length == candidates[0].length) {
+                    candidates.add(Path(p.length, p.start))
+                }
+            } else {
                 for (c in p.pos.neighborsInOrder()) {
                     maybeEnqueue(PathStub(p.length + 1, p.start, c))
                 }
             }
         }
 
-        return null
+        return candidates.minBy { it.start }
     }
 
     private fun hasEnemyInRange(combatant: Coord, combatantRace: Race): Boolean {
@@ -223,16 +289,22 @@ class RangePair(val x: IntRange, val y: IntRange)
 
 fun runGame(world: IWorld): Int {
     for (i in 0..Int.MAX_VALUE) {
-        val advanced = world.combatantsInOrder().all { world.advance(it.first) }
-        val fought = world.combatantsInOrder().all {
-            // May have died since combatantsInOrder() was called
-            it.second.hitPoints > 0 && world.fight(it.first)
-        }
+        val allFoundTargets = world.combatantsInOrder()
+            .filter { it.second.hitPoints > 0 }
+            .all { world.takeTurn(it.first) }
 
-        if (!advanced && !fought) {
+        if (!allFoundTargets) {
             return i
         }
+
+        println("After turn ${i}:\n$world")
     }
 
     throw Error("Game failed to end")
+}
+
+fun battleOutcome(world: IWorld): Int {
+    val nTurns = runGame(world)
+    val hitPoints = world.combatantsInOrder().sumBy { it.second.hitPoints }
+    return nTurns * hitPoints
 }
