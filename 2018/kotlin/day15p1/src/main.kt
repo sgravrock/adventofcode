@@ -38,6 +38,7 @@ fun main(args: Array<String>) {
     """.trimIndent()
     println(battleOutcome(World.parse(input)))
     // 186124 is too low
+    // 187984 is too low
 }
 
 enum class Race { Goblin, Elf }
@@ -140,10 +141,13 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
 
     override fun fight(attacker: Coord) {
         val attackerRace = (grid[attacker] as Space.Occupied).combatant.race
-        val target = attacker.neighborsInOrder().firstOrNull {
-            val space = grid[it]
-            space is Space.Occupied && space.combatant.race != attackerRace
-        } ?: return
+        val target = attacker.neighborsInOrder()
+            .filter {
+                val space = grid[it]
+                space is Space.Occupied && space.combatant.race != attackerRace
+            }
+            .minBy { (grid[it] as Space.Occupied).combatant.hitPoints }
+            ?: return
 
         val opponent = (grid[target] as Space.Occupied).combatant
         opponent.hitPoints -= 3
@@ -289,18 +293,19 @@ class RangePair(val x: IntRange, val y: IntRange)
 
 fun runGame(world: IWorld): Int {
     for (i in 0..Int.MAX_VALUE) {
-        val allFoundTargets = world.combatantsInOrder()
-            .filter { it.second.hitPoints > 0 }
-            .all { world.takeTurn(it.first) }
-
-        if (!allFoundTargets) {
-            return i
-        }
+        if (!doRound(world)) return i
 
         println("After turn ${i}:\n$world")
     }
 
     throw Error("Game failed to end")
+}
+
+fun doRound(world: IWorld): Boolean {
+    val allFoundTargets = world.combatantsInOrder()
+        .filter { it.second.hitPoints > 0 }
+        .all { world.takeTurn(it.first) }
+    return allFoundTargets
 }
 
 fun battleOutcome(world: IWorld): Int {

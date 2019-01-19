@@ -81,6 +81,41 @@ class Tests {
         """.trimIndent())
         assertEquals(27730, battleOutcome(world))
     }
+
+    @Test
+    fun doRound_example() {
+        val world = World.parse("""
+            #######
+            #.G...#
+            #...EG#
+            #.#.#G#
+            #..G#E#
+            #.....#
+            #######
+        """.trimIndent())
+        val expected1 = World.parse("""
+            #######
+            #..G..#   200
+            #...EG#   197,197
+            #.#G#G#   200,197
+            #...#E#   197
+            #.....#
+            #######
+        """.trimIndent())
+        val expected2 = World.parse("""
+            #######
+            #...G.#   200
+            #..GEG#   200,188,194
+            #.#.#G#   194
+            #...#E#   194
+            #.....#
+            #######
+        """.trimIndent())
+        doRound(world)
+        assertEquals(expected1, world)
+        doRound(world)
+        assertEquals(expected2, world)
+    }
 }
 
 class WorldTests {
@@ -256,13 +291,29 @@ class WorldTests {
     fun fightAttacksTargetInRange() {
         val subject = World.parse("""
             #####
-            #GEE#
+            #GEE#   200,200,100
             #####
         """.trimIndent())
         subject.fight(Coord(1, 1))
         val expected = World.parse("""
             #####
-            #GEE#   200,197,200
+            #GEE#   200,197,100
+            #####
+        """.trimIndent())
+        assertEquals(expected, subject)
+    }
+
+    @Test
+    fun fightAttacksWeakestTargetInRange() {
+        val subject = World.parse("""
+            #####
+            #GEG#   200,200,199
+            #####
+        """.trimIndent())
+        subject.fight(Coord(2, 1))
+        val expected = World.parse("""
+            #####
+            #GEG#   200,200,196
             #####
         """.trimIndent())
         assertEquals(expected, subject)
