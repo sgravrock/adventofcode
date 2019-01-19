@@ -110,11 +110,28 @@ class Tests {
             #...#E#   194
             #.....#
             #######
-        """.trimIndent())
+        """.trimIndent()
+        )
         doRound(world)
         assertEquals(expected1, world)
         doRound(world)
         assertEquals(expected2, world)
+    }
+
+    @Test
+    fun testFilterMap() {
+        val actual = sequenceOf("a", "b", "c")
+            .filterMap {
+                if (it == "a") {
+                    1
+                } else if (it == "c") {
+                    2
+                } else {
+                    null
+                }
+            }
+            .toList()
+        assertEquals(listOf(1, 2), actual)
     }
 }
 

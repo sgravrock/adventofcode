@@ -112,19 +112,18 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         // to combatants, not the combatants themselves.
         val paths = combatantsInOrder()
             .filter { it.second.race != combatantRace }
-            .map { shortestPathToNeighbor(combatant, it.first) }
-            .filter { it != null }
-            .sortedBy { it!!.length }
+            .filterMap { shortestPathToNeighbor(combatant, it.first) }
+            .sortedBy { it.length }
 
         if (!paths.any()) {
             return combatant
         }
 
-        val minLength = paths.map { it!!.length }.min()!!
+        val minLength = paths.map { it.length }.min()!!
 
         val path = paths
-            .filter { it!!.length == minLength }
-            .minBy { it!!.dest }!!
+            .filter { it.length == minLength }
+            .minBy { it.dest }!!
 
         if (grid[path.start] is Space.Occupied) {
             return combatant
@@ -275,6 +274,13 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
             return World(grid)
         }
     }
+}
+
+fun <T, R> Sequence<T>.filterMap(transform: (T) -> R?): Sequence<R> {
+    return this
+        .map(transform)
+        .filter { it != null }
+        .map { it!! }
 }
 
 class RangePair(val x: IntRange, val y: IntRange)
