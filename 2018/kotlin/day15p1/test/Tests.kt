@@ -229,6 +229,26 @@ class WorldTests {
     }
 
     @Test
+    fun advanceBreaksTiesByDestNotFirstMove() {
+        val subject = World.parse("""
+            #######
+            #.E..G#
+            #.#####
+            #G#####
+            #######
+        """.trimIndent())
+        assertEquals(Coord(3, 1), subject.advance(Coord(2, 1)))
+        val expected = World.parse("""
+            #######
+            #..E.G#
+            #.#####
+            #G#####
+            #######
+        """.trimIndent())
+        assertEquals(expected, subject)
+    }
+
+    @Test
     fun advanceIgnoresSameRace() {
         val subject = World.parse("""
             ####
@@ -365,8 +385,8 @@ class WorldTests {
         """.trimIndent()
         )
         assertEquals(
-            Path(2, Coord(1, 2)),
-            subject.shortestPath(Coord(1, 1), Coord(1, 4))
+            Path(2, Coord(1, 2),  Coord(1, 4)),
+            subject.shortestPathToNeighbor(Coord(1, 1), Coord(1, 4))
         )
     }
 
@@ -379,7 +399,7 @@ class WorldTests {
             #####
         """.trimIndent()
         )
-        assertNull(subject.shortestPath(Coord(1, 1), Coord(3, 1)))
+        assertNull(subject.shortestPathToNeighbor(Coord(1, 1), Coord(3, 1)))
     }
 
     @Test

@@ -37,7 +37,6 @@ fun main(args: Array<String>) {
         ################################
     """.trimIndent()
     println(battleOutcome(World.parse(input)))
-    // 186124 is too low
     // 187984 is too low
 }
 
@@ -75,7 +74,7 @@ interface IWorld {
     fun fight(attacker: Coord)
 }
 
-data class Path(val length: Int, val start: Coord)
+data class Path(val length: Int, val start: Coord, val dest: Coord)
 
 data class World(val grid: MutableMap<Coord, Space>) : IWorld {
     override fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>> {
@@ -106,7 +105,6 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         val combatantRace = (grid[combatant] as Space.Occupied).combatant.race
 
         if (hasEnemyInRange(combatant, combatantRace)) {
-            println("Not advancing $combatant because an enemy is in range")
             return combatant
         }
 
@@ -114,12 +112,11 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         // to combatants, not the combatants themselves.
         val paths = combatantsInOrder()
             .filter { it.second.race != combatantRace }
-            .map { shortestPath(combatant, it.first) }
+            .map { shortestPathToNeighbor(combatant, it.first) }
             .filter { it != null }
             .sortedBy { it!!.length }
 
         if (!paths.any()) {
-            println("Not advancing $combatant because no paths were found")
             return combatant
         }
 
@@ -127,10 +124,9 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
 
         val path = paths
             .filter { it!!.length == minLength }
-            .minBy { it!!.start }!!
+            .minBy { it!!.dest }!!
 
         if (grid[path.start] is Space.Occupied) {
-            println("Not advancing $combatant because ${path.start} was occupied")
             return combatant
         }
 
@@ -157,9 +153,7 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         }
     }
 
-    // TODO: rename to shortestPathToNeighbor?
-    fun shortestPath(src: Coord, dest: Coord): Path? {
-//        println("shortestPath($src, $dest)")
+    fun shortestPathToNeighbor(src: Coord, dest: Coord): Path? {
         data class PathStub(val length: Int, val start: Coord, val pos: Coord)
 
         val queue: Queue<PathStub> = LinkedList<PathStub>()
@@ -167,13 +161,8 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
         val candidates = mutableListOf<Path>()
 
         fun maybeEnqueue(p: PathStub) {
-            if (grid.containsKey(p.pos)) {
-//                println("Not enqueueing $p because ${p.pos} is not vacant")
-            } else if (added.add(p.pos)) {
-//                println("Enqueueing $p")
+            if (!grid.containsKey(p.pos) && added.add(p.pos)) {
                 queue.add(p)
-            } else {
-//                println("Not enqueueing $p because ${p.pos} was already added")
             }
         }
 
@@ -183,13 +172,12 @@ data class World(val grid: MutableMap<Coord, Space>) : IWorld {
 
         while (!queue.isEmpty()) {
             val p = queue.remove()
-//            println("Visiting ${p}")
 
             // TODO: optimize?
             if (p.pos.neighborsInOrder().contains(dest)) {
                 // TODO: May be able to exit early if longer.
                 if (candidates.size == 0 || p.length == candidates[0].length) {
-                    candidates.add(Path(p.length, p.start))
+                    candidates.add(Path(p.length, p.start, dest))
                 }
             } else {
                 for (c in p.pos.neighborsInOrder()) {
@@ -294,8 +282,6 @@ class RangePair(val x: IntRange, val y: IntRange)
 fun runGame(world: IWorld): Int {
     for (i in 0..Int.MAX_VALUE) {
         if (!doRound(world)) return i
-
-        println("After turn ${i}:\n$world")
     }
 
     throw Error("Game failed to end")
