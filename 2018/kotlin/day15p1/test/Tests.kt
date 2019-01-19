@@ -81,6 +81,35 @@ class Tests {
     }
 
     @Test
+    fun runGame_anotherExample() {
+        val world = World.parse(
+            """
+            ####
+            ##E#
+            #GG#
+            ####
+        """.trimIndent()
+        )
+        assertEquals(67, runGame(world))
+    }
+
+    @Test
+    fun runGame_stillAnotherExample() {
+        val world = World.parse(
+            """
+            #####
+            #GG##
+            #.###
+            #..E#
+            #.#G#
+            #.E##
+            #####
+        """.trimIndent()
+        )
+        assertEquals(71, runGame(world))
+    }
+
+    @Test
     fun battleOutcome_example() {
         val world = World.parse(
             """
@@ -95,6 +124,70 @@ class Tests {
         )
         assertEquals(27730, battleOutcome(world))
     }
+
+    @Test
+    fun battleOutcome_anotherExample() {
+        val world = World.parse(
+            """
+            ####
+            ##E#
+            #GG#
+            ####
+        """.trimIndent()
+        )
+        assertEquals(67 * 200, battleOutcome(world))
+    }
+
+    @Test
+    fun battleOutcome_stillAnotherExample() {
+        val world = World.parse(
+            """
+            #####
+            #GG##
+            #.###
+            #..E#
+            #.#G#
+            #.E##
+            #####
+        """.trimIndent()
+        )
+        assertEquals(71 * 197, battleOutcome(world))
+    }
+
+    @Test
+    fun battleOutcome_evenMoreExamples() {
+        val world1 = World.parse(
+            """
+            ################
+            #.......G......#
+            #G.............#
+            #..............#
+            #....###########
+            #....###########
+            #.......EG.....#
+            ################
+        """.trimIndent()
+        )
+        assertEquals(38 * 486, battleOutcome(world1))
+
+        val world2 = World.parse(
+            """
+            ######################
+            #...................E#
+            #.####################
+            #....................#
+            ####################.#
+            #....................#
+            #.####################
+            #....................#
+            ###.##################
+            #EG.#................#
+            ######################
+        """.trimIndent()
+        )
+        assertEquals(66 * 202, battleOutcome(world2))
+    }
+
 
     @Test
     fun doRound_example() {
