@@ -55,6 +55,11 @@ data class Coord(val x: Int, val y: Int) : Comparable<Coord> {
         )
     }
 
+    fun hasNeighbor(other: Coord): Boolean {
+        return (other.y == y && (other.x == x - 1 || other.x == x + 1)) ||
+                (other.x == x && (other.y == y - 1 || other.y == y + 1))
+    }
+
     override fun compareTo(other: Coord): Int {
         return if (y == other.y) {
             x.compareTo(other.x)
@@ -150,7 +155,7 @@ data class World(val grid: MutableMap<Coord, Space>) {
 
         val queue: Queue<PathStub> = LinkedList<PathStub>()
         val added = mutableSetOf(src)
-        val candidates = mutableListOf<Path>()
+        var candidate: Path? = null
 
         fun maybeEnqueue(p: PathStub) {
             if (!grid.containsKey(p.pos) && added.add(p.pos)) {
@@ -165,11 +170,14 @@ data class World(val grid: MutableMap<Coord, Space>) {
         while (!queue.isEmpty()) {
             val p = queue.remove()
 
-            // TODO: optimize?
-            if (p.pos.neighborsInOrder().contains(dest)) {
-                // TODO: May be able to exit early if longer.
-                if (candidates.size == 0 || p.length == candidates[0].length) {
-                    candidates.add(Path(p.length, p.start, dest))
+            if (p.pos.hasNeighbor(dest)) {
+                if (candidate == null ||
+                    p.length < candidate.length ||
+                    (p.length == candidate.length && p.start < candidate.start)
+                ) {
+                    candidate = Path(p.length, p.start, dest)
+                } else if (p.length > candidate.length) {
+                    break;
                 }
             } else {
                 for (c in p.pos.neighborsInOrder()) {
@@ -178,7 +186,7 @@ data class World(val grid: MutableMap<Coord, Space>) {
             }
         }
 
-        return candidates.minBy { it.start }
+        return candidate
     }
 
     private fun hasEnemyInRange(combatant: Coord, combatantRace: Race): Boolean {
