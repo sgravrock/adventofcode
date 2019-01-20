@@ -3,14 +3,8 @@ import java.util.*
 
 fun main(args: Array<String>) {
     val start = Date()
-    val n = (4..Int.MAX_VALUE)
-            .asSequence()
-            .filter { elfAttackPower ->
-                allElvesSurvive(World.parse(puzzleInput), elfAttackPower)
-            }
-            .first()
-    println("With elf attack power $n:")
-    println(battleOutcome(World.parse(puzzleInput), n))
+    val result = optimize(puzzleInput)
+    println("With elf attack power ${result.elfAttackPower}: ${result.outcome}")
     println("in ${Date().time - start.time}ms")
 }
 
@@ -48,6 +42,47 @@ val puzzleInput = """
     ################.##E.###########
     ################################
     """.trimIndent()
+
+data class OptimizationResult(val elfAttackPower: Int, val outcome: Int)
+
+fun optimize(input: String): OptimizationResult {
+    var highestLoss: Int? = null
+    var lowestWin: Int? = null
+    var current = 4
+    var lowestWinOutcome: Int? = null
+
+    while (highestLoss == null || lowestWin == null || lowestWin != highestLoss + 1) {
+        val world = World.parse(input)
+        val initialElves = world.numElves()
+        val outcome = battleOutcome(world, current)
+
+        if (initialElves == world.numElves()) {
+            assert(highestLoss == null || current > highestLoss)
+            assert(lowestWin == null || current < lowestWin)
+            lowestWin = current
+            lowestWinOutcome = outcome
+
+            if (highestLoss == null) {
+                current /= 2
+            } else {
+                current -= (current - highestLoss) / 2
+            }
+
+        } else {
+            assert(highestLoss == null || current > highestLoss)
+            assert(lowestWin == null || current < lowestWin)
+            highestLoss = current
+
+            if (lowestWin == null) {
+                current *= 2
+            } else {
+                current += (lowestWin - current) / 2
+            }
+        }
+    }
+
+    return OptimizationResult(lowestWin, lowestWinOutcome!!)
+}
 
 enum class Race { Goblin, Elf }
 data class Combatant(val race: Race, var hitPoints: Int)
@@ -89,6 +124,13 @@ data class World(val grid: MutableMap<Coord, Space>) {
                 .filter { it.value is Space.Occupied }
                 .map { Pair(it.key, (it.value as Space.Occupied).combatant) }
                 .sortedBy { it.first }
+    }
+
+    fun numElves(): Int {
+        return grid.count {
+            val s = it.value
+            s is Space.Occupied && s.combatant.race == Race.Elf
+        }
     }
 
     fun takeTurn(combatant: Coord, elfAttackPower: Int): Boolean {
@@ -310,13 +352,6 @@ fun doRound(world: World, elfAttackPower: Int): Boolean {
             .filter { it.second.hitPoints > 0 }
             .all { world.takeTurn(it.first, elfAttackPower) }
     return allFoundTargets
-}
-
-fun allElvesSurvive(world: World, elfAttackPower: Int): Boolean {
-    fun numElves() = world.combatantsInOrder().count { it.second.race == Race.Elf }
-    val initial = numElves()
-    runGame(world, elfAttackPower)
-    return numElves() == initial
 }
 
 fun battleOutcome(world: World, elfAttackPower: Int): Int {

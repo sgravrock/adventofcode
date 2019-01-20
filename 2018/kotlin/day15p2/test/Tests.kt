@@ -9,6 +9,14 @@ class Tests {
     }
 
     @Test
+    fun optimizeForPuzzleInput() {
+        assertEquals(
+                OptimizationResult(25, 38512),
+                optimize(puzzleInput)
+        )
+    }
+
+    @Test
     fun runGameReturnsTurnsUntilCompletion() {
         val world = World.parse(
                 """
