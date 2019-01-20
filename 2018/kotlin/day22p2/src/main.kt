@@ -31,7 +31,8 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
     private val memo = mutableMapOf<Coord, Int>()
 
     fun fewestMinutesToTarget(): Int {
-        val best = mutableMapOf<Coord, Int>()
+        var bestToTarget = Int.MAX_VALUE
+        val best = mutableMapOf<SearchState, Int>()
         val pending = mutableMapOf<SearchState, Int>()
         pending[SearchState(Coord(0, 0), Tool.Torch)] = 0
 
@@ -39,14 +40,15 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
             val (cur, curMinutes) = pending.asSequence().first()
             pending.remove(cur)
 
-            if (best.getOrDefault(cur.pos, Int.MAX_VALUE) <= curMinutes ||
-                    best.getOrDefault(Coord(targetX, targetY), Int.MAX_VALUE) <= curMinutes) {
+            if (best.getOrDefault(cur, Int.MAX_VALUE) <= curMinutes ||
+                    bestToTarget <= curMinutes) {
                 continue
             }
 
-            best[cur.pos] = curMinutes
+            best[cur] = curMinutes
 
             if (cur.pos.x == targetX && cur.pos.y == targetY) {
+                bestToTarget = curMinutes
                 continue
             }
 
@@ -60,8 +62,8 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
             }
         }
 
-        return best[Coord(targetX, targetY)]
-                ?: throw Exception("Never reached target")
+        assert(bestToTarget != Int.MAX_VALUE)
+        return bestToTarget
     }
 
     override fun regionType(pos: Coord): Region {
