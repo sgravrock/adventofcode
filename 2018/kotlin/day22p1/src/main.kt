@@ -3,133 +3,63 @@ import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
     val millis = measureTimeMillis {
-        val cave = Cave.build(9171, Coord(7, 721))
-        println(cave.riskLevel())
+        println(riskLevel(9171, 7, 721))
     }
     println("in ${millis}ms")
-
 }
 
 data class Coord(val x: Int, val y: Int)
+enum class Region { Rocky, Narrow, Wet }
 
-enum class Region {
-    Mouth,
-    Rocky,
-    Narrow,
-    Wet,
-    Target
+fun riskLevel(depth: Int, targetX: Int, targetY: Int): Int {
+    val memo = mutableMapOf<Coord, Int>()
+    var sum = 0
+
+    for (x in 0..targetX) {
+        for (y in 0..targetY) {
+            sum += if ((x == 0 && y == 0) || (x == targetX && y == targetY)) {
+                0
+            } else when (regionType(depth, x, y, memo)) {
+                Region.Narrow -> 2
+                Region.Wet -> 1
+                else -> 0
+            }
+        }
+    }
+
+    return sum
 }
 
-data class Cave(val regions: Map<Coord, Region>) {
-    fun riskLevel(): Int {
-        val target = regions.asSequence()
-            .first { kv -> kv.value == Region.Target }
-            .key
-        return (0..target.x).asSequence()
-            .flatMap { x ->
-                (0..target.y).asSequence()
-                    .map { y ->
-                        when (regions[Coord(x, y)]) {
-                            Region.Narrow -> 2
-                            Region.Wet -> 1
-                            else -> 0
-                        }
-                    }
-            }
-            .sum()
-    }
-
-    override fun toString(): String {
-        val range = regions.coordinateRange()
-        return range.y.asSequence()
-            .map { y ->
-                range.x.asSequence()
-                    .map { x ->
-                        when (regions[Coord(x, y)]) {
-                            Region.Mouth -> 'M'
-                            Region.Rocky -> '.'
-                            Region.Narrow -> '|'
-                            Region.Wet -> '='
-                            Region.Target -> 'T'
-                            null -> '*'
-                        }
-                    }.joinToString("")
-            }
-            .joinToString("\n")
-    }
-
-    companion object {
-        fun parse(input: String): Cave {
-            val grid = mutableMapOf<Coord, Region>()
-
-            input.lineSequence().forEachIndexed { y, line ->
-                line.toCharArray().forEachIndexed { x, c ->
-                    grid[Coord(x, y)] = when (c) {
-                        'M' -> Region.Mouth
-                        '.' -> Region.Rocky
-                        '|' -> Region.Narrow
-                        '=' -> Region.Wet
-                        'T' -> Region.Target
-                        else -> throw Exception("Unexpected '$c'")
-                    }
-                }
-            }
-
-            return Cave(grid)
-        }
-
-        fun build(depth: Int, target: Coord): Cave {
-            val mouth = Coord(0, 0)
-            val erosionLevels = mutableMapOf<Coord, Int>()
-            val regions = mutableMapOf(
-                mouth to Region.Mouth,
-                target to Region.Target
-            )
-
-
-            for (x in 0..target.x) {
-                for (y in 0..target.y) {
-                    val c = Coord(x, y)
-                    erosionLevels[c] = if (c == mouth || c == target) {
-                        0
-                    } else if (x == 0) {
-                        giToEl(y * 48271, depth)
-                    } else if (y == 0) {
-                        giToEl(x * 16807, depth)
-                    } else {
-                        giToEl(
-                            erosionLevels[Coord(x-1, y)]!! * erosionLevels[Coord(x, y-1)]!!,
-                            depth
-                        )
-                    }
-
-                    if (c != mouth && c != target) {
-                        regions[c] = when (erosionLevels[c]!! % 3) {
-                            0 -> Region.Rocky
-                            1 -> Region.Wet
-                            2 -> Region.Narrow
-                            else -> throw Exception("Can't happen")
-                        }
-                    }
-                }
-            }
-
-            return Cave(regions)
-        }
-
-        private fun giToEl(geologicIndex: Int, caveDepth: Int): Int {
-            return (geologicIndex + caveDepth) % 20183
-        }
+private fun regionType(
+    depth: Int, x: Int, y: Int,
+    memo: MutableMap<Coord, Int>
+): Region {
+    return when (erosionLevel(depth, x, y, memo) % 3) {
+        0 -> Region.Rocky
+        1 -> Region.Wet
+        2 -> Region.Narrow
+        else -> throw Exception("Can't happen")
     }
 }
 
-class RangePair(val x: IntRange, val y: IntRange)
+private fun erosionLevel(
+    depth: Int, x: Int, y: Int,
+    memo: MutableMap<Coord, Int>
+): Int {
+    return memo.getOrPut(Coord(x, y), {
+        (geologicIndex(depth, x, y, memo) + depth) % 20183
+    })
+}
 
-fun <V> Map<Coord, V>.coordinateRange(): RangePair {
-    val xs = this.asSequence().map { it.key.x }
-    val ys = this.asSequence().map { it.key.y }
-    return RangePair(
-        xs.min()!!..xs.max()!!,
-        ys.min()!!..ys.max()!!
-    )
+private fun geologicIndex(
+    depth: Int, x: Int, y: Int,
+    memo: MutableMap<Coord, Int>
+): Int {
+    return if (x == 0) {
+        y * 48271
+    } else if (y == 0) {
+        x * 16807
+    } else {
+        erosionLevel(depth, x - 1, y, memo) * erosionLevel(depth, x, y - 1, memo)
+    }
 }
