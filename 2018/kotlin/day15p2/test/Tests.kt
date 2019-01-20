@@ -11,7 +11,7 @@ class Tests {
     @Test
     fun runGameReturnsTurnsUntilCompletion() {
         val world = World.parse(
-            """
+                """
             ####
             #EG#   200,6
             ####
@@ -23,7 +23,7 @@ class Tests {
     @Test
     fun runGameDoesNotFightDeadCombatants() {
         val world = World.parse(
-            """
+                """
             ####
             #GE#
             ####
@@ -32,7 +32,7 @@ class Tests {
         (world.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints = 3
         runGame(world, 3)
         val expected = World.parse(
-            """
+                """
             ####
             #G.#   200
             ####
@@ -44,7 +44,7 @@ class Tests {
     @Test
     fun runGame_example_rightNumberOfTurns() {
         val world = World.parse(
-            """
+                """
             #######
             #.G...#
             #...EG#
@@ -60,7 +60,7 @@ class Tests {
     @Test
     fun runGame_example_rightEndState() {
         val world = World.parse(
-            """
+                """
             #######
             #.G...#
             #...EG#
@@ -72,7 +72,7 @@ class Tests {
         )
         runGame(world, 3)
         val expected = World.parse(
-            """
+                """
             #######
             #G....#   200
             #.G...#   131
@@ -88,7 +88,7 @@ class Tests {
     @Test
     fun runGame_anotherExample() {
         val world = World.parse(
-            """
+                """
             ####
             ##E#
             #GG#
@@ -101,7 +101,7 @@ class Tests {
     @Test
     fun runGame_stillAnotherExample() {
         val world = World.parse(
-            """
+                """
             #####
             #GG##
             #.###
@@ -117,7 +117,7 @@ class Tests {
     @Test
     fun battleOutcome_example() {
         val world = World.parse(
-            """
+                """
             #######
             #.G...#
             #...EG#
@@ -133,7 +133,7 @@ class Tests {
     @Test
     fun battleOutcome_anotherExample() {
         val world = World.parse(
-            """
+                """
             ####
             ##E#
             #GG#
@@ -146,7 +146,7 @@ class Tests {
     @Test
     fun battleOutcome_stillAnotherExample() {
         val world = World.parse(
-            """
+                """
             #####
             #GG##
             #.###
@@ -162,7 +162,7 @@ class Tests {
     @Test
     fun battleOutcome_evenMoreExamples() {
         val world1 = World.parse(
-            """
+                """
             ################
             #.......G......#
             #G.............#
@@ -176,7 +176,7 @@ class Tests {
         assertEquals(38 * 486, battleOutcome(world1, 3))
 
         val world2 = World.parse(
-            """
+                """
             ######################
             #...................E#
             #.####################
@@ -197,7 +197,7 @@ class Tests {
     @Test
     fun doRound_example() {
         val world = World.parse(
-            """
+                """
             #######
             #.G...#
             #...EG#
@@ -208,7 +208,7 @@ class Tests {
         """.trimIndent()
         )
         val expected1 = World.parse(
-            """
+                """
             #######
             #..G..#   200
             #...EG#   197,197
@@ -219,7 +219,7 @@ class Tests {
         """.trimIndent()
         )
         val expected2 = World.parse(
-            """
+                """
             #######
             #...G.#   200
             #..GEG#   200,188,194
@@ -241,24 +241,24 @@ class Tests {
         doRound(world, 3)
         assertEquals(false, world.grid.containsKey(Coord(24, 11)))
         assertEquals(
-            Space.Occupied(Combatant(Race.Goblin, 200)),
-            world.grid[Coord(25, 10)]
+                Space.Occupied(Combatant(Race.Goblin, 200)),
+                world.grid[Coord(25, 10)]
         )
     }
 
     @Test
     fun testFilterMap() {
         val actual = sequenceOf("a", "b", "c")
-            .filterMap {
-                if (it == "a") {
-                    1
-                } else if (it == "c") {
-                    2
-                } else {
-                    null
+                .filterMap {
+                    if (it == "a") {
+                        1
+                    } else if (it == "c") {
+                        2
+                    } else {
+                        null
+                    }
                 }
-            }
-            .toList()
+                .toList()
         assertEquals(listOf(1, 2), actual)
     }
 }
@@ -267,17 +267,17 @@ class WorldTests {
     @Test
     fun combatantsInOrderReturnsReadingOrder() {
         val subject = World(
-            mutableMapOf(
-                Coord(0, 0) to Space.Occupied(arbitraryCombatant),
-                Coord(0, 1) to Space.Occupied(arbitraryCombatant),
-                Coord(1, 0) to Space.Occupied(arbitraryCombatant),
-                Coord(1, 1) to Space.Wall
-            )
+                mutableMapOf(
+                        Coord(0, 0) to Space.Occupied(arbitraryCombatant),
+                        Coord(0, 1) to Space.Occupied(arbitraryCombatant),
+                        Coord(1, 0) to Space.Occupied(arbitraryCombatant),
+                        Coord(1, 1) to Space.Wall
+                )
         )
         val expected = listOf(
-            Pair(Coord(0, 0), arbitraryCombatant),
-            Pair(Coord(1, 0), arbitraryCombatant),
-            Pair(Coord(0, 1), arbitraryCombatant)
+                Pair(Coord(0, 0), arbitraryCombatant),
+                Pair(Coord(1, 0), arbitraryCombatant),
+                Pair(Coord(0, 1), arbitraryCombatant)
         )
         assertEquals(expected, subject.combatantsInOrder().toList())
     }
@@ -298,7 +298,7 @@ class WorldTests {
     @Test
     fun advanceMovesTowardNearestEnemy() {
         val subject = World.parse(
-            """
+                """
             ######
             #G..E#
             #....#
@@ -308,7 +308,7 @@ class WorldTests {
         )
         assertEquals(Coord(1, 2), subject.advance(Coord(1, 1)))
         val expected = World.parse(
-            """
+                """
             ######
             #...E#
             #G...#
@@ -322,7 +322,7 @@ class WorldTests {
     @Test
     fun advanceChoosesShortestPathToTarget() {
         val subject = World.parse(
-            """
+                """
             ########
             #E.....#
             #.####.#
@@ -332,7 +332,7 @@ class WorldTests {
         )
         assertEquals(Coord(1, 2), subject.advance(Coord(1, 1)))
         val expected = World.parse(
-            """
+                """
             ########
             #......#
             #E####.#
@@ -346,7 +346,7 @@ class WorldTests {
     @Test
     fun advanceBreaksTiesBetweenOpponentsInReadingOrder() {
         val subject = World.parse(
-            """
+                """
             #####
             #E.G#
             #...#
@@ -356,7 +356,7 @@ class WorldTests {
         )
         assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
         val expected = World.parse(
-            """
+                """
             #####
             #.EG#
             #...#
@@ -370,7 +370,7 @@ class WorldTests {
     @Test
     fun advanceBreaksTiesBetweenSameOpponentPathsInReadingOrder() {
         val subject = World.parse(
-            """
+                """
             ####
             #E.#
             #.G#
@@ -379,7 +379,7 @@ class WorldTests {
         )
         assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
         val expected = World.parse(
-            """
+                """
             ####
             #.E#
             #.G#
@@ -392,7 +392,7 @@ class WorldTests {
     @Test
     fun advanceBreaksTiesByDestNotFirstMove() {
         val subject = World.parse(
-            """
+                """
             #######
             #.E..G#
             #.#####
@@ -402,7 +402,7 @@ class WorldTests {
         )
         assertEquals(Coord(3, 1), subject.advance(Coord(2, 1)))
         val expected = World.parse(
-            """
+                """
             #######
             #..E.G#
             #.#####
@@ -416,7 +416,7 @@ class WorldTests {
     @Test
     fun advanceIgnoresSameRace() {
         val subject = World.parse(
-            """
+                """
             ####
             #G.#
             #G.#
@@ -427,7 +427,7 @@ class WorldTests {
         )
         assertEquals(Coord(1, 3), subject.advance(Coord(1, 2)))
         val expected = World.parse(
-            """
+                """
             ####
             #G.#
             #..#
@@ -442,7 +442,7 @@ class WorldTests {
     @Test
     fun advanceExample() {
         val subject = World.parse(
-            """
+                """
             #######
             #G...#
             #..EG#
@@ -453,7 +453,7 @@ class WorldTests {
         """.trimIndent()
         )
         val expected = World.parse(
-            """
+                """
             #######
             #.G..#
             #..EG#
@@ -470,7 +470,7 @@ class WorldTests {
     @Test
     fun advanceMovesThatOneGoblinFromMyPuzzleInputCorrectly() {
         val subject = World.parse(
-            """
+                """
             #####
             #E..#
             #..G#
@@ -478,7 +478,7 @@ class WorldTests {
         """.trimIndent()
         )
         val expected = World.parse(
-            """
+                """
             #####
             #E.G#
             #...#
@@ -505,7 +505,7 @@ class WorldTests {
     @Test
     fun fightAttacksTargetInRange() {
         val subject = World.parse(
-            """
+                """
             #####
             #GEE#   200,200,100
             #####
@@ -513,7 +513,7 @@ class WorldTests {
         )
         subject.fight(Coord(1, 1), 3)
         val expected = World.parse(
-            """
+                """
             #####
             #GEE#   200,197,100
             #####
@@ -525,7 +525,7 @@ class WorldTests {
     @Test
     fun fightAttacksWeakestTargetInRange() {
         val subject = World.parse(
-            """
+                """
             #####
             #GEG#   200,200,199
             #####
@@ -533,7 +533,7 @@ class WorldTests {
         )
         subject.fight(Coord(2, 1), 3)
         val expected = World.parse(
-            """
+                """
             #####
             #GEG#   200,200,196
             #####
@@ -545,7 +545,7 @@ class WorldTests {
     @Test
     fun fightIgnoresSameRace() {
         val subject = World.parse(
-            """
+                """
             #####
             #GGE#
             #####
@@ -554,7 +554,7 @@ class WorldTests {
         subject.fight(Coord(1, 1), 3)
         subject.fight(Coord(2, 1), 3)
         val expected = World.parse(
-            """
+                """
             #####
             #GGE#   200,200,197
             #####
@@ -566,7 +566,7 @@ class WorldTests {
     @Test
     fun fightRemovesDeadCombatant() {
         val subject = World.parse(
-            """
+                """
             ####
             #EG#
             ####
@@ -575,7 +575,7 @@ class WorldTests {
         (subject.grid[Coord(2, 1)] as Space.Occupied).combatant.hitPoints = 3
         subject.fight(Coord(1, 1), 3)
         val expected = World.parse(
-            """
+                """
             ####
             #E.#
             ####
@@ -593,7 +593,7 @@ class WorldTests {
         """.trimIndent())
         val expected = World.parse("""
             ####
-            #EG# 200,195
+            #EG#   200,195
             ####
         """.trimIndent())
         subject.fight(Coord(1, 1), 5)
@@ -603,7 +603,7 @@ class WorldTests {
     @Test
     fun shortestPath_reachable() {
         val subject = World.parse(
-            """
+                """
             #####
             #E..#
             #.#.#
@@ -612,15 +612,15 @@ class WorldTests {
         """.trimIndent()
         )
         assertEquals(
-            Path(2, Coord(1, 2), Coord(1, 4)),
-            subject.shortestPathToNeighbor(Coord(1, 1), Coord(1, 4))
+                Path(2, Coord(1, 2), Coord(1, 4)),
+                subject.shortestPathToNeighbor(Coord(1, 1), Coord(1, 4))
         )
     }
 
     @Test
     fun shortestPath_unreachable() {
         val subject = World.parse(
-            """
+                """
             #####
             #E#.#
             #####
@@ -638,22 +638,22 @@ class WorldTests {
             ####
         """.trimIndent()
         val expected = World(
-            mutableMapOf(
-                Coord(0, 0) to Space.Wall,
-                Coord(1, 0) to Space.Wall,
-                Coord(2, 0) to Space.Wall,
-                Coord(3, 0) to Space.Wall,
-                Coord(0, 1) to Space.Wall,
-                Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 200)),
-                Coord(3, 1) to Space.Wall,
-                Coord(0, 2) to Space.Wall,
-                Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 200)),
-                Coord(3, 2) to Space.Wall,
-                Coord(0, 3) to Space.Wall,
-                Coord(1, 3) to Space.Wall,
-                Coord(2, 3) to Space.Wall,
-                Coord(3, 3) to Space.Wall
-            )
+                mutableMapOf(
+                        Coord(0, 0) to Space.Wall,
+                        Coord(1, 0) to Space.Wall,
+                        Coord(2, 0) to Space.Wall,
+                        Coord(3, 0) to Space.Wall,
+                        Coord(0, 1) to Space.Wall,
+                        Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 200)),
+                        Coord(3, 1) to Space.Wall,
+                        Coord(0, 2) to Space.Wall,
+                        Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 200)),
+                        Coord(3, 2) to Space.Wall,
+                        Coord(0, 3) to Space.Wall,
+                        Coord(1, 3) to Space.Wall,
+                        Coord(2, 3) to Space.Wall,
+                        Coord(3, 3) to Space.Wall
+                )
         )
         assertEquals(expected, World.parse(input))
     }
@@ -666,22 +666,22 @@ class WorldTests {
             #####
         """.trimIndent()
         val expected = World(
-            mutableMapOf(
-                Coord(0, 0) to Space.Wall,
-                Coord(1, 0) to Space.Wall,
-                Coord(2, 0) to Space.Wall,
-                Coord(3, 0) to Space.Wall,
-                Coord(4, 0) to Space.Wall,
-                Coord(0, 1) to Space.Wall,
-                Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 100)),
-                Coord(3, 1) to Space.Occupied(Combatant(Race.Elf, 150)),
-                Coord(4, 1) to Space.Wall,
-                Coord(0, 2) to Space.Wall,
-                Coord(1, 2) to Space.Wall,
-                Coord(2, 2) to Space.Wall,
-                Coord(3, 2) to Space.Wall,
-                Coord(4, 2) to Space.Wall
-            )
+                mutableMapOf(
+                        Coord(0, 0) to Space.Wall,
+                        Coord(1, 0) to Space.Wall,
+                        Coord(2, 0) to Space.Wall,
+                        Coord(3, 0) to Space.Wall,
+                        Coord(4, 0) to Space.Wall,
+                        Coord(0, 1) to Space.Wall,
+                        Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 100)),
+                        Coord(3, 1) to Space.Occupied(Combatant(Race.Elf, 150)),
+                        Coord(4, 1) to Space.Wall,
+                        Coord(0, 2) to Space.Wall,
+                        Coord(1, 2) to Space.Wall,
+                        Coord(2, 2) to Space.Wall,
+                        Coord(3, 2) to Space.Wall,
+                        Coord(4, 2) to Space.Wall
+                )
         )
         assertEquals(expected, World.parse(input))
     }
@@ -695,25 +695,25 @@ class WorldTests {
             #####
         """.trimIndent()
         val subject = World(
-            mutableMapOf(
-                Coord(0, 0) to Space.Wall,
-                Coord(1, 0) to Space.Wall,
-                Coord(2, 0) to Space.Wall,
-                Coord(3, 0) to Space.Wall,
-                Coord(4, 0) to Space.Wall,
-                Coord(0, 1) to Space.Wall,
-                Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 200)),
-                Coord(4, 1) to Space.Wall,
-                Coord(0, 2) to Space.Wall,
-                Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 100)),
-                Coord(3, 2) to Space.Occupied(Combatant(Race.Goblin, 150)),
-                Coord(4, 2) to Space.Wall,
-                Coord(0, 3) to Space.Wall,
-                Coord(1, 3) to Space.Wall,
-                Coord(2, 3) to Space.Wall,
-                Coord(3, 3) to Space.Wall,
-                Coord(4, 3) to Space.Wall
-            )
+                mutableMapOf(
+                        Coord(0, 0) to Space.Wall,
+                        Coord(1, 0) to Space.Wall,
+                        Coord(2, 0) to Space.Wall,
+                        Coord(3, 0) to Space.Wall,
+                        Coord(4, 0) to Space.Wall,
+                        Coord(0, 1) to Space.Wall,
+                        Coord(1, 1) to Space.Occupied(Combatant(Race.Goblin, 200)),
+                        Coord(4, 1) to Space.Wall,
+                        Coord(0, 2) to Space.Wall,
+                        Coord(2, 2) to Space.Occupied(Combatant(Race.Elf, 100)),
+                        Coord(3, 2) to Space.Occupied(Combatant(Race.Goblin, 150)),
+                        Coord(4, 2) to Space.Wall,
+                        Coord(0, 3) to Space.Wall,
+                        Coord(1, 3) to Space.Wall,
+                        Coord(2, 3) to Space.Wall,
+                        Coord(3, 3) to Space.Wall,
+                        Coord(4, 3) to Space.Wall
+                )
         )
         assertEquals(expected, subject.toString())
     }

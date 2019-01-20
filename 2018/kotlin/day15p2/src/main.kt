@@ -55,10 +55,10 @@ data class Combatant(val race: Race, var hitPoints: Int)
 data class Coord(val x: Int, val y: Int) : Comparable<Coord> {
     fun neighborsInOrder(): List<Coord> {
         return listOf(
-            Coord(x, y - 1),
-            Coord(x - 1, y),
-            Coord(x + 1, y),
-            Coord(x, y + 1)
+                Coord(x, y - 1),
+                Coord(x - 1, y),
+                Coord(x + 1, y),
+                Coord(x, y + 1)
         )
     }
 
@@ -86,9 +86,9 @@ data class Path(val length: Int, val start: Coord, val dest: Coord)
 data class World(val grid: MutableMap<Coord, Space>) {
     fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>> {
         return grid.asSequence()
-            .filter { it.value is Space.Occupied }
-            .map { Pair(it.key, (it.value as Space.Occupied).combatant) }
-            .sortedBy { it.first }
+                .filter { it.value is Space.Occupied }
+                .map { Pair(it.key, (it.value as Space.Occupied).combatant) }
+                .sortedBy { it.first }
     }
 
     fun takeTurn(combatant: Coord, elfAttackPower: Int): Boolean {
@@ -116,9 +116,9 @@ data class World(val grid: MutableMap<Coord, Space>) {
         }
 
         val paths = combatantsInOrder()
-            .filter { it.second.race != combatantRace }
-            .filterMap { shortestPathToNeighbor(combatant, it.first) }
-            .sortedBy { it.length }
+                .filter { it.second.race != combatantRace }
+                .filterMap { shortestPathToNeighbor(combatant, it.first) }
+                .sortedBy { it.length }
 
         if (!paths.any()) {
             return combatant
@@ -127,8 +127,8 @@ data class World(val grid: MutableMap<Coord, Space>) {
         val minLength = paths.map { it.length }.min()!!
 
         val path = paths
-            .filter { it.length == minLength }
-            .minBy { it.dest }!!
+                .filter { it.length == minLength }
+                .minBy { it.dest }!!
 
         if (grid[path.start] is Space.Occupied) {
             return combatant
@@ -142,12 +142,12 @@ data class World(val grid: MutableMap<Coord, Space>) {
     fun fight(attacker: Coord, elfAttackPower: Int) {
         val attackerRace = (grid[attacker] as Space.Occupied).combatant.race
         val target = attacker.neighborsInOrder()
-            .filter {
-                val space = grid[it]
-                space is Space.Occupied && space.combatant.race != attackerRace
-            }
-            .minBy { (grid[it] as Space.Occupied).combatant.hitPoints }
-            ?: return
+                .filter {
+                    val space = grid[it]
+                    space is Space.Occupied && space.combatant.race != attackerRace
+                }
+                .minBy { (grid[it] as Space.Occupied).combatant.hitPoints }
+                ?: return
 
         val opponent = (grid[target] as Space.Occupied).combatant
         opponent.hitPoints -= if (attackerRace == Race.Elf) {
@@ -183,8 +183,8 @@ data class World(val grid: MutableMap<Coord, Space>) {
 
             if (p.pos.hasNeighbor(dest)) {
                 if (candidate == null ||
-                    p.length < candidate.length ||
-                    (p.length == candidate.length && p.start < candidate.start)
+                        p.length < candidate.length ||
+                        (p.length == candidate.length && p.start < candidate.start)
                 ) {
                     candidate = Path(p.length, p.start, dest)
                 } else if (p.length > candidate.length) {
@@ -202,51 +202,51 @@ data class World(val grid: MutableMap<Coord, Space>) {
 
     private fun hasEnemyInRange(combatant: Coord, combatantRace: Race): Boolean {
         return combatantsInOrder()
-            .filter { it.second.race != combatantRace }
-            .any { it.first in combatant.neighborsInOrder() }
+                .filter { it.second.race != combatantRace }
+                .any { it.first in combatant.neighborsInOrder() }
     }
 
     private fun gridRange(): RangePair {
         val xs = grid.asSequence().map { it.key.x }
         val ys = grid.asSequence().map { it.key.y }
         return RangePair(
-            xs.min()!!..xs.max()!!,
-            ys.min()!!..ys.max()!!
+                xs.min()!!..xs.max()!!,
+                ys.min()!!..ys.max()!!
         )
     }
 
     override fun toString(): String {
         val r = gridRange()
         return r.y.asSequence()
-            .map { y ->
-                val gridLine = r.x.asSequence()
-                    .map { x ->
-                        val s = grid[Coord(x, y)]
-                        when (s) {
-                            null -> '.'
-                            is Space.Wall -> '#'
-                            is Space.Occupied -> {
-                                when (s.combatant.race) {
-                                    Race.Elf -> 'E'
-                                    Race.Goblin -> 'G'
+                .map { y ->
+                    val gridLine = r.x.asSequence()
+                            .map { x ->
+                                val s = grid[Coord(x, y)]
+                                when (s) {
+                                    null -> '.'
+                                    is Space.Wall -> '#'
+                                    is Space.Occupied -> {
+                                        when (s.combatant.race) {
+                                            Race.Elf -> 'E'
+                                            Race.Goblin -> 'G'
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                    .joinToString("")
-                val hitPoints = r.x.asSequence()
-                    .map { x -> grid[Coord(x, y)] }
-                    .filter { it is Space.Occupied }
-                    .map { (it as Space.Occupied).combatant.hitPoints }
-                    .joinToString(",")
+                            .joinToString("")
+                    val hitPoints = r.x.asSequence()
+                            .map { x -> grid[Coord(x, y)] }
+                            .filter { it is Space.Occupied }
+                            .map { (it as Space.Occupied).combatant.hitPoints }
+                            .joinToString(",")
 
-                if (hitPoints == "") {
-                    gridLine
-                } else {
-                    "$gridLine   $hitPoints"
+                    if (hitPoints == "") {
+                        gridLine
+                    } else {
+                        "$gridLine   $hitPoints"
+                    }
                 }
-            }
-            .joinToString("\n")
+                .joinToString("\n")
     }
 
     companion object {
@@ -271,10 +271,10 @@ data class World(val grid: MutableMap<Coord, Space>) {
                     when (c) {
                         '#' -> grid[coord] = Space.Wall
                         'G' -> grid[coord] = Space.Occupied(
-                            Combatant(Race.Goblin, getHp())
+                                Combatant(Race.Goblin, getHp())
                         )
                         'E' -> grid[coord] = Space.Occupied(
-                            Combatant(Race.Elf, getHp())
+                                Combatant(Race.Elf, getHp())
                         )
                         '.' -> {
                         }
@@ -290,9 +290,9 @@ data class World(val grid: MutableMap<Coord, Space>) {
 
 fun <T, R> Sequence<T>.filterMap(transform: (T) -> R?): Sequence<R> {
     return this
-        .map(transform)
-        .filter { it != null }
-        .map { it!! }
+            .map(transform)
+            .filter { it != null }
+            .map { it!! }
 }
 
 class RangePair(val x: IntRange, val y: IntRange)
@@ -307,8 +307,8 @@ fun runGame(world: World, elfAttackPower: Int): Int {
 
 fun doRound(world: World, elfAttackPower: Int): Boolean {
     val allFoundTargets = world.combatantsInOrder()
-        .filter { it.second.hitPoints > 0 }
-        .all { world.takeTurn(it.first, elfAttackPower) }
+            .filter { it.second.hitPoints > 0 }
+            .all { world.takeTurn(it.first, elfAttackPower) }
     return allFoundTargets
 }
 
