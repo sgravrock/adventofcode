@@ -22,12 +22,15 @@ data class Coord(val x: Int, val y: Int) {
 enum class Region { Rocky, Narrow, Wet }
 enum class Tool { Torch, ClimbingGear, None }
 
-class Cave(val depth: Int, val targetX: Int, val targetY: Int) {
+interface ICave {
+    val depth: Int
+    fun regionType(pos: Coord): Region;
+}
+
+class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave {
     private val memo = mutableMapOf<Coord, Int>()
 
     fun fewestMinutesToTarget(): Int {
-        data class SearchState(val pos: Coord, val tool: Tool)
-
         val best = mutableMapOf<Coord, Int>()
         val pending = mutableMapOf<SearchState, Int>()
         pending[SearchState(Coord(0, 0), Tool.Torch)] = 0
@@ -47,43 +50,21 @@ class Cave(val depth: Int, val targetX: Int, val targetY: Int) {
                 continue
             }
 
-            for (n in cur.pos.neighbors()) {
-                if (n.x >= 0 && n.y >= 0 && n.y < depth) {
-                    for (t in Tool.values()) {
-                        if (canUseTool(t, cur.pos) && canUseTool(t, n)) {
-                            val toolChangeMinutes = if (t == cur.tool) 0 else 7
-                            val minutes = curMinutes + toolChangeMinutes + 1
-                            val s = SearchState(n, t)
+            for (n in cur.neighbors(this)) {
+                val toolChangeMinutes = if (n.tool == cur.tool) 0 else 7
+                val minutes = curMinutes + toolChangeMinutes + 1
 
-//                            if (n.x == targetX && n.y == targetY) {
-//                                println("Considering target-reaching move p=${cur.pos} t=${cur.tool} m=$curMinutes -> p=$n t=$t")
-//                            }
-
-                            if (minutes < pending.getOrDefault(s, Int.MAX_VALUE)) {
-                                pending[s] = minutes
-                            }
-                        }
-                    }
+                if (minutes < pending.getOrDefault(n, Int.MAX_VALUE)) {
+                    pending[n] = minutes
                 }
             }
         }
 
-//        for (e in best) {
-//            println(e)
-//        }
         return best[Coord(targetX, targetY)]
                 ?: throw Exception("Never reached target")
     }
 
-    private fun canUseTool(t: Tool, pos: Coord): Boolean {
-        return t != when (regionType(pos)) {
-            Region.Rocky -> Tool.None
-            Region.Wet -> Tool.Torch
-            Region.Narrow -> Tool.ClimbingGear
-        }
-    }
-
-    private fun regionType(pos: Coord): Region {
+    override fun regionType(pos: Coord): Region {
         if (pos.x == targetX && pos.y == targetY) {
             return Region.Rocky
         }
@@ -131,5 +112,29 @@ class Cave(val depth: Int, val targetX: Int, val targetY: Int) {
 
             println()
         }
+    }
+}
+
+data class SearchState(val pos: Coord, val tool: Tool) {
+    fun neighbors(cave: ICave): Sequence<SearchState> {
+        val region = cave.regionType(pos)
+        return pos.neighbors()
+                .filter { n -> n.x >= 0 && n.y >= 0 && n.y < cave.depth }
+                .flatMap { n ->
+                    Tool.values().asSequence()
+                            .filter {
+                                canUseTool(it, region) &&
+                                        canUseTool(it, cave.regionType(n))
+                            }
+                            .map { SearchState(n, it) }
+                }
+    }
+}
+
+fun canUseTool(t: Tool, r: Region): Boolean {
+    return t != when (r) {
+        Region.Rocky -> Tool.None
+        Region.Wet -> Tool.Torch
+        Region.Narrow -> Tool.ClimbingGear
     }
 }
