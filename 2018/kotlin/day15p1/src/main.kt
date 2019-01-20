@@ -2,43 +2,45 @@ import java.lang.Exception
 import java.util.*
 
 fun main(args: Array<String>) {
-    val input = """
-        ################################
-        ###################........#####
-        ###################..G..#G..####
-        ####################........####
-        ##..G###############G......#####
-        ###..G###############.....######
-        #####.######..######....G##..###
-        #####.........####............##
-        #########...#####.............##
-        #########...####..............##
-        #########E#####.......GE......##
-        #########............E...G...###
-        ######.###....#####..G........##
-        #.G#....##...#######.........###
-        ##.#....##GG#########.........##
-        #....G#....E#########....#....##
-        #...........#########.......####
-        #####..G....#########...##....##
-        #####....G..#########.#.......##
-        #######...G..#######G.....#...##
-        ######....E...#####............#
-        ######...GG.......E......#...E.#
-        #######.G...#....#..#...#.....##
-        #######..........#####..####.###
-        ########.......E################
-        #######..........###############
-        ########.............###########
-        #########...#...##....##########
-        #########.....#.#..E..##########
-        ################.....###########
-        ################.##E.###########
-        ################################
-    """.trimIndent()
-    println(battleOutcome(World.parse(input)))
-    // 187984 is too low
+    val start = Date()
+    println(battleOutcome(World.parse(puzzleInput)))
+    println("in ${Date().time - start.time}ms")
 }
+
+val puzzleInput = """
+    ################################
+    ###################........#####
+    ###################..G..#G..####
+    ####################........####
+    ##..G###############G......#####
+    ###..G###############.....######
+    #####.######..######....G##..###
+    #####.........####............##
+    #########...#####.............##
+    #########...####..............##
+    #########E#####.......GE......##
+    #########............E...G...###
+    ######.###....#####..G........##
+    #.G#....##...#######.........###
+    ##.#....##GG#########.........##
+    #....G#....E#########....#....##
+    #...........#########.......####
+    #####..G....#########...##....##
+    #####....G..#########.#.......##
+    #######...G..#######G.....#...##
+    ######....E...#####............#
+    ######...GG.......E......#...E.#
+    #######.G...#....#..#...#.....##
+    #######..........#####..####.###
+    ########.......E################
+    #######..........###############
+    ########.............###########
+    #########...#...##....##########
+    #########.....#.#..E..##########
+    ################.....###########
+    ################.##E.###########
+    ################################
+    """.trimIndent()
 
 enum class Race { Goblin, Elf }
 data class Combatant(val race: Race, var hitPoints: Int)
@@ -46,10 +48,10 @@ data class Combatant(val race: Race, var hitPoints: Int)
 data class Coord(val x: Int, val y: Int) : Comparable<Coord> {
     fun neighborsInOrder(): List<Coord> {
         return listOf(
-            Coord(x - 1, y),
             Coord(x, y - 1),
-            Coord(x, y + 1),
-            Coord(x + 1, y)
+            Coord(x - 1, y),
+            Coord(x + 1, y),
+            Coord(x, y + 1)
         )
     }
 
@@ -69,7 +71,7 @@ sealed class Space {
 
 data class Path(val length: Int, val start: Coord, val dest: Coord)
 
-data class World(val grid: MutableMap<Coord, Space>)  {
+data class World(val grid: MutableMap<Coord, Space>) {
     fun combatantsInOrder(): Sequence<Pair<Coord, Combatant>> {
         return grid.asSequence()
             .filter { it.value is Space.Occupied }
@@ -101,8 +103,6 @@ data class World(val grid: MutableMap<Coord, Space>)  {
             return combatant
         }
 
-        // TODO: Is this right? Might need to consider all squares adjacent
-        // to combatants, not the combatants themselves.
         val paths = combatantsInOrder()
             .filter { it.second.race != combatantRace }
             .filterMap { shortestPathToNeighbor(combatant, it.first) }

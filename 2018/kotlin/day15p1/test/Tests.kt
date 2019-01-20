@@ -4,6 +4,11 @@ import kotlin.test.assertNull
 
 class Tests {
     @Test
+    fun battleOutcomeForPuzzleInput() {
+        assertEquals(189000, battleOutcome(World.parse(puzzleInput)))
+    }
+
+    @Test
     fun runGameReturnsTurnsUntilCompletion() {
         val world = World.parse(
             """
@@ -231,6 +236,17 @@ class Tests {
     }
 
     @Test
+    fun doRound_movesThatOneGoblinFromMyPuzzleInputCorrectly() {
+        val world = World.parse(puzzleInput)
+        doRound(world)
+        assertEquals(false, world.grid.containsKey(Coord(24, 11)))
+        assertEquals(
+            Space.Occupied(Combatant(Race.Goblin, 200)),
+            world.grid[Coord(25, 10)]
+        )
+    }
+
+    @Test
     fun testFilterMap() {
         val actual = sequenceOf("a", "b", "c")
             .filterMap {
@@ -448,6 +464,28 @@ class WorldTests {
         """.trimIndent()
         )
         assertEquals(Coord(2, 1), subject.advance(Coord(1, 1)))
+        assertEquals(expected, subject)
+    }
+
+    @Test
+    fun advanceMovesThatOneGoblinFromMyPuzzleInputCorrectly() {
+        val subject = World.parse(
+            """
+            #####
+            #E..#
+            #..G#
+            #####
+        """.trimIndent()
+        )
+        val expected = World.parse(
+            """
+            #####
+            #E.G#
+            #...#
+            #####
+        """.trimIndent()
+        )
+        subject.advance(Coord(3, 2))
         assertEquals(expected, subject)
     }
 
