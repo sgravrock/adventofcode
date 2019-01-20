@@ -97,26 +97,6 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
                     erosionLevel(Coord(pos.x, pos.y - 1))
         }
     }
-
-    fun printToWidth(width: Int) {
-        for (y in 0..(depth - 1)) {
-            for (x in 0..(width - 1)) {
-                if (x == 0 && y == 0) {
-                    print('M')
-                } else if (x == targetX && y == targetY) {
-                    print('T')
-                } else {
-                    print(when (regionType(Coord(x, y))) {
-                        Region.Rocky -> '.'
-                        Region.Narrow -> '|'
-                        Region.Wet -> '='
-                    })
-                }
-            }
-
-            println()
-        }
-    }
 }
 
 data class SearchState(val pos: Coord, val tool: Tool) {
