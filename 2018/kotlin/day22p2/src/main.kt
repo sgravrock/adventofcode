@@ -1,4 +1,5 @@
 import java.lang.Exception
+import kotlin.math.min
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
@@ -48,7 +49,8 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
             best[cur] = curMinutes
 
             if (cur.pos.x == targetX && cur.pos.y == targetY) {
-                bestToTarget = curMinutes
+                val toolChangeMinutes = if (cur.tool == Tool.Torch) 0 else 7
+                bestToTarget = min(bestToTarget, curMinutes + toolChangeMinutes)
                 continue
             }
 
