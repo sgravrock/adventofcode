@@ -9,17 +9,7 @@ fun main(args: Array<String>) {
     println("in ${millis}ms")
 }
 
-data class Coord(val x: Int, val y: Int) {
-    fun neighbors(): Sequence<Coord> {
-        return sequenceOf(
-                Coord(x - 1, y),
-                Coord(x + 1, y),
-                Coord(x, y - 1),
-                Coord(x, y + 1)
-        )
-    }
-}
-
+data class Coord(val x: Int, val y: Int)
 enum class Region { Rocky, Narrow, Wet }
 enum class Tool { Torch, ClimbingGear, None }
 
@@ -100,18 +90,28 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
 }
 
 data class SearchState(val pos: Coord, val tool: Tool) {
-    fun neighbors(cave: ICave): Sequence<SearchState> {
+    fun neighbors(cave: ICave): List<SearchState> {
         val region = cave.regionType(pos)
-        return pos.neighbors()
-                .filter { n -> n.x >= 0 && n.y >= 0 && n.y < cave.depth }
-                .flatMap { n ->
-                    Tool.values().asSequence()
-                            .filter {
-                                canUseTool(it, region) &&
-                                        canUseTool(it, cave.regionType(n))
+        val result = mutableListOf<SearchState>()
+        val tools = Tool.values()
+
+        for (x in -1..1) {
+            for (y in -1..1) {
+                if ((x == 0) xor (y == 0)) {
+                    val n = Coord(pos.x + x, pos.y + y)
+
+                    if (n.x >= 0 && n.y >= 0 && n.y < cave.depth) {
+                        for (t in tools) {
+                            if (canUseTool(t, region) && canUseTool(t, cave.regionType(n))) {
+                                result.add(SearchState(n, t))
                             }
-                            .map { SearchState(n, it) }
+                        }
+                    }
                 }
+            }
+        }
+
+        return result
     }
 }
 
