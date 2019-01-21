@@ -135,8 +135,11 @@ fun fight(armies: Pair<Army, Army>) {
 fun selectTargets(groups: List<UnitGroup>): Map<Int, Int> {
     val result = mutableMapOf<Int, Int>()
     targetSelectionOrder(groups).forEach { i ->
-        result[i] = targetPreferenceOrder(groups, groups[i], result).first()
-        println("${groups[i].identify()} chose ${groups[result[i]!!].identify()}")
+        val target = targetPreferenceOrder(groups, groups[i], result).firstOrNull()
+
+        if (target != null) {
+            result[i] = target
+        }
     }
 
     return result

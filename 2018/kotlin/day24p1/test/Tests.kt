@@ -36,14 +36,62 @@ class Tests {
         """.trimIndent()
         )
         val groups = listOf(armies.first, armies.second).flatMap { it.groups }
-        for (group in groups) {
-            println("${group.identify()}: ep=${group.effectivePower()}")
-        }
         val expected = mapOf(
             3 to 1, // Infection group 2 attacks defending group 2
             1 to 2, // Immune System group 2 attacks defending group 1
             0 to 3, // Immune System group 2 attacks defending group 1
             2 to 0  // Infection group 1 attacks defending group 1
+        )
+        assertEquals(expected, selectTargets(groups))
+    }
+
+    @Test
+    fun selectTargets_skipsOddGroup() {
+        val armies = Pair(
+            Army(
+                name = "a",
+                groups = listOf(
+                    arbitraryGroup.copy(army = "a", id = 1, numUnits = 2, attack = 1),
+                    arbitraryGroup.copy(army = "a", id = 2, numUnits = 1, attack = 1)
+                )
+            ),
+            Army(
+                name = "b",
+                groups = listOf(
+                    arbitraryGroup.copy(army = "b", id = 3, numUnits = 1)
+                )
+            )
+        )
+        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
+        val expected = mapOf(
+            0 to 2,
+            2 to 0
+        )
+        assertEquals(expected, selectTargets(groups))
+    }
+
+
+    @Test
+    fun selectTargets_skipsDeadGroups() {
+        val armies = Pair(
+            Army(
+                name = "a",
+                groups = listOf(
+                    arbitraryGroup.copy(army = "a", id = 1)
+                )
+            ),
+            Army(
+                name = "b",
+                groups = listOf(
+                    arbitraryGroup.copy(army = "b", id = 2, numUnits = 0),
+                    arbitraryGroup.copy(army = "b", id = 3, numUnits = 1)
+                )
+            )
+        )
+        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
+        val expected = mapOf(
+            0 to 2,
+            2 to 0
         )
         assertEquals(expected, selectTargets(groups))
     }
