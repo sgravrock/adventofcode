@@ -2,25 +2,45 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class Tests {
-//    @Test
-//    fun fightUntilDone_example() {
-//        val armies = parseArmies(
-//            """
-//            Immune System:
-//            17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
-//            989 units each with 1274 hit points (immune to fire; weak to bludgeoning, slashing) with an attack that does 25 slashing damage at initiative 3
-//
-//            Infection:
-//            801 units each with 4706 hit points (weak to radiation) with an attack that does 116 bludgeoning damage at initiative 1
-//            4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
-//        """.trimIndent()
-//        )
-//        fightUntilDone(armies)
-//        assertEquals(0, armies.first.groups[0].numUnits)
-//        assertEquals(0, armies.first.groups[1].numUnits)
-//        assertEquals(782, armies.second.groups[0].numUnits)
-//        assertEquals(4434, armies.second.groups[1].numUnits)
-//    }
+    @Test
+    fun fightUntilDone_example() {
+        val armies = parseArmies(
+            """
+            Immune System:
+            17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
+            989 units each with 1274 hit points (immune to fire; weak to bludgeoning, slashing) with an attack that does 25 slashing damage at initiative 3
+
+            Infection:
+            801 units each with 4706 hit points (weak to radiation) with an attack that does 116 bludgeoning damage at initiative 1
+            4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
+        """.trimIndent()
+        )
+        val numLeft = fightUntilDone(armies, true)
+        assertEquals(0, armies.first.groups[0].numUnits)
+        assertEquals(0, armies.first.groups[1].numUnits)
+        assertEquals(782, armies.second.groups[0].numUnits)
+        assertEquals(4434, armies.second.groups[1].numUnits)
+        assertEquals(782 + 4434, numLeft)
+    }
+
+    @Test
+    fun fight() {
+        val armies = parseArmies(
+            """
+            Immune System:
+            905 units each with 1274 hit points (immune to fire; weak to bludgeoning, slashing) with an attack that does 25 slashing damage at initiative 3
+
+            Infection:
+            797 units each with 4706 hit points (weak to radiation) with an attack that does 116 bludgeoning damage at initiative 1
+            4434 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
+        """.trimIndent()
+        )
+        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
+        fight(groups, true)
+        assertEquals(761, armies.first.groups[0].numUnits)
+        assertEquals(793, armies.second.groups[0].numUnits)
+        assertEquals(4434, armies.second.groups[1].numUnits)
+    }
 
     @Test
     fun selectTargets() {
@@ -214,7 +234,7 @@ class Tests {
                 name = "Immune System",
                 groups = listOf(
                     UnitGroup(
-                        id = 0,
+                        id = 1,
                         army = "Immune System",
                         numUnits = 17,
                         hitPoints = 5390,
@@ -225,7 +245,7 @@ class Tests {
                         initiative = 2
                     ),
                     UnitGroup(
-                        id = 1,
+                        id = 2,
                         army = "Immune System",
                         numUnits = 989,
                         hitPoints = 1274,
@@ -241,7 +261,7 @@ class Tests {
                 name = "Infection",
                 groups = listOf(
                     UnitGroup(
-                        id = 2,
+                        id = 1,
                         army = "Infection",
                         numUnits = 801,
                         hitPoints = 4706,
@@ -252,7 +272,7 @@ class Tests {
                         initiative = 1
                     ),
                     UnitGroup(
-                        id = 3,
+                        id = 2,
                         army = "Infection",
                         numUnits = 4485,
                         hitPoints = 2961,

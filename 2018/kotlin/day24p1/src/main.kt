@@ -5,6 +5,8 @@ fun main(args: Array<String>) {
     val ms = measureTimeMillis {
         val classLoader = Army::class.java.classLoader
         val input = classLoader.getResource("input.txt").readText()
+        val armies = parseArmies(input)
+        println(fightUntilDone(armies))
     }
     println("in ${ms}ms")
 }
@@ -48,7 +50,7 @@ data class UnitGroup(
     }
 
     fun identify(): String {
-        return "UnitGroup(id=$id army=$army...)"
+        return "$army group $id"
     }
 
     companion object {
@@ -56,7 +58,6 @@ data class UnitGroup(
             val m = re.matchEntire(input)
                 ?: throw Exception("Parse error: $input")
             return UnitGroup(
-                // TODO: are id and army useful?
                 id = id,
                 army = army,
                 numUnits = m.groupValues[1].toInt(),
@@ -107,14 +108,26 @@ data class UnitGroup(
 data class Army(val name: String, val groups: List<UnitGroup>) {
     fun unitsLeft(): Int = groups.sumBy { it.numUnits }
 
+    fun toDebugString(): String {
+        val groupsLeft = groups.filter { it.numUnits > 0 }
+        val groupStr = if (groupsLeft.isEmpty()) {
+            "No groups remain."
+        } else {
+            groupsLeft
+                .map { "Group ${it.id} contains ${it.numUnits} units"}
+                .joinToString("\n")
+        }
+        return "$name\n$groupStr"
+    }
+
     companion object {
-        fun parse(input: String, firstId: Int): Army {
+        fun parse(input: String): Army {
             val lines = input.lines()
             val name = lines[0].replace(":", "")
             return Army(
                 name = name,
                 groups = lines.drop(1).mapIndexed { i, s ->
-                    UnitGroup.parse(s, firstId + i, name)
+                    UnitGroup.parse(s, i + 1, name)
                 }
             )
         }
@@ -123,17 +136,28 @@ data class Army(val name: String, val groups: List<UnitGroup>) {
 
 fun parseArmies(input: String): Pair<Army, Army> {
     val chunks = input.split("\n\n")
-    val army0 = Army.parse(chunks[0], 0)
-    val army1 = Army.parse(chunks[1], army0.groups.last().id + 1)
+    val army0 = Army.parse(chunks[0])
+    val army1 = Army.parse(chunks[1])
     return Pair(army0, army1)
 }
 
-fun fightUntilDone(armies: Pair<Army, Army>) {
+fun fightUntilDone(armies: Pair<Army, Army>, debug: Boolean = false): Int {
     val groups = listOf(armies.first, armies.second).flatMap { it.groups }
 
     while (armies.first.unitsLeft() != 0 && armies.second.unitsLeft() != 0) {
-        doAttacks(groups, selectTargets(groups))
+        if (debug) {
+            println(armies.first.toDebugString())
+            println(armies.second.toDebugString())
+            println()
+        }
+        fight(groups, debug)
     }
+
+    return groups.sumBy { it.numUnits }
+}
+
+fun fight(groups: List<UnitGroup>, debug: Boolean = false) {
+    doAttacks(groups, selectTargets(groups), debug)
 }
 
 fun selectTargets(groups: List<UnitGroup>): Map<Int, Int> {
@@ -199,10 +223,19 @@ class DescendingCascadingComparator(
     }
 }
 
-fun doAttacks(groups: List<UnitGroup>, targets: Map<Int, Int>) {
-    for ((ai, di) in targets) {
-        val attacker = groups[ai]
-        val defender = groups[di]
-        defender.receiveDamage(attacker.damageDealtTo(defender))
-    }
+fun doAttacks(groups: List<UnitGroup>, targets: Map<Int, Int>, debug: Boolean = false) {
+    groups.indices
+        .filter { targets[it] != null }
+        .sortedByDescending { groups[it].initiative }
+        .forEach { ai ->
+            val attacker = groups[ai]
+            val defender = groups[targets[ai]!!]
+            val before = defender.numUnits
+            defender.receiveDamage(attacker.damageDealtTo(defender))
+
+            if (debug) {
+                println("${attacker.identify()} attacks defending group ${defender.id}, " +
+                        "killing ${before - defender.numUnits} units")
+            }
+        }
 }
