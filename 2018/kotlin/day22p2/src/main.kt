@@ -1,5 +1,6 @@
 import java.lang.Exception
-import kotlin.math.min
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
@@ -32,40 +33,65 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
     private val memo = mutableMapOf<Coord, Int>()
 
     fun fewestMinutesToTarget(): Int {
-        var bestToTarget = Int.MAX_VALUE
-        val best = mutableMapOf<SearchState, Int>()
-        val pending = mutableMapOf<SearchState, Int>()
-        pending[SearchState(Coord(0, 0), Tool.Torch)] = 0
+        val start = PathNode(Coord(0, 0), Tool.Torch)
+        val target = PathNode(Coord(targetX, targetY), Tool.Torch)
+        val closedSet = mutableSetOf<PathNode>()
+        val openSet = mutableSetOf(start)
+        val gScoreMap = mutableMapOf(start to 0)
+        val fScoreMap = mutableMapOf(
+                start to heuristicCostEstimate(start, target)
+        )
 
-        while (pending.isNotEmpty()) {
-            val (cur, curMinutes) = pending.asSequence().first()
-            pending.remove(cur)
+        fun gScore(n: PathNode): Int = gScoreMap.getOrDefault(n, Int.MAX_VALUE)
+        fun fScore(n: PathNode): Int = fScoreMap.getOrDefault(n, Int.MAX_VALUE)
 
-            if (best.getOrDefault(cur, Int.MAX_VALUE) <= curMinutes ||
-                    bestToTarget <= curMinutes) {
-                continue
+        while (openSet.isNotEmpty()) {
+            val curr = openSet.minBy { fScore(it) }!!
+
+            if (curr == target) {
+                return gScoreMap[target]!!
             }
 
-            best[cur] = curMinutes
+            openSet.remove(curr)
+            closedSet.add(curr)
 
-            if (cur.pos.x == targetX && cur.pos.y == targetY) {
-                val toolChangeMinutes = if (cur.tool == Tool.Torch) 0 else 7
-                bestToTarget = min(bestToTarget, curMinutes + toolChangeMinutes)
-                continue
-            }
-
-            for (n in cur.neighbors(this)) {
-                val toolChangeMinutes = if (n.tool == cur.tool) 0 else 7
-                val minutes = curMinutes + toolChangeMinutes + 1
-
-                if (minutes < pending.getOrDefault(n, Int.MAX_VALUE)) {
-                    pending[n] = minutes
+            for (n in curr.neighbors(this)) {
+                if (closedSet.contains(n)) {
+                    continue
                 }
+
+                val tentativeGScore = gScore(curr) + timeBetweenNeigbors(curr, n)
+
+                if (!openSet.contains(n)) {
+                    openSet.add(n)
+                } else if (tentativeGScore >= gScore(n)) {
+                    continue
+                }
+
+                gScoreMap[n] = tentativeGScore
+                fScoreMap[n] = tentativeGScore + heuristicCostEstimate(n, target)
             }
         }
 
-        assert(bestToTarget != Int.MAX_VALUE)
-        return bestToTarget
+        throw Error("Did not find target")
+    }
+
+    private fun timeBetweenNeigbors(src: PathNode, dest: PathNode): Int {
+        if (src.tool != dest.tool) {
+            return 7
+        } else {
+            val dx = abs(src.pos.x - dest.pos.x)
+            val dy = abs(src.pos.y - dest.pos.y)
+            assert((dx == 0 && dy == 1) || (dx == 1 && dy == 0))
+            return 1
+        }
+    }
+
+    private fun heuristicCostEstimate(start: PathNode, goal: PathNode): Int {
+        val dist = abs(start.pos.x - goal.pos.x) + abs(start.pos.x - goal.pos.x)
+//        val toolChanges = (dist * 0.36).roundToInt() + if (start.tool != goal.tool) 1 else 0
+//        return dist + toolChanges * 7
+        return dist + if (start.tool == goal.tool) 0 else 1
     }
 
     override fun regionType(pos: Coord): Region {
@@ -99,19 +125,22 @@ class Cave(override val depth: Int, val targetX: Int, val targetY: Int) : ICave 
     }
 }
 
-data class SearchState(val pos: Coord, val tool: Tool) {
-    fun neighbors(cave: ICave): Sequence<SearchState> {
+data class PathNode(val pos: Coord, val tool: Tool) {
+    fun neighbors(cave: ICave): List<PathNode> {
         val region = cave.regionType(pos)
-        return pos.neighbors()
-                .filter { n -> n.x >= 0 && n.y >= 0 && n.y < cave.depth }
-                .flatMap { n ->
-                    Tool.values().asSequence()
-                            .filter {
-                                canUseTool(it, region) &&
-                                        canUseTool(it, cave.regionType(n))
-                            }
-                            .map { SearchState(n, it) }
+        val result = pos.neighbors()
+                .filter { n ->
+                    n.x >= 0 && n.y >= 0 && n.y < cave.depth &&
+                            canUseTool(tool, cave.regionType(n))
                 }
+                .map { n -> PathNode(n, tool) }
+                .toMutableList()
+        result.addAll(
+                Tool.values()
+                        .filter { t -> t != tool && canUseTool(t, region) }
+                        .map { t -> PathNode(pos, t) }
+        )
+        return result
     }
 }
 

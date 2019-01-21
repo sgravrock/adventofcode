@@ -14,20 +14,17 @@ class CaveTests {
     }
 }
 
-class SearchStateTests {
+class PathNodeTests {
     @Test
     fun neighbors_allFourDirections() {
         val cave = StubCave.fill(3, 3, Region.Rocky)
-        val subject = SearchState(Coord(1, 1), Tool.Torch)
+        val subject = PathNode(Coord(1, 1), Tool.Torch)
         val expected = setOf(
-                SearchState(Coord(1, 0), Tool.Torch),
-                SearchState(Coord(0, 1), Tool.Torch),
-                SearchState(Coord(2, 1), Tool.Torch),
-                SearchState(Coord(1, 2), Tool.Torch),
-                SearchState(Coord(1, 0), Tool.ClimbingGear),
-                SearchState(Coord(0, 1), Tool.ClimbingGear),
-                SearchState(Coord(2, 1), Tool.ClimbingGear),
-                SearchState(Coord(1, 2), Tool.ClimbingGear)
+                PathNode(Coord(1, 0), Tool.Torch),
+                PathNode(Coord(0, 1), Tool.Torch),
+                PathNode(Coord(2, 1), Tool.Torch),
+                PathNode(Coord(1, 2), Tool.Torch),
+                PathNode(Coord(1, 1), Tool.ClimbingGear)
         )
         assertEquals(expected, subject.neighbors(cave).toSet())
     }
@@ -35,12 +32,11 @@ class SearchStateTests {
     @Test
     fun neighbors_excludesLessThanZero() {
         val cave = StubCave.fill(2, 2, Region.Rocky)
-        val subject = SearchState(Coord(0, 0), Tool.Torch)
+        val subject = PathNode(Coord(0, 0), Tool.Torch)
         val expected = setOf(
-                SearchState(Coord(1, 0), Tool.Torch),
-                SearchState(Coord(0, 1), Tool.Torch),
-                SearchState(Coord(1, 0), Tool.ClimbingGear),
-                SearchState(Coord(0, 1), Tool.ClimbingGear)
+                PathNode(Coord(1, 0), Tool.Torch),
+                PathNode(Coord(0, 1), Tool.Torch),
+                PathNode(Coord(0, 0), Tool.ClimbingGear)
         )
         assertEquals(expected, subject.neighbors(cave).toSet())
     }
@@ -48,78 +44,79 @@ class SearchStateTests {
     @Test
     fun neighbors_excludesBelowDepth() {
         val cave = StubCave.fill(2, 2, Region.Rocky)
-        val subject = SearchState(Coord(0, 1), Tool.Torch)
+        val subject = PathNode(Coord(0, 1), Tool.Torch)
         val expected = setOf(
-                SearchState(Coord(0, 0), Tool.Torch),
-                SearchState(Coord(1, 1), Tool.Torch),
-                SearchState(Coord(0, 0), Tool.ClimbingGear),
-                SearchState(Coord(1, 1), Tool.ClimbingGear)
+                PathNode(Coord(0, 0), Tool.Torch),
+                PathNode(Coord(1, 1), Tool.Torch),
+                PathNode(Coord(0, 1), Tool.ClimbingGear)
         )
         assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
     @Test
-    fun neighbors_rockyToRocky() {
-        testNeighborsByType(
-                Region.Rocky, Region.Rocky,
-                setOf(Tool.Torch, Tool.ClimbingGear)
+    fun neighbors_rockyWithTorch() {
+        val cave = StubCave.fill(1, 2, Region.Rocky)
+        val subject = PathNode(Coord(0, 0), Tool.Torch)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.ClimbingGear),
+                PathNode(Coord(1, 0), Tool.Torch)
         )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
     @Test
-    fun neighbors_rockyToNarrow() {
-        testNeighborsByType(Region.Rocky, Region.Narrow, setOf(Tool.Torch))
-    }
-
-    @Test
-    fun neighbors_rockyToWet() {
-        testNeighborsByType(Region.Rocky, Region.Wet, setOf(Tool.ClimbingGear))
-    }
-
-    @Test
-    fun neighbors_wetToWet() {
-        testNeighborsByType(
-                Region.Wet, Region.Wet,
-                setOf(Tool.None, Tool.ClimbingGear)
+    fun neighbors_rockyWithClimbingGear() {
+        val cave = StubCave.fill(1, 2, Region.Rocky)
+        val subject = PathNode(Coord(0, 0), Tool.ClimbingGear)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.Torch),
+                PathNode(Coord(1, 0), Tool.ClimbingGear)
         )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
     @Test
-    fun neighbors_wetToRocky() {
-        testNeighborsByType(Region.Wet, Region.Rocky, setOf(Tool.ClimbingGear))
-    }
-
-    @Test
-    fun neighbors_wetToNarrow() {
-        testNeighborsByType(Region.Wet, Region.Narrow, setOf(Tool.None))
-    }
-
-    @Test
-    fun neighbors_narrowToNarrow() {
-        testNeighborsByType(
-                Region.Narrow, Region.Narrow,
-                setOf(Tool.None, Tool.Torch)
+    fun neighbors_wetWithNone() {
+        val cave = StubCave.fill(1, 2, Region.Wet)
+        val subject = PathNode(Coord(0, 0), Tool.None)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.ClimbingGear),
+                PathNode(Coord(1, 0), Tool.None)
         )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
     @Test
-    fun neighbors_narrowToWet() {
-        testNeighborsByType(Region.Narrow, Region.Wet, setOf(Tool.None))
+    fun neighbors_wetWithClimbingGear() {
+        val cave = StubCave.fill(1, 2, Region.Wet)
+        val subject = PathNode(Coord(0, 0), Tool.ClimbingGear)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.None),
+                PathNode(Coord(1, 0), Tool.ClimbingGear)
+        )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
     @Test
-    fun neighbors_narrowToRocky() {
-        testNeighborsByType(Region.Narrow, Region.Rocky, setOf(Tool.Torch))
+    fun neighbors_narrowWithTorch() {
+        val cave = StubCave.fill(1, 2, Region.Narrow)
+        val subject = PathNode(Coord(0, 0), Tool.Torch)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.None),
+                PathNode(Coord(1, 0), Tool.Torch)
+        )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 
-    private fun testNeighborsByType(src: Region, dest: Region, expected: Set<Tool>) {
-        val cave = StubCave(1, mapOf(
-                Coord(0, 0) to src,
-                Coord(1, 0) to dest
-        ))
-        val subject = SearchState(Coord(0, 0), Tool.Torch)
-        val actual = subject.neighbors(cave).map { it.tool }.toSet()
-        assertEquals(expected, actual)
+    @Test
+    fun neighbors_narrowWithNone() {
+        val cave = StubCave.fill(1, 2, Region.Narrow)
+        val subject = PathNode(Coord(0, 0), Tool.None)
+        val expected = setOf(
+                PathNode(Coord(0, 0), Tool.Torch),
+                PathNode(Coord(1, 0), Tool.None)
+        )
+        assertEquals(expected, subject.neighbors(cave).toSet())
     }
 }
 
