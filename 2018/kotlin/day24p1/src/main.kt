@@ -1,3 +1,4 @@
+import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
@@ -39,6 +40,11 @@ data class UnitGroup(
         } else {
             effectivePower()
         }
+    }
+
+    fun receiveDamage(damage: Int) {
+        val unitsKilled = damage / hitPoints
+        numUnits = max(0, numUnits - unitsKilled)
     }
 
     fun identify(): String {
@@ -123,13 +129,11 @@ fun parseArmies(input: String): Pair<Army, Army> {
 }
 
 fun fightUntilDone(armies: Pair<Army, Army>) {
-    while (armies.first.unitsLeft() != 0 && armies.second.unitsLeft() != 0) {
-        fight(armies)
-    }
-}
+    val groups = listOf(armies.first, armies.second).flatMap { it.groups }
 
-fun fight(armies: Pair<Army, Army>) {
-    TODO()
+    while (armies.first.unitsLeft() != 0 && armies.second.unitsLeft() != 0) {
+        doAttacks(groups, selectTargets(groups))
+    }
 }
 
 fun selectTargets(groups: List<UnitGroup>): Map<Int, Int> {
@@ -192,5 +196,13 @@ class DescendingCascadingComparator(
         }
 
         return 0
+    }
+}
+
+fun doAttacks(groups: List<UnitGroup>, targets: Map<Int, Int>) {
+    for ((ai, di) in targets) {
+        val attacker = groups[ai]
+        val defender = groups[di]
+        defender.receiveDamage(attacker.damageDealtTo(defender))
     }
 }

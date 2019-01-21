@@ -145,6 +145,58 @@ class Tests {
     }
 
     @Test
+    fun doAttacks_example() {
+        val armies = parseArmies(
+            """
+            Immune System:
+            17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
+            989 units each with 1274 hit points (immune to fire; weak to bludgeoning, slashing) with an attack that does 25 slashing damage at initiative 3
+
+            Infection:
+            801 units each with 4706 hit points (weak to radiation) with an attack that does 116 bludgeoning damage at initiative 1
+            4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
+        """.trimIndent()
+        )
+        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
+        val targets = mapOf(
+            3 to 1,
+            1 to 2,
+            0 to 3,
+            2 to 0
+        )
+        doAttacks(groups, targets)
+        assertEquals(17 - 17, armies.first.groups[0].numUnits)
+        assertEquals(989 - 84, armies.first.groups[1].numUnits)
+        assertEquals(801 - 4, armies.second.groups[0].numUnits)
+        assertEquals(4485 - 51, armies.second.groups[1].numUnits)
+    }
+
+    @Test
+    fun damageDealtTo_weakness() {
+        val attacker = arbitraryGroup.copy(
+            numUnits = 4485,
+            attack = 12,
+            attackType = AttackType.Slashing
+        )
+        val defender = arbitraryGroup.copy(weaknesses = listOf(AttackType.Slashing))
+        assertEquals(107640, attacker.damageDealtTo(defender))
+    }
+
+    @Test
+    fun receiveDamage_greaterThanZeroLeft() {
+        val defender = arbitraryGroup.copy(numUnits=989, hitPoints=1274)
+        defender.receiveDamage(107640)
+        assertEquals(989 - 84, defender.numUnits)
+    }
+
+    @Test
+    fun receiveDamage_lessThanZeroLeft() {
+        val defender = arbitraryGroup.copy(numUnits=83, hitPoints=1274)
+        defender.receiveDamage(107640)
+        assertEquals(0, defender.numUnits)
+    }
+
+    @Test
     fun testParseArmies() {
         val actual = parseArmies(
             """
