@@ -9,6 +9,7 @@ fun main(args: Array<String>) {
         println(fightUntilDone(armies))
     }
     println("in ${ms}ms")
+    // 20996  is too low
 }
 
 enum class AttackType {
@@ -57,32 +58,44 @@ data class UnitGroup(
         fun parse(input: String, id: Int, army: String): UnitGroup {
             val m = re.matchEntire(input)
                 ?: throw Exception("Parse error: $input")
+            val (weaknesses, immunities) = parseCapabilities(
+                m.groups["capabilities"]?.value
+            )
             return UnitGroup(
                 id = id,
                 army = army,
-                numUnits = m.groupValues[1].toInt(),
-                hitPoints = m.groupValues[2].toInt(),
-                attack = m.groupValues[8].toInt(),
-                attackType = when (m.groupValues[9]) {
-                    "fire" -> AttackType.Fire
-                    "radiation" -> AttackType.Radiation
-                    "bludgeoning" -> AttackType.Bludgeoning
-                    "slashing" -> AttackType.Slashing
-                    "cold" -> AttackType.Cold
-                    else -> throw Exception("Unexpected attack type: ${m.groupValues[9]}")
-                },
-                weaknesses = parseAttackTypeList(m.groupValues[7]),
-                immunities = parseAttackTypeList(m.groupValues[4]),
-                initiative = m.groupValues[10].toInt()
+                numUnits = m.groups["numUnits"]!!.value.toInt(),
+                hitPoints = m.groups["hitPoints"]!!.value.toInt(),
+                attack = m.groups["damage"]!!.value.toInt(),
+                attackType = attackTypeFromString(m.groups["attackType"]!!.value),
+                weaknesses = weaknesses,
+                immunities = immunities,
+                initiative = m.groups["initiative"]!!.value.toInt()
             )
         }
 
-        private fun parseAttackTypeList(s: String): List<AttackType> {
-            return if (s == "") {
-                emptyList()
-            } else {
-                s.split(", ").map { attackTypeFromString(it) }
+        private fun parseCapabilities(
+            input: String?
+        ): Pair<List<AttackType>, List<AttackType>> {
+            if (input == null) {
+                return Pair(emptyList(), emptyList())
             }
+
+            var weaknesses = emptyList<AttackType>()
+            var immunities = emptyList<AttackType>()
+
+            for (chunk in input.split("; ")) {
+                val (name, values) = chunk.split(" to ")
+                val caps = values.split(", ").map { attackTypeFromString(it) }
+
+                when (name) {
+                    "weak" -> weaknesses = caps
+                    "immune" -> immunities = caps
+                    else -> throw Error("Expected weak or immune but got $name")
+                }
+            }
+
+            return Pair(weaknesses, immunities)
         }
 
         private fun attackTypeFromString(s: String): AttackType {
@@ -97,10 +110,10 @@ data class UnitGroup(
         }
 
         private val re = Regex(
-            "^([0-9]+) units each with ([0-9]+) hit points " +
-                    "\\((immune to ([^;)]+))?(; )?(weak to ([^)]+))?\\) " +
-                    "with an attack that does ([0-9]+) ([^ ]+) damage " +
-                    "at initiative ([0-9]+)\$"
+            "^(?<numUnits>[0-9]+) units each with (?<hitPoints>[0-9]+) hit points " +
+                    "(\\((?<capabilities>[^)]+)\\) )?with an attack that does " +
+                    "(?<damage>[0-9]+) (?<attackType>[^ ]+) damage at initiative " +
+                    "(?<initiative>[0-9]+)\$"
         )
     }
 }
