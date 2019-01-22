@@ -5,11 +5,11 @@ fun main(args: Array<String>) {
     val ms = measureTimeMillis {
         val classLoader = Army::class.java.classLoader
         val input = classLoader.getResource("input.txt").readText()
-        val armies = parseArmies(input)
+        val armies = Combat.parse(input)
         println(fightUntilDone(armies))
     }
     println("in ${ms}ms")
-    // 20996  is too low
+    // 21065  is too low
 }
 
 enum class AttackType {
@@ -22,7 +22,7 @@ enum class AttackType {
 
 data class UnitGroup(
     val id: Int,
-    val army: String,
+    val army: ArmyType,
     var numUnits: Int,
     val hitPoints: Int,
     val attack: Int,
@@ -55,7 +55,7 @@ data class UnitGroup(
     }
 
     companion object {
-        fun parse(input: String, id: Int, army: String): UnitGroup {
+        fun parse(input: String, id: Int, army: ArmyType): UnitGroup {
             val m = re.matchEntire(input)
                 ?: throw Exception("Parse error: $input")
             val (weaknesses, immunities) = parseCapabilities(
@@ -118,7 +118,29 @@ data class UnitGroup(
     }
 }
 
-data class Army(val name: String, val groups: List<UnitGroup>) {
+enum class ArmyType {
+    ImmmuneSystem,
+    Infection;
+
+    override fun toString(): String {
+        return when (this) {
+            ArmyType.ImmmuneSystem -> "Immune System"
+            ArmyType.Infection -> "Infection"
+        }
+    }
+
+    companion object {
+        fun fromString(s: String): ArmyType {
+            return when (s) {
+                "Immune System" -> ArmyType.ImmmuneSystem
+                "Infection" -> ArmyType.Infection
+                else -> throw Error("Unrecognized army type: $s")
+            }
+        }
+    }
+}
+
+data class Army(val type: ArmyType, val groups: List<UnitGroup>) {
     fun unitsLeft(): Int = groups.sumBy { it.numUnits }
 
     fun toDebugString(): String {
@@ -130,37 +152,49 @@ data class Army(val name: String, val groups: List<UnitGroup>) {
                 .map { "Group ${it.id} contains ${it.numUnits} units"}
                 .joinToString("\n")
         }
-        return "$name\n$groupStr"
+
+        return "$type\n$groupStr"
     }
 
     companion object {
         fun parse(input: String): Army {
             val lines = input.lines()
-            val name = lines[0].replace(":", "")
+            val type = ArmyType.fromString(lines[0].replace(":", ""))
             return Army(
-                name = name,
+                type = type,
                 groups = lines.drop(1).mapIndexed { i, s ->
-                    UnitGroup.parse(s, i + 1, name)
+                    UnitGroup.parse(s, i + 1, type)
                 }
             )
         }
     }
 }
 
-fun parseArmies(input: String): Pair<Army, Army> {
-    val chunks = input.split("\n\n")
-    val army0 = Army.parse(chunks[0])
-    val army1 = Army.parse(chunks[1])
-    return Pair(army0, army1)
+data class Combat(val immuneSystem: Army, val infection: Army) {
+    fun allGroups(): List<UnitGroup> {
+        return listOf(immuneSystem, infection).flatMap { it.groups }
+    }
+
+    companion object {
+        fun parse(input: String): Combat {
+            val chunks = input.split("\n\n")
+            val army0 = Army.parse(chunks[0])
+            val army1 = Army.parse(chunks[1])
+            return when (army0.type) {
+                ArmyType.ImmmuneSystem -> Combat(army0, army1)
+                ArmyType.Infection -> Combat(army1, army0)
+            }
+        }
+    }
 }
 
-fun fightUntilDone(armies: Pair<Army, Army>, debug: Boolean = false): Int {
-    val groups = listOf(armies.first, armies.second).flatMap { it.groups }
+fun fightUntilDone(armies: Combat, debug: Boolean = false): Int {
+    val groups = armies.allGroups()
 
-    while (armies.first.unitsLeft() != 0 && armies.second.unitsLeft() != 0) {
+    while (armies.immuneSystem.unitsLeft() != 0 && armies.infection.unitsLeft() != 0) {
         if (debug) {
-            println(armies.first.toDebugString())
-            println(armies.second.toDebugString())
+            println(armies.immuneSystem.toDebugString())
+            println(armies.infection.toDebugString())
             println()
         }
         fight(groups, debug)
@@ -179,6 +213,7 @@ fun selectTargets(groups: List<UnitGroup>): Map<Int, Int> {
         val target = targetPreferenceOrder(groups, groups[i], result).firstOrNull()
 
         if (target != null) {
+            // TODO: Do we need to make sure that the target would lose units?
             result[i] = target
         }
     }

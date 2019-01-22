@@ -4,7 +4,7 @@ import kotlin.test.assertEquals
 class Tests {
     @Test
     fun fightUntilDone_example() {
-        val armies = parseArmies(
+        val armies = Combat.parse(
             """
             Immune System:
             17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
@@ -16,16 +16,16 @@ class Tests {
         """.trimIndent()
         )
         val numLeft = fightUntilDone(armies, true)
-        assertEquals(0, armies.first.groups[0].numUnits)
-        assertEquals(0, armies.first.groups[1].numUnits)
-        assertEquals(782, armies.second.groups[0].numUnits)
-        assertEquals(4434, armies.second.groups[1].numUnits)
+        assertEquals(0, armies.immuneSystem.groups[0].numUnits)
+        assertEquals(0, armies.immuneSystem.groups[1].numUnits)
+        assertEquals(782, armies.infection.groups[0].numUnits)
+        assertEquals(4434, armies.infection.groups[1].numUnits)
         assertEquals(782 + 4434, numLeft)
     }
 
     @Test
     fun fight() {
-        val armies = parseArmies(
+        val armies = Combat.parse(
             """
             Immune System:
             905 units each with 1274 hit points (immune to fire; weak to bludgeoning, slashing) with an attack that does 25 slashing damage at initiative 3
@@ -35,16 +35,15 @@ class Tests {
             4434 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
-        fight(groups, true)
-        assertEquals(761, armies.first.groups[0].numUnits)
-        assertEquals(793, armies.second.groups[0].numUnits)
-        assertEquals(4434, armies.second.groups[1].numUnits)
+        fight(armies.allGroups(), true)
+        assertEquals(761, armies.immuneSystem.groups[0].numUnits)
+        assertEquals(793, armies.infection.groups[0].numUnits)
+        assertEquals(4434, armies.infection.groups[1].numUnits)
     }
 
     @Test
     fun selectTargets() {
-        val armies = parseArmies(
+        val armies = Combat.parse(
             """
             Immune System:
             17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
@@ -55,65 +54,62 @@ class Tests {
             4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
         val expected = mapOf(
             3 to 1, // Infection group 2 attacks defending group 2
             1 to 2, // Immune System group 2 attacks defending group 1
             0 to 3, // Immune System group 2 attacks defending group 1
             2 to 0  // Infection group 1 attacks defending group 1
         )
-        assertEquals(expected, selectTargets(groups))
+        assertEquals(expected, selectTargets(armies.allGroups()))
     }
 
     @Test
     fun selectTargets_skipsOddGroup() {
-        val armies = Pair(
+        val armies = Combat(
             Army(
-                name = "a",
+                type = ArmyType.Infection,
                 groups = listOf(
-                    arbitraryGroup.copy(army = "a", id = 1, numUnits = 2, attack = 1),
-                    arbitraryGroup.copy(army = "a", id = 2, numUnits = 1, attack = 1)
+                    arbitraryGroup.copy(id = 1, numUnits = 2, attack = 1, army = ArmyType.Infection),
+                    arbitraryGroup.copy(id = 2, numUnits = 1, attack = 1, army = ArmyType.Infection)
                 )
             ),
             Army(
-                name = "b",
+                type = ArmyType.ImmmuneSystem,
                 groups = listOf(
-                    arbitraryGroup.copy(army = "b", id = 3, numUnits = 1)
+                    arbitraryGroup.copy(id = 3, numUnits = 1, army = ArmyType.ImmmuneSystem)
                 )
             )
         )
-        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
         val expected = mapOf(
             0 to 2,
             2 to 0
         )
-        assertEquals(expected, selectTargets(groups))
+        assertEquals(expected, selectTargets(armies.allGroups()))
     }
 
 
     @Test
     fun selectTargets_skipsDeadGroups() {
-        val armies = Pair(
+        val armies = Combat(
             Army(
-                name = "a",
+                type = ArmyType.ImmmuneSystem,
                 groups = listOf(
-                    arbitraryGroup.copy(army = "a", id = 1)
+                    arbitraryGroup.copy(id = 1, army = ArmyType.ImmmuneSystem)
                 )
             ),
             Army(
-                name = "b",
+                type = ArmyType.Infection,
                 groups = listOf(
-                    arbitraryGroup.copy(army = "b", id = 2, numUnits = 0),
-                    arbitraryGroup.copy(army = "b", id = 3, numUnits = 1)
+                    arbitraryGroup.copy(id = 2, numUnits = 0, army = ArmyType.Infection),
+                    arbitraryGroup.copy(id = 3, numUnits = 1, army = ArmyType.Infection)
                 )
             )
         )
-        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
         val expected = mapOf(
             0 to 2,
             2 to 0
         )
-        assertEquals(expected, selectTargets(groups))
+        assertEquals(expected, selectTargets(armies.allGroups()))
     }
 
     @Test
@@ -137,9 +133,15 @@ class Tests {
     @Test
     fun targetPreferenceOrder_favorsMostDamageDealt() {
         val groups = listOf(
-            arbitraryGroup.copy(army = "a", numUnits = 1, attack = 5, attackType = AttackType.Cold),
-            arbitraryGroup.copy(army = "b"),
-            arbitraryGroup.copy(army = "b", weaknesses = listOf(AttackType.Cold))
+            arbitraryGroup.copy(
+                army = ArmyType.ImmmuneSystem,
+                numUnits = 1, attack = 5, attackType = AttackType.Cold
+            ),
+            arbitraryGroup.copy(army = ArmyType.Infection),
+            arbitraryGroup.copy(
+                army = ArmyType.Infection,
+                weaknesses = listOf(AttackType.Cold)
+            )
         )
         assertEquals(listOf(2, 1), targetPreferenceOrder(groups, groups[0], emptyMap()))
     }
@@ -147,9 +149,16 @@ class Tests {
     @Test
     fun targetPreferenceOrder_breaksDamageTiesWithEffectivePower() {
         val groups = listOf(
-            arbitraryGroup.copy(army = "a", numUnits = 1, attack = 5, attackType = AttackType.Cold),
-            arbitraryGroup.copy(army = "b", numUnits = 1, attack = 2),
-            arbitraryGroup.copy(army = "b", numUnits = 1, attack = 1)
+            arbitraryGroup.copy(
+                army = ArmyType.Infection,
+                numUnits = 1, attack = 5, attackType = AttackType.Cold
+            ),
+            arbitraryGroup.copy(
+                army = ArmyType.ImmmuneSystem, numUnits = 1, attack = 2
+            ),
+            arbitraryGroup.copy(
+                army = ArmyType.ImmmuneSystem, numUnits = 1, attack = 1
+            )
         )
         assertEquals(listOf(1, 2), targetPreferenceOrder(groups, groups[0], emptyMap()))
     }
@@ -157,16 +166,16 @@ class Tests {
     @Test
     fun targetPreferenceOrder_breaksEffectivePowerTiesWithInitiative() {
         val groups = listOf(
-            arbitraryGroup.copy(army = "a", numUnits = 1, attack = 5, attackType = AttackType.Cold),
-            arbitraryGroup.copy(army = "b", initiative = 1),
-            arbitraryGroup.copy(army = "b", initiative = 2)
+            arbitraryGroup.copy(army = ArmyType.ImmmuneSystem, numUnits = 1, attack = 5, attackType = AttackType.Cold),
+            arbitraryGroup.copy(army = ArmyType.Infection, initiative = 1),
+            arbitraryGroup.copy(army = ArmyType.Infection, initiative = 2)
         )
         assertEquals(listOf(2, 1), targetPreferenceOrder(groups, groups[0], emptyMap()))
     }
 
     @Test
     fun doAttacks_example() {
-        val armies = parseArmies(
+        val armies = Combat.parse(
             """
             Immune System:
             17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
@@ -177,18 +186,17 @@ class Tests {
             4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        val groups = listOf(armies.first, armies.second).flatMap { it.groups }
         val targets = mapOf(
             3 to 1,
             1 to 2,
             0 to 3,
             2 to 0
         )
-        doAttacks(groups, targets)
-        assertEquals(17 - 17, armies.first.groups[0].numUnits)
-        assertEquals(989 - 84, armies.first.groups[1].numUnits)
-        assertEquals(801 - 4, armies.second.groups[0].numUnits)
-        assertEquals(4485 - 51, armies.second.groups[1].numUnits)
+        doAttacks(armies.allGroups(), targets)
+        assertEquals(17 - 17, armies.immuneSystem.groups[0].numUnits)
+        assertEquals(989 - 84, armies.immuneSystem.groups[1].numUnits)
+        assertEquals(801 - 4, armies.infection.groups[0].numUnits)
+        assertEquals(4485 - 51, armies.infection.groups[1].numUnits)
     }
 
     @Test
@@ -217,8 +225,8 @@ class Tests {
     }
 
     @Test
-    fun testParseArmies() {
-        val actual = parseArmies(
+    fun testCombatParse() {
+        val actual = Combat.parse(
             """
             Immune System:
             17 units each with 5390 hit points (weak to radiation, bludgeoning) with an attack that does 4507 fire damage at initiative 2
@@ -229,13 +237,13 @@ class Tests {
             4485 units each with 2961 hit points (weak to fire, cold; immune to radiation) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        val expected = Pair(
+        val expected = Combat(
             Army(
-                name = "Immune System",
+                type = ArmyType.ImmmuneSystem,
                 groups = listOf(
                     UnitGroup(
                         id = 1,
-                        army = "Immune System",
+                        army = ArmyType.ImmmuneSystem,
                         numUnits = 17,
                         hitPoints = 5390,
                         attack = 4507,
@@ -246,7 +254,7 @@ class Tests {
                     ),
                     UnitGroup(
                         id = 2,
-                        army = "Immune System",
+                        army = ArmyType.ImmmuneSystem,
                         numUnits = 989,
                         hitPoints = 1274,
                         attack = 25,
@@ -258,11 +266,11 @@ class Tests {
                 )
             ),
             Army(
-                name = "Infection",
+                type = ArmyType.Infection,
                 groups = listOf(
                     UnitGroup(
                         id = 1,
-                        army = "Infection",
+                        army = ArmyType.Infection,
                         numUnits = 801,
                         hitPoints = 4706,
                         attack = 116,
@@ -273,7 +281,7 @@ class Tests {
                     ),
                     UnitGroup(
                         id = 2,
-                        army = "Infection",
+                        army = ArmyType.Infection,
                         numUnits = 4485,
                         hitPoints = 2961,
                         attack = 12,
@@ -291,7 +299,7 @@ class Tests {
 
 val arbitraryGroup = UnitGroup(
     id = -1,
-    army = "",
+    army = ArmyType.Infection,
     numUnits = Int.MAX_VALUE,
     hitPoints = Int.MAX_VALUE,
     attackType = AttackType.Cold,
