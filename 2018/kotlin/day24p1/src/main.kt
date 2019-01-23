@@ -149,11 +149,11 @@ data class Army(val type: ArmyType, val groups: List<UnitGroup>) {
             "No groups remain."
         } else {
             groupsLeft
-                .map { "Group ${it.id} contains ${it.numUnits} units"}
+                .map { "Group ${it.id} contains ${it.numUnits} units" }
                 .joinToString("\n")
         }
 
-        return "$type\n$groupStr"
+        return "$type:\n$groupStr"
     }
 
     companion object {
@@ -189,41 +189,73 @@ data class Combat(val immuneSystem: Army, val infection: Army) {
 }
 
 fun fightUntilDone(armies: Combat, debug: Boolean = false): Int {
-    val groups = armies.allGroups()
-
     while (armies.immuneSystem.unitsLeft() != 0 && armies.infection.unitsLeft() != 0) {
         if (debug) {
             println(armies.immuneSystem.toDebugString())
             println(armies.infection.toDebugString())
             println()
         }
-        fight(groups, debug)
+        fight(armies, debug)
     }
 
-    return groups.sumBy { it.numUnits }
+    if (debug) {
+        println(armies.immuneSystem.toDebugString())
+        println(armies.infection.toDebugString())
+        println()
+    }
+
+    return armies.allGroups().sumBy { it.numUnits }
 }
 
-fun fight(groups: List<UnitGroup>, debug: Boolean = false) {
-    doAttacks(groups, selectTargets(groups), debug)
+fun fight(armies: Combat, debug: Boolean = false) {
+    val infectionTargets = selectTargets(
+        armies.infection.groups, armies.immuneSystem.groups, debug
+    )
+    val immuneTargets = selectTargets(
+        armies.immuneSystem.groups, armies.infection.groups, debug
+    )
+    if (debug) println()
+    doAttacks(armies, immuneTargets, infectionTargets, debug)
 }
 
-fun selectTargets(groups: List<UnitGroup>): Map<Int, Int> {
-    val result = mutableMapOf<Int, Int>()
-    targetSelectionOrder(groups).forEach { i ->
-        val target = targetPreferenceOrder(groups, groups[i], result).firstOrNull()
+fun selectTargets(
+    attackers: List<UnitGroup>,
+    defenders: List<UnitGroup>,
+    debug: Boolean = false
+): Map<UnitGroup, UnitGroup> {
+
+    assert(attackers.map { it.army }.distinct().size == 1)
+    assert(defenders.map { it.army }.distinct().size == 1)
+    val result = mutableMapOf<UnitGroup, UnitGroup>()
+    targetSelectionOrder(attackers).forEach { attacker ->
+        if (debug) {
+            // Match the order of the example output,
+            // which is not the same order as below.
+            for (d in defenders.sortedBy { it.id }) {
+                if (!result.containsValue(d)) {
+                    println(
+                        "${attacker.army} group ${attacker.id} would deal " +
+                                "defending group ${d.id} ${attacker.damageDealtTo(d)} damage"
+                    )
+                }
+
+            }
+        }
+
+        val target = targetPreferenceOrder(defenders, attacker, result)
+            .firstOrNull()
 
         if (target != null) {
-            // TODO: Do we need to make sure that the target would lose units?
-            result[i] = target
+//             TODO: Do we need to make sure that the target would lose units?
+            result[attacker] = target
         }
     }
 
     return result
 }
 
-fun targetSelectionOrder(groups: List<UnitGroup>): List<Int> {
-    return groups.indices.sortedWith(DescendingCascadingComparator(
-        groups,
+fun targetSelectionOrder(groups: List<UnitGroup>): List<UnitGroup> {
+    return groups.sortedWith(DescendingCascadingComparator(
         listOf(
             { g: UnitGroup -> g.effectivePower() },
             { g: UnitGroup -> g.initiative }
@@ -234,14 +266,13 @@ fun targetSelectionOrder(groups: List<UnitGroup>): List<Int> {
 fun targetPreferenceOrder(
     groups: List<UnitGroup>,
     attacker: UnitGroup,
-    choicesSoFar: Map<Int, Int>
-): List<Int> {
-    return groups.indices
+    choicesSoFar: Map<UnitGroup, UnitGroup>
+): List<UnitGroup> {
+    return groups
         .filter {
-            !choicesSoFar.containsValue(it) && groups[it].army != attacker.army
+            !choicesSoFar.containsValue(it)
         }
         .sortedWith(DescendingCascadingComparator(
-            groups,
             listOf(
                 { g: UnitGroup -> attacker.damageDealtTo(g) },
                 { g: UnitGroup -> g.effectivePower() },
@@ -252,15 +283,11 @@ fun targetPreferenceOrder(
 }
 
 class DescendingCascadingComparator(
-    val groups: List<UnitGroup>,
     val selectors: List<(UnitGroup) -> Int>
-): Comparator<Int> {
-    override fun compare(a: Int?, b: Int?): Int {
-        val ga = groups[a!!]
-        val gb = groups[b!!]
-
+) : Comparator<UnitGroup> {
+    override fun compare(a: UnitGroup, b: UnitGroup): Int {
         for (sel in selectors) {
-            val c = sel(gb).compareTo(sel(ga))
+            val c = sel(b).compareTo(sel(a))
 
             if (c != 0) {
                 return c
@@ -271,19 +298,36 @@ class DescendingCascadingComparator(
     }
 }
 
-fun doAttacks(groups: List<UnitGroup>, targets: Map<Int, Int>, debug: Boolean = false) {
-    groups.indices
-        .filter { targets[it] != null }
-        .sortedByDescending { groups[it].initiative }
-        .forEach { ai ->
-            val attacker = groups[ai]
-            val defender = groups[targets[ai]!!]
-            val before = defender.numUnits
+fun doAttacks(
+    armies: Combat,
+    immuneTargets: Map<UnitGroup, UnitGroup>,
+    infectionTargets: Map<UnitGroup, UnitGroup>,
+    debug: Boolean = false
+) {
+    fun targetFor(attacker: UnitGroup): UnitGroup? {
+        val targetMap = when (attacker.army) {
+            ArmyType.ImmmuneSystem -> immuneTargets
+            ArmyType.Infection -> infectionTargets
+        }
+        return targetMap[attacker]
+    }
+
+    armies.allGroups()
+        .map { attacker -> Pair(attacker, targetFor(attacker)) }
+        .filter { (_, defender) -> defender != null }
+        .sortedByDescending { (attacker, _) -> attacker.initiative }
+        .forEach { (attacker, defender) ->
+            val before = defender!!.numUnits
             defender.receiveDamage(attacker.damageDealtTo(defender))
 
             if (debug) {
-                println("${attacker.identify()} attacks defending group ${defender.id}, " +
-                        "killing ${before - defender.numUnits} units")
+                val nk = before - defender.numUnits
+                println(
+                    "${attacker.identify()} attacks defending group ${defender.id}, " +
+                            "killing ${nk} ${if (nk == 1) "unit" else "units"}"
+                )
             }
         }
+
+    if (debug) println()
 }
