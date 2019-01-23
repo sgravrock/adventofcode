@@ -23,7 +23,7 @@ class Tests {
             4485 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        val numLeft = fightUntilDone(armies, true)
+        val numLeft = fightUntilDone(armies)
         assertEquals(0, armies.immuneSystem.groups[0].numUnits)
         assertEquals(0, armies.immuneSystem.groups[1].numUnits)
         assertEquals(782, armies.infection.groups[0].numUnits)
@@ -43,7 +43,7 @@ class Tests {
             4434 units each with 2961 hit points (immune to radiation; weak to fire, cold) with an attack that does 12 slashing damage at initiative 4
         """.trimIndent()
         )
-        fight(armies, true)
+        fight(armies)
         assertEquals(761, armies.immuneSystem.groups[0].numUnits)
         assertEquals(793, armies.infection.groups[0].numUnits)
         assertEquals(4434, armies.infection.groups[1].numUnits)
