@@ -105,14 +105,15 @@ class Tests {
             Army(
                 type = ArmyType.ImmmuneSystem,
                 groups = listOf(
-                    arbitraryGroup.copy(id = 1, army = ArmyType.ImmmuneSystem)
+                    arbitraryGroup.copy(id = 1, army = ArmyType.ImmmuneSystem),
+                    arbitraryGroup.copy(id = 2, army = ArmyType.ImmmuneSystem)
                 )
             ),
             Army(
                 type = ArmyType.Infection,
                 groups = listOf(
-                    arbitraryGroup.copy(id = 2, numUnits = 0, army = ArmyType.Infection),
-                    arbitraryGroup.copy(id = 3, numUnits = 1, army = ArmyType.Infection)
+                    arbitraryGroup.copy(id = 3, numUnits = 0, army = ArmyType.Infection),
+                    arbitraryGroup.copy(id = 4, numUnits = 1, army = ArmyType.Infection)
                 )
             )
         )

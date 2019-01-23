@@ -10,6 +10,7 @@ fun main(args: Array<String>) {
     }
     println("in ${ms}ms")
     // 21065  is too low
+    // 21082 is too high
 }
 
 enum class AttackType {
@@ -227,6 +228,8 @@ fun selectTargets(
     assert(attackers.map { it.army }.distinct().size == 1)
     assert(defenders.map { it.army }.distinct().size == 1)
     val result = mutableMapOf<UnitGroup, UnitGroup>()
+    val attackers = attackers.filter { it.numUnits > 0 }
+    val defenders = defenders.filter { it.numUnits > 0 }
     targetSelectionOrder(attackers).forEach { attacker ->
         if (debug) {
             // Match the order of the example output,
