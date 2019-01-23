@@ -3,6 +3,14 @@ import kotlin.test.assertEquals
 
 class Tests {
     @Test
+    fun fightUntilDone_puzzleInput() {
+        val classLoader = Army::class.java.classLoader
+        val input = classLoader.getResource("input.txt").readText()
+        val armies = Combat.parse(input)
+        assertEquals(21070, fightUntilDone(armies))
+    }
+
+    @Test
     fun fightUntilDone_example() {
         val armies = Combat.parse(
             """
@@ -125,6 +133,17 @@ class Tests {
             mapOf(armies.infection.groups[1] to armies.immuneSystem.groups[0]),
             selectTargets(armies.infection.groups, armies.immuneSystem.groups)
         )
+    }
+
+    @Test
+    fun selectTarget_doesNotSelectIfDamageIs0() {
+        val immuneGroups = listOf(
+            arbitraryGroup.copy(army = ArmyType.ImmmuneSystem, attackType = AttackType.Slashing)
+        )
+        val infectionGroups = listOf(
+            arbitraryGroup.copy(army = ArmyType.Infection, immunities = listOf(AttackType.Slashing))
+        )
+        assertEquals(emptyMap(), selectTargets(immuneGroups, infectionGroups))
     }
 
     @Test

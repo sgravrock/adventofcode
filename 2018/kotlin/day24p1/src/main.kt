@@ -9,8 +9,6 @@ fun main(args: Array<String>) {
         println(fightUntilDone(armies))
     }
     println("in ${ms}ms")
-    // 21065  is too low
-    // 21082 is too high
 }
 
 enum class AttackType {
@@ -141,7 +139,7 @@ enum class ArmyType {
     }
 }
 
-data class Army(val type: ArmyType, val groups: List<UnitGroup>) {
+data class Army(val type: ArmyType, var groups: List<UnitGroup>) {
     fun unitsLeft(): Int = groups.sumBy { it.numUnits }
 
     fun toDebugString(): String {
@@ -248,8 +246,7 @@ fun selectTargets(
         val target = targetPreferenceOrder(defenders, attacker, result)
             .firstOrNull()
 
-        if (target != null) {
-//             TODO: Do we need to make sure that the target would lose units?
+        if (target != null && attacker.damageDealtTo(target) > 0) {
             result[attacker] = target
         }
     }
