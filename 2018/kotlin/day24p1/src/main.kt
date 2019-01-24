@@ -41,58 +41,6 @@ data class UnitGroup(
         val unitsKilled = damage / hitPoints
         numUnits = max(0, numUnits - unitsKilled)
     }
-
-    companion object {
-        fun parse(input: String, id: Int, army: String): UnitGroup {
-            val m = re.matchEntire(input)
-                ?: throw Exception("Parse error: $input")
-            val (weaknesses, immunities) = parseCapabilities(
-                m.groups["capabilities"]?.value
-            )
-            return UnitGroup(
-                id = id,
-                army = army,
-                numUnits = m.groups["numUnits"]!!.value.toInt(),
-                hitPoints = m.groups["hitPoints"]!!.value.toInt(),
-                attack = m.groups["damage"]!!.value.toInt(),
-                attackType = m.groups["String"]!!.value,
-                weaknesses = weaknesses,
-                immunities = immunities,
-                initiative = m.groups["initiative"]!!.value.toInt()
-            )
-        }
-
-        private fun parseCapabilities(
-            input: String?
-        ): Pair<List<String>, List<String>> {
-            if (input == null) {
-                return Pair(emptyList(), emptyList())
-            }
-
-            var weaknesses = emptyList<String>()
-            var immunities = emptyList<String>()
-
-            for (chunk in input.split("; ")) {
-                val (name, values) = chunk.split(" to ")
-                val caps = values.split(", ")
-
-                when (name) {
-                    "weak" -> weaknesses = caps
-                    "immune" -> immunities = caps
-                    else -> throw Error("Expected weak or immune but got $name")
-                }
-            }
-
-            return Pair(weaknesses, immunities)
-        }
-
-        private val re = Regex(
-            "^(?<numUnits>[0-9]+) units each with (?<hitPoints>[0-9]+) hit points " +
-                    "(\\((?<capabilities>[^)]+)\\) )?with an attack that does " +
-                    "(?<damage>[0-9]+) (?<String>[^ ]+) damage at initiative " +
-                    "(?<initiative>[0-9]+)\$"
-        )
-    }
 }
 
 fun fightUntilDone(groups: List<UnitGroup>): Int {
@@ -119,6 +67,16 @@ fun selectTargets(groups: List<UnitGroup>): Map<UnitGroup, UnitGroup> {
     }
 
     return result
+}
+
+fun doAttacks(groups: List<UnitGroup>, targets: Map<UnitGroup, UnitGroup>) {
+    groups
+        .map { attacker -> Pair(attacker, targets[attacker]) }
+        .filter { (_, defender) -> defender != null }
+        .sortedByDescending { (attacker, _) -> attacker.initiative }
+        .forEach { (attacker, defender) ->
+            defender!!.receiveDamage(attacker.damageDealtTo(defender))
+        }
 }
 
 fun targetSelectionOrder(groups: List<UnitGroup>): List<UnitGroup> {
@@ -169,16 +127,6 @@ class DescendingCascadingComparator(
     }
 }
 
-fun doAttacks(groups: List<UnitGroup>, targets: Map<UnitGroup, UnitGroup>) {
-    groups
-        .map { attacker -> Pair(attacker, targets[attacker]) }
-        .filter { (_, defender) -> defender != null }
-        .sortedByDescending { (attacker, _) -> attacker.initiative }
-        .forEach { (attacker, defender) ->
-            defender!!.receiveDamage(attacker.damageDealtTo(defender))
-        }
-}
-
 fun parseArmies(input: String): List<UnitGroup> {
     val chunks = input.split("\n\n")
     return listOf(
@@ -191,6 +139,56 @@ fun parseArmy(input: String): List<UnitGroup> {
     val lines = input.lines()
     val type = lines[0].replace(":", "")
     return lines.drop(1).mapIndexed { i, s ->
-        UnitGroup.parse(s, i + 1, type)
+        parseUnitGroup(s, i + 1, type)
     }
 }
+
+fun parseUnitGroup(input: String, id: Int, army: String): UnitGroup {
+    val m = unitGroupRegex.matchEntire(input)
+        ?: throw Exception("Parse error: $input")
+    val (weaknesses, immunities) = parseCapabilities(
+        m.groups["capabilities"]?.value
+    )
+    return UnitGroup(
+        id = id,
+        army = army,
+        numUnits = m.groups["numUnits"]!!.value.toInt(),
+        hitPoints = m.groups["hitPoints"]!!.value.toInt(),
+        attack = m.groups["damage"]!!.value.toInt(),
+        attackType = m.groups["String"]!!.value,
+        weaknesses = weaknesses,
+        immunities = immunities,
+        initiative = m.groups["initiative"]!!.value.toInt()
+    )
+}
+
+private fun parseCapabilities(
+    input: String?
+): Pair<List<String>, List<String>> {
+    if (input == null) {
+        return Pair(emptyList(), emptyList())
+    }
+
+    var weaknesses = emptyList<String>()
+    var immunities = emptyList<String>()
+
+    for (chunk in input.split("; ")) {
+        val (name, values) = chunk.split(" to ")
+        val caps = values.split(", ")
+
+        when (name) {
+            "weak" -> weaknesses = caps
+            "immune" -> immunities = caps
+            else -> throw Error("Expected weak or immune but got $name")
+        }
+    }
+
+    return Pair(weaknesses, immunities)
+}
+
+private val unitGroupRegex = Regex(
+    "^(?<numUnits>[0-9]+) units each with (?<hitPoints>[0-9]+) hit points " +
+            "(\\((?<capabilities>[^)]+)\\) )?with an attack that does " +
+            "(?<damage>[0-9]+) (?<String>[^ ]+) damage at initiative " +
+            "(?<initiative>[0-9]+)\$"
+)
