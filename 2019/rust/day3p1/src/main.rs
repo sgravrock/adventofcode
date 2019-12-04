@@ -95,13 +95,7 @@ fn intersections(paths: (Vec<Step>, Vec<Step>)) -> Vec<(i32, i32)> {
 
 	path_points(paths.1)
 		.into_iter()
-		.filter_map(|point| {
-			if points.contains(&point) {
-				Some(point)
-			} else {
-				None
-			}
-		})
+		.filter({|p| points.contains(&p)})
 		.collect()
 }
 
