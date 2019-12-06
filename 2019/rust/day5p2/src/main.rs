@@ -123,6 +123,18 @@ fn execute(program: &mut Vec<i32>, input: Option<i32>) -> Vec<i32> {
 			} else {
 				ip += 3;
 			}
+		} else if instruction.opcode == 7 {
+			let a = lvalue(program, &instruction, ip, 0);
+			let b = lvalue(program, &instruction, ip, 1);
+			let dest = program[ip + 3] as usize;
+			program[dest] = if a < b { 1 } else { 0 };
+			ip = 4;
+		} else if instruction.opcode == 8 {
+			let a = lvalue(program, &instruction, ip, 0);
+			let b = lvalue(program, &instruction, ip, 1);
+			let dest = program[ip + 3] as usize;
+			program[dest] = if a == b { 1 } else { 0 };
+			ip = 4;
 		} else {
 			panic!("Unrecognized opcode {} at ip={}", program[ip], ip);
 		}
@@ -184,6 +196,31 @@ fn test_execute_jump_if_false() {
 	assert_eq!(execute(&mut program1, None), vec![]);
 	let mut program2 = vec![1106,0,4,99,104,1,99];
 	assert_eq!(execute(&mut program2, None), vec![1]);
+}
+
+#[test]
+fn test_less_than() {
+	let mut program1 = vec![1107,1,2,5,99,-1];
+	execute(&mut program1, None);
+	assert_eq!(program1, vec![1107,1,2,5,99,1]);
+	let mut program2 = vec![1107,2,2,5,99,-1];
+	execute(&mut program2, None);
+	assert_eq!(program2, vec![1107,2,2,5,99,0]);
+}
+
+#[test]
+fn test_equal() {
+	let mut program1 = vec![1108,1,2,5,99,-1];
+	execute(&mut program1, None);
+	assert_eq!(program1, vec![1108,1,2,5,99,0]);
+
+	let mut program2 = vec![1108,2,2,5,99,-1];
+	execute(&mut program2, None);
+	assert_eq!(program2, vec![1108,2,2,5,99,1]);
+
+	let mut program3 = vec![1108,1,0,5,99,-1];
+	execute(&mut program3, None);
+	assert_eq!(program3, vec![1108,1,0,5,99,0]);
 }
 
 #[test]
