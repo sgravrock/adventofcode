@@ -33,53 +33,62 @@ fn find_max_thruster_signal(program: Vec<i32>) -> SearchResult {
 fn test_find_max_thruster_signal() {
 	assert_eq!(
 		find_max_thruster_signal(
-			vec![3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0]
+			vec![3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,
+				28,-1,28,1005,28,6,99,0,0,5]
 		),
 		SearchResult {
-			max_thruster_signal: 43210,
-			phase_settings: vec![4, 3, 2, 1, 0]
+			max_thruster_signal: 139629729,
+			phase_settings: vec![9,8,7,6,5]
 		}
 	);
 	assert_eq!(
 		find_max_thruster_signal(
-			vec![3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,
-				4,23,99,0,0]
+			vec![3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,
+				1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,
+				2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10]
 		),
 		SearchResult {
-			max_thruster_signal: 54321,
-			phase_settings: vec![0, 1, 2, 3, 4]
-		}
-	);
-	assert_eq!(
-		find_max_thruster_signal(
-			vec![3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33, 1002,33,7,
-				33,1,33,31,31,1,32,31,31,4,31,99,0,0,0]
-		),
-		SearchResult {
-			max_thruster_signal: 65210,
-			phase_settings: vec![1, 0, 4, 3, 2]
+			max_thruster_signal: 18216,
+			phase_settings: vec![9,7,8,5,6]
 		}
 	);
 }
 
 fn all_possible_phase_settings() -> Vec<Vec<i32>> {
-	let mut values = [0, 1, 2, 3, 4];
+	let mut values = [5, 6, 7, 8, 9];
 	let mut result: Vec<Vec<i32>> = vec![];
 	permutohedron::heap_recursive(&mut values, |s| { result.push(s.to_vec()) });
 	result
 }
 
 fn thruster_signal(program: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {
-	phase_settings
+	let mut machines: Vec<Machine> = phase_settings
 		.iter()
-		.fold(0, |input_signal, phase_setting| {
-			let mut machine = Machine::new(program.clone());
-			machine.input.enqueue(*phase_setting);
-			machine.input.enqueue(input_signal);
-			machine.execute().unwrap();
-			assert_eq!(machine.output.len(), 1);
-			machine.output[0]
+		.map(|phase_setting| {
+			let mut m = Machine::new(program.clone());
+			m.input.enqueue(*phase_setting);
+			m
 		})
+		.collect();
+	
+	machines[0].input.enqueue(0);
+
+	loop {
+		for i in 0..machines.len() {
+			machines[i].execute().unwrap();
+			let output = machines[i].output.dequeue().unwrap();
+
+			if i == machines.len() - 1 {
+				if machines[i].state == MachineState::Halted {
+					return output;
+				} else {
+					machines[0].input.enqueue(output);
+				}
+			} else {
+				machines[i + 1].input.enqueue(output);
+			}
+		}
+	}
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -176,8 +185,7 @@ enum MachineState {
 struct Machine {
 	mem: Vec<i32>,
 	input: Queue<i32>,
-	next_input_ix: usize,
-	output: Vec<i32>,
+	output: Queue<i32>,
 	ip: i32,
 	state: MachineState,
 }
@@ -187,8 +195,7 @@ impl Machine {
 		Machine {
 			mem,
 			input: Queue::new(),
-			next_input_ix: 0,
-			output: vec![],
+			output: Queue::new(),
 			ip: 0,
 			state: MachineState::Running,
 		}
@@ -232,14 +239,13 @@ impl Machine {
 				match self.input.dequeue() {
 					Some(input) => {
 						rvalue = Some(input);
-						self.next_input_ix += 1;
 						self.ip += 2;
 					},
 					None => self.state = MachineState::Blocked
 				}
 			},
 			4 => {
-				self.output.push(params.arg0.unwrap());
+				self.output.enqueue(params.arg0.unwrap());
 				self.ip += 2;
 			},
 			5 => {
@@ -393,28 +399,28 @@ fn test_execute_input_pauses() {
 fn test_execute_output() {
 	let mut machine = Machine::new(vec![4,3,99,12345]);
 	machine.execute().unwrap();
-	assert_eq!(machine.output, vec![12345]);
+	assert_eq!(machine.output.dequeue(), Some(12345));
 }
 
 #[test]
 fn test_execute_jump_if_true() {
 	let mut machine1 = Machine::new(vec![1105,0,4,99,104,1,99]);
 	machine1.execute().unwrap();
-	assert_eq!(machine1.output, vec![]);
+	assert_eq!(machine1.output.dequeue(), None);
 	let mut machine2 = Machine::new(vec![1105,1,4,99,4,1,99]);
 	machine2.execute().unwrap();
-	assert_eq!(machine2.output, vec![1]);
+	assert_eq!(machine2.output.dequeue(), Some(1));
 }
 
 #[test]
 fn test_execute_jump_if_false() {
 	let mut machine1 = Machine::new(vec![1106,1,4,99,4,1,99]);
 	machine1.execute().unwrap();
-	assert_eq!(machine1.output, vec![]);
+	assert_eq!(machine1.output.dequeue(), None);
 
 	let mut machine2 = Machine::new(vec![1106,0,4,99,104,1,99]);
 	machine2.execute().unwrap();
-	assert_eq!(machine2.output, vec![1]);
+	assert_eq!(machine2.output.dequeue(), Some(1));
 }
 
 #[test]
