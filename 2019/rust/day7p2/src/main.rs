@@ -74,7 +74,8 @@ fn thruster_signal(program: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {
 		.iter()
 		.fold(0, |input_signal, phase_setting| {
 			let mut machine = Machine::new(program.clone());
-			machine.input = vec![*phase_setting, input_signal];
+			machine.input.enqueue(*phase_setting);
+			machine.input.enqueue(input_signal);
 			machine.execute().unwrap();
 			assert_eq!(machine.output.len(), 1);
 			machine.output[0]
@@ -165,21 +166,37 @@ struct ParamValues {
 	dest: Option<i32>
 }
 
+#[derive(Debug, PartialEq)]
+enum MachineState {
+	Running,
+	Blocked,
+	Halted
+}
+
 struct Machine {
 	mem: Vec<i32>,
-	input: Vec<i32>,
+	input: Queue<i32>,
 	next_input_ix: usize,
 	output: Vec<i32>,
 	ip: i32,
+	state: MachineState,
 }
 
 impl Machine {
 	fn new(mem: Vec<i32>) -> Machine {
-		Machine { mem, input: vec![], next_input_ix: 0, output: vec![], ip: 0, }
+		Machine {
+			mem,
+			input: Queue::new(),
+			next_input_ix: 0,
+			output: vec![],
+			ip: 0,
+			state: MachineState::Running,
+		}
 	}
 
 	fn execute(&mut self) -> Result<(), Error> {
-		while self.read_instruction()? != 99 {
+		self.state = MachineState::Running;
+		while self.state == MachineState::Running {
 			self.do_current_instruction()?;
 		}
 		Ok(())
@@ -212,10 +229,14 @@ impl Machine {
 				self.ip += 4;
 			},
 			3 => {
-				// TODO: Propagate errors from being out of input
-				rvalue = Some(self.input[self.next_input_ix]);
-				self.next_input_ix += 1;
-				self.ip += 2;
+				match self.input.dequeue() {
+					Some(input) => {
+						rvalue = Some(input);
+						self.next_input_ix += 1;
+						self.ip += 2;
+					},
+					None => self.state = MachineState::Blocked
+				}
 			},
 			4 => {
 				self.output.push(params.arg0.unwrap());
@@ -255,6 +276,9 @@ impl Machine {
 				);
 				self.ip += 4;
 			},
+			99 => {
+				self.state = MachineState::Halted;
+			}
 			_ => {
 				panic!("Unrecognized opcode {} at self.ip={} (should have been caught earlier", self.mem[self.ip as usize], self.ip)
 			}
@@ -288,6 +312,11 @@ impl Machine {
 				arg0: Some(self.lvalue(&instruction, 0)?),
 				arg1: Some(self.lvalue(&instruction, 1)?),
 				dest: None
+			}),
+			99 => Ok(ParamValues {
+				arg0: None,
+				arg1: None,
+				dest: None,
 			}),
 			_ => Err(Error::InvalidOpcode {opcode: self.mem[self.ip as usize], ip: self.ip as i32})
 		}
@@ -343,9 +372,21 @@ fn test_execute_negative() {
 #[test]
 fn test_execute_input() {
 	let mut machine = Machine::new(vec![3,5,3,6,99,0,0]);
-	machine.input = vec![10, 11];
+	machine.input.enqueue(10);
+	machine.input.enqueue(11);
 	machine.execute().unwrap();
 	assert_eq!(machine.mem, vec![3,5,3,6,99,10,11]);
+}
+
+#[test]
+fn test_execute_input_pauses() {
+	let mut machine = Machine::new(vec![3,3,99,0]);
+	machine.execute().unwrap();
+	assert_eq!(machine.state, MachineState::Blocked);
+	machine.input.enqueue(10);
+	machine.execute().unwrap();
+	assert_eq!(machine.state, MachineState::Halted);
+	assert_eq!(machine.mem, vec![3,3,99,10]);
 }
 
 #[test]
@@ -405,7 +446,7 @@ fn test_equal() {
 #[test]
 fn test_execute_immediate_mode() {
 	let mut machine = Machine::new(vec![1102,4,3,5,99,0]);
-	machine.input = vec![5];
+	machine.input.enqueue(5);
 	machine.execute().unwrap();
 	assert_eq!(machine.mem, vec![1102,4,3,5,99,12]);
 }
@@ -519,4 +560,23 @@ fn dump_mem(cmd: Vec<&str>, machine: &Machine) {
 		},
 		_ => println!("Usage: mem [start end]")
 	};
+}
+
+
+struct Queue<T> {
+	buf: Vec<T>
+}
+
+impl<T> Queue<T> {
+	fn new() -> Queue<T> {
+		Queue {buf: vec![]}
+	}
+
+	fn enqueue(&mut self, item: T) {
+		self.buf.insert(0, item);
+	}
+
+	fn dequeue(&mut self) -> Option<T> {
+		self.buf.pop()
+	}
 }
