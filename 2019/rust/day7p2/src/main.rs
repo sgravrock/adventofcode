@@ -76,7 +76,7 @@ fn thruster_signal(program: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {
 
 	loop {
 		for i in 0..machines.len() {
-			machines[i].execute().unwrap();
+			execute_or_debug(&mut machines[i]);
 			let output = machines[i].output.dequeue().unwrap();
 
 			if i == machines.len() - 1 {
@@ -88,6 +88,17 @@ fn thruster_signal(program: &Vec<i32>, phase_settings: &Vec<i32>) -> i32 {
 			} else {
 				machines[i + 1].input.enqueue(output);
 			}
+		}
+	}
+}
+
+fn execute_or_debug(mut machine: &mut Machine) {
+	match machine.execute() {
+		Ok(_) => {},
+		Err(error) => {
+			println!("Execution failed: {:?}", error);
+			debug(&mut machine);
+			panic!("Aborting because of previous execution failure");
 		}
 	}
 }
