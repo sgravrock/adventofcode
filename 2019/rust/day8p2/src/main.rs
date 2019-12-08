@@ -68,13 +68,11 @@ fn decode_image(image: Image) -> Layer {
 
 fn decode_pixel(image: &Image, y: usize, x: usize) -> i32 {
 	image.iter()
-		.fold(None, |prev, layer| {
-			Some(match prev.unwrap_or(2) {
-				2 => layer[y][x],
-				p => p
-			})
+		.filter_map(|layer| {
+			if layer[y][x] == 2 { None } else { Some(layer[y][x]) }
 		})
-		.unwrap()
+		.next()
+		.unwrap_or(2)
 }
 
 #[test]
