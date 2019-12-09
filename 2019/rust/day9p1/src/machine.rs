@@ -252,7 +252,7 @@ impl Machine {
 		match usize::try_from(index) {
 			Err(_) => Err(Error::OutOfBoundsRead {index}),
 			Ok(i) => match self.mem.get(i) {
-				None => Err(Error::OutOfBoundsRead {index}),
+				None => Ok(0),
 				Some(v) => Ok(*v)
 			}
 		}
@@ -261,12 +261,13 @@ impl Machine {
 	fn checked_write(&mut self, index: i32, value: i32) -> Result<(), Error> {
 		match usize::try_from(index) {
 			Err(_) => Err(Error::OutOfBoundsWrite {index}),
-			Ok(i) => match self.mem.get_mut(i) {
-				None => Err(Error::OutOfBoundsWrite {index}),
-				Some(elem) => {
-					*elem = value;
-					Ok(())
+			Ok(i) => {
+				if i >= self.mem.len() {
+					self.mem.resize(i + 1, 0);
 				}
+
+				self.mem[i] = value;
+				Ok(())
 			}
 		}
 	}
@@ -380,21 +381,29 @@ fn test_execute_relative_mode() {
 }
 
 #[test]
-fn test_execute_detects_oob_reads() {
-	let mut machine = Machine::new(vec![2, 500, 0, 0, 99]);
-	assert_eq!(machine.execute(), Err(Error::OutOfBoundsRead {index: 500}));
-	let mut machine2 = Machine::new(vec![2, 0, 500, 0, 99]);
-	assert_eq!(machine2.execute(), Err(Error::OutOfBoundsRead {index: 500}));
-	let mut machine3 = Machine::new(vec![2, 0, -1, 0, 99]);
-	assert_eq!(machine3.execute(), Err(Error::OutOfBoundsRead {index: -1}));
+fn test_execute_allows_positive_oob_reads() {
+	let mut machine = Machine::new(vec![4,3,99]);
+	machine.execute().unwrap();
+	assert_eq!(machine.output.dequeue(), Some(0));
 }
 
 #[test]
-fn test_execute_detects_oob_writes() {
-	let mut machine = Machine::new(vec![1102, 0, 0, 500, 99]);
-	assert_eq!(machine.execute(), Err(Error::OutOfBoundsWrite {index: 500}));
-	let mut machine2 = Machine::new(vec![1102, 0, 0, -1, 99]);
-	assert_eq!(machine2.execute(), Err(Error::OutOfBoundsWrite {index: -1}));
+fn test_execute_detects_negative_oob_reads() {
+	let mut machine = Machine::new(vec![2, 0, -1, 0, 99]);
+	assert_eq!(machine.execute(), Err(Error::OutOfBoundsRead {index: -1}));
+}
+
+#[test]
+fn test_execute_allows_positive_oob_writes() {
+	let mut machine = Machine::new(vec![1101, 1, 2, 6, 99]);
+	machine.execute().unwrap();
+	assert_eq!(machine.mem, vec![1101, 1, 2, 6, 99, 0, 3]);
+}
+
+#[test]
+fn test_execute_detects_negative_oob_writes() {
+	let mut machine = Machine::new(vec![1102, 0, 0, -1, 99]);
+	assert_eq!(machine.execute(), Err(Error::OutOfBoundsWrite {index: -1}));
 }
 
 #[test]
