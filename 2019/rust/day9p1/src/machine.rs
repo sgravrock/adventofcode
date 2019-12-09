@@ -11,7 +11,8 @@ pub enum Error {
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum Mode {
 	Immed,
-	Pos
+	Pos,
+	Rel,
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,6 +31,7 @@ impl Instruction {
 			param_modes.push(match word % 10 {
 				0 => Mode::Pos,
 				1 => Mode::Immed,
+				2 => Mode::Rel,
 				_ => panic!("Unrecognized parameter mode {}", word % 10)
 			});
 			word /= 10;
@@ -84,6 +86,7 @@ pub struct Machine {
 	pub input: Queue<i32>,
 	pub output: Queue<i32>,
 	pub ip: i32,
+	pub relative_base: i32,
 	pub state: MachineState,
 }
 
@@ -94,6 +97,7 @@ impl Machine {
 			input: Queue::new(),
 			output: Queue::new(),
 			ip: 0,
+			relative_base: 0,
 			state: MachineState::Running,
 		}
 	}
@@ -179,6 +183,10 @@ impl Machine {
 				);
 				self.ip += 4;
 			},
+			9 => {
+				self.relative_base = params.arg0.unwrap();
+				self.ip += 2;
+			}
 			99 => {
 				self.state = MachineState::Halted;
 			}
@@ -216,6 +224,11 @@ impl Machine {
 				arg1: Some(self.lvalue(&instruction, 1)?),
 				dest: None
 			}),
+			9 => Ok(ParamValues {
+				arg0: Some(self.lvalue(&instruction, 0)?),
+				arg1: None,
+				dest: None,
+			}),
 			99 => Ok(ParamValues {
 				arg0: None,
 				arg1: None,
@@ -230,7 +243,8 @@ impl Machine {
 		let x = self.checked_read(self.ip + param_ix as i32 + 1)?;
 		match instruction.param_mode(param_ix) {
 			Mode::Immed => Ok(x),
-			Mode::Pos => self.checked_read(x)
+			Mode::Pos => self.checked_read(x),
+			Mode::Rel => self.checked_read(x + self.relative_base),
 		}
 	}
 
@@ -352,6 +366,17 @@ fn test_execute_immediate_mode() {
 	machine.input.enqueue(5);
 	machine.execute().unwrap();
 	assert_eq!(machine.mem, vec![1102,4,3,5,99,12]);
+}
+
+#[test]
+fn test_execute_relative_mode() {
+	let mut machine1 = Machine::new(vec![2201,6,7,5,99,0,2,3]);
+	machine1.execute().unwrap();
+	assert_eq!(machine1.mem, vec![2201,6,7,5,99,5,2,3]);
+
+	let mut machine2 = Machine::new(vec![109,19,204,-14,99,17]);
+	machine2.execute().unwrap();
+	assert_eq!(machine2.output.dequeue(), Some(17));
 }
 
 #[test]
