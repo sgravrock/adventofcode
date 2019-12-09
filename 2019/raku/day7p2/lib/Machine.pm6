@@ -10,11 +10,11 @@ class Machine is export {
 
 	method execute() {
 		while self.mem[self.ip] != 99 {
-			self!do-current-instruction();
+			self.step();
 		}
 	}
 
-	method !do-current-instruction() {
+	method step() {
 		my $opcode = self.mem[self.ip];
 		given $opcode {
 			when 1 {
