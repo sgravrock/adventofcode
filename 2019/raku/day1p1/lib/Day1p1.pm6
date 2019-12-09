@@ -1,10 +1,10 @@
 use v6;
 use Input;
 
-sub fuelRequirement($mass) is export {
+sub fuel-requirement($mass) is export {
 	floor($mass / 3) - 2
 }
 
-sub totalFuelRequirement(@masses) is export {
-	[+] @masses.map(&fuelRequirement);
+sub total-fuel-requirement(@masses) is export {
+	[+] @masses.map(&fuel-requirement);
 }

@@ -1,3 +1,5 @@
+use v6;
+
 our @puzzle_input is export = [
 	61302,
 	105953,

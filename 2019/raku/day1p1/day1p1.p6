@@ -4,5 +4,5 @@ use lib 'lib';
 use Input;
 use Day1p1;
 
-print totalFuelRequirement(@puzzle_input);
+print total-fuel-requirement(@puzzle_input);
 print "\n";

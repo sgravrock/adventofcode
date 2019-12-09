@@ -3,12 +3,12 @@ use lib 'lib';
 use Day1p1;
 
 subtest {
-	is fuelRequirement(12), 2, "for 12";
-	is fuelRequirement(14), 2, "for 14";
-	is fuelRequirement(1969), 654, "for 1969";
+	is fuel-requirement(12), 2, "for 12";
+	is fuel-requirement(14), 2, "for 14";
+	is fuel-requirement(1969), 654, "for 1969";
 	done-testing;
-}, "fuelRequirement";
+}, "fuel-requirement";
 
-is totalFuelRequirement([12, 14, 1969]), 658, "totalFuelRequirement";
+is total-fuel-requirement([12, 14, 1969]), 658, "total-fuel-requirement";
 
 done-testing;
