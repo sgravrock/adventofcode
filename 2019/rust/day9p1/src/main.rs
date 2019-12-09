@@ -7,7 +7,12 @@ use debugger::debug;
 extern crate permutohedron;
 
 fn main() {
-	let program = input::puzzle_input();
+	let mut machine = Machine::new(input::puzzle_input());
+	machine.input.enqueue(1);
+	machine.execute().unwrap();
+	println!("{}", machine.output.dequeue().unwrap());
+	// 203 is not the correct answer
+	assert!(machine.output.dequeue().is_none());
 }
 
 

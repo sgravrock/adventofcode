@@ -2,10 +2,10 @@ use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Error {
-	OutOfBoundsRead { index: i32 },
-	OutOfBoundsWrite { index: i32 },
-	InvalidOpcode { opcode: i32, ip: i32 },
-	IpOutOfRange { ip: i32 },
+	OutOfBoundsRead { index: i64 },
+	OutOfBoundsWrite { index: i64 },
+	InvalidOpcode { opcode: i64, ip: i64 },
+	IpOutOfRange { ip: i64 },
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -17,12 +17,12 @@ enum Mode {
 
 #[derive(Debug, PartialEq)]
 pub struct Instruction {
-	opcode: i32,
+	opcode: i64,
 	param_modes: Vec<Mode>
 }
 
 impl Instruction {
-	fn decode(mut word: i32) -> Instruction {
+	fn decode(mut word: i64) -> Instruction {
 		let opcode = word % 100;
 		word /= 100;
 		let mut param_modes: Vec<Mode> = vec![];
@@ -69,9 +69,9 @@ fn test_instruction_decode() {
 }
 
 struct ParamValues {
-	arg0: Option<i32>,
-	arg1: Option<i32>,
-	dest: Option<i32>
+	arg0: Option<i64>,
+	arg1: Option<i64>,
+	dest: Option<i64>
 }
 
 #[derive(Debug, PartialEq)]
@@ -82,16 +82,16 @@ pub enum MachineState {
 }
 
 pub struct Machine {
-	pub mem: Vec<i32>,
-	pub input: Queue<i32>,
-	pub output: Queue<i32>,
-	pub ip: i32,
-	pub relative_base: i32,
+	pub mem: Vec<i64>,
+	pub input: Queue<i64>,
+	pub output: Queue<i64>,
+	pub ip: i64,
+	pub relative_base: i64,
 	pub state: MachineState,
 }
 
 impl Machine {
-	pub fn new(mem: Vec<i32>) -> Machine {
+	pub fn new(mem: Vec<i64>) -> Machine {
 		Machine {
 			mem,
 			input: Queue::new(),
@@ -116,16 +116,16 @@ impl Machine {
 		})
 	}
 
-	fn read_instruction(&self) -> Result<i32, Error> {
-		self.checked_read(self.ip as i32).or_else(|_| {
-			Err(Error::IpOutOfRange {ip: self.ip as i32})
+	fn read_instruction(&self) -> Result<i64, Error> {
+		self.checked_read(self.ip as i64).or_else(|_| {
+			Err(Error::IpOutOfRange {ip: self.ip as i64})
 		})
 	}
 
 	pub fn do_current_instruction(&mut self) -> Result<(), Error> {
 		let instruction = self.current_instruction()?;
 		let params = self.evaluate_params(&instruction)?;
-		let mut rvalue: Option<i32> = None;
+		let mut rvalue: Option<i64> = None;
 
 		match instruction.opcode {
 			1 => {
@@ -234,13 +234,13 @@ impl Machine {
 				arg1: None,
 				dest: None,
 			}),
-			_ => Err(Error::InvalidOpcode {opcode: self.mem[self.ip as usize], ip: self.ip as i32})
+			_ => Err(Error::InvalidOpcode {opcode: self.mem[self.ip as usize], ip: self.ip as i64})
 		}
 	}
 
 	fn lvalue(&self, instruction: &Instruction, param_ix: usize)
-			-> Result<i32, Error> {
-		let x = self.checked_read(self.ip + param_ix as i32 + 1)?;
+			-> Result<i64, Error> {
+		let x = self.checked_read(self.ip + param_ix as i64 + 1)?;
 		match instruction.param_mode(param_ix) {
 			Mode::Immed => Ok(x),
 			Mode::Pos => self.checked_read(x),
@@ -248,7 +248,7 @@ impl Machine {
 		}
 	}
 
-	fn checked_read(&self, index: i32) -> Result<i32, Error> {
+	fn checked_read(&self, index: i64) -> Result<i64, Error> {
 		match usize::try_from(index) {
 			Err(_) => Err(Error::OutOfBoundsRead {index}),
 			Ok(i) => match self.mem.get(i) {
@@ -258,7 +258,7 @@ impl Machine {
 		}
 	}
 
-	fn checked_write(&mut self, index: i32, value: i32) -> Result<(), Error> {
+	fn checked_write(&mut self, index: i64, value: i64) -> Result<(), Error> {
 		match usize::try_from(index) {
 			Err(_) => Err(Error::OutOfBoundsWrite {index}),
 			Ok(i) => {
