@@ -136,26 +136,26 @@ impl Machine {
 	pub fn do_current_instruction(&mut self) -> Result<(), Error> {
 		let instruction = self.current_instruction()?;
 		let params = self.evaluate_params(&instruction)?;
-		let mut rvalue: Option<i64> = None;
+		let mut to_store: Option<i64> = None;
 
 		match instruction.opcode {
 			1 => {
-				rvalue = Some(params.arg0.unwrap() + params.arg1.unwrap());
+				to_store = Some(params.arg0.unwrap() + params.arg1.unwrap());
 				self.ip += 4;
 			},
 			2 => {
-				rvalue = Some(params.arg0.unwrap() * params.arg1.unwrap());
+				to_store = Some(params.arg0.unwrap() * params.arg1.unwrap());
 				self.ip += 4;
 			},
 			3 => {
 				match self.input.dequeue() {
 					Some(input) => {
-						rvalue = Some(input);
+						to_store = Some(input);
 						self.ip += 2;
 					},
 					None => self.state = MachineState::Blocked
 				}
-				self.emit_event(Event::Input(rvalue));
+				self.emit_event(Event::Input(to_store));
 			},
 			4 => {
 				let value = params.arg0.unwrap();
@@ -178,7 +178,7 @@ impl Machine {
 				}
 			},
 			7 => {
-				rvalue = Some(
+				to_store = Some(
 					if params.arg0.unwrap() < params.arg1.unwrap() {
 						1
 					} else {
@@ -188,7 +188,7 @@ impl Machine {
 				self.ip += 4;
 			},
 			8 => {
-				rvalue = Some(
+				to_store = Some(
 					if params.arg0.unwrap() == params.arg1.unwrap() {
 						1
 					} else {
@@ -211,7 +211,7 @@ impl Machine {
 			}
 		}
 
-		match rvalue {
+		match to_store {
 			None => Ok(()),
 			Some(v) => self.checked_write(params.dest.unwrap(), v)
 		}
@@ -221,8 +221,8 @@ impl Machine {
 			-> Result<ParamValues, Error> {
 		match instruction.opcode {
 			1 | 2 | 7 | 8 => Ok(ParamValues {
-				arg0: Some(self.lvalue(&instruction, 0)?),
-				arg1: Some(self.lvalue(&instruction, 1)?),
+				arg0: Some(self.rvalue(&instruction, 0)?),
+				arg1: Some(self.rvalue(&instruction, 1)?),
 				dest: Some(self.checked_read(self.ip + 3)?),
 			}),
 			3 => Ok(ParamValues {
@@ -231,17 +231,17 @@ impl Machine {
 				dest: Some(self.checked_read(self.ip + 1)?),
 			}),
 			4 => Ok(ParamValues {
-				arg0: Some(self.lvalue(&instruction, 0)?),
+				arg0: Some(self.rvalue(&instruction, 0)?),
 				arg1: None,
 				dest: None
 			}),
 			5 | 6 => Ok(ParamValues {
-				arg0: Some(self.lvalue(&instruction, 0)?),
-				arg1: Some(self.lvalue(&instruction, 1)?),
+				arg0: Some(self.rvalue(&instruction, 0)?),
+				arg1: Some(self.rvalue(&instruction, 1)?),
 				dest: None
 			}),
 			9 => Ok(ParamValues {
-				arg0: Some(self.lvalue(&instruction, 0)?),
+				arg0: Some(self.rvalue(&instruction, 0)?),
 				arg1: None,
 				dest: None,
 			}),
@@ -254,7 +254,7 @@ impl Machine {
 		}
 	}
 
-	fn lvalue(&self, instruction: &Instruction, param_ix: usize)
+	fn rvalue(&self, instruction: &Instruction, param_ix: usize)
 			-> Result<i64, Error> {
 		let x = self.checked_read(self.ip + param_ix as i64 + 1)?;
 		match instruction.param_mode(param_ix) {
