@@ -1,0 +1,278 @@
+16 words of memory
+ip=0 rb=0
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+debugger> ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 1 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 2 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 3 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 4 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 5 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 6 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 7 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 8 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 9 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 10 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 11 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 12 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 13 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 14 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 15 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 0 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=0 rb=1
+mem[ip..ip+3]=[109, 1, 204, -1]
+instruction at ip: Ok(Instruction { opcode: 9, param_modes: [Immed] })
+ip=2 rb=1
+mem[ip..ip+3]=[204, -1, 1001, 100]
+instruction at ip: Ok(Instruction { opcode: 4, param_modes: [Rel] })
+ip=4 rb=1
+mem[ip..ip+3]=[1001, 100, 1, 100]
+instruction at ip: Ok(Instruction { opcode: 1, param_modes: [Pos, Immed] })
+Stored 16 at address 100
+ip=8 rb=1
+mem[ip..ip+3]=[1008, 100, 16, 101]
+instruction at ip: Ok(Instruction { opcode: 8, param_modes: [Pos, Immed] })
+Stored 1 at address 101
+ip=12 rb=1
+mem[ip..ip+3]=[1006, 101, 0, 99]
+instruction at ip: Ok(Instruction { opcode: 6, param_modes: [Pos, Immed] })
+ip=15 rb=1
+mem[ip..ip+3]=[99, 0, 0, 0]
+instruction at ip: Ok(Instruction { opcode: 99, param_modes: [] })
+debugger> [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 1]
+debugger> 
