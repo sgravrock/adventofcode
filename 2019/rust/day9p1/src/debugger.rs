@@ -67,10 +67,7 @@ fn debug_step(machine: &mut Machine) -> bool {
 		}
 	};
 
-	if machine.mem[machine.ip as usize] != 99 {
-		show_machine_state(&machine);
-	}
-
+	show_machine_state(&machine);
 	ok
 }
 
