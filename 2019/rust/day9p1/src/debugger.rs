@@ -26,9 +26,13 @@ pub fn debug(mut machine: &mut Machine) {
 						debug_step(&mut machine) {
 				}
 			},
+			"o" | "output" => {
+				println!("{:?}", machine.output.dequeue());
+			},
 			_ => {
 				println!("Commands:");
 				println!("mem [start end]: dump memory");
+				println!("o, output        read a word from output");
 				println!("s, step:         perform the instruction at ip");
 				println!("r, run:          run from current position");
 				println!("q, quit:         exit");
@@ -54,7 +58,7 @@ fn debug_step(machine: &mut Machine) -> bool {
 }
 
 fn show_machine_state(machine: &Machine) {
-	println!("ip={}", machine.ip);
+	println!("ip={} rb={}", machine.ip, machine.relative_base);
 	let ip = machine.ip as usize;
 	println!("mem[ip..ip+3]={:?}", &machine.mem[ip..min(ip+4, machine.mem.len() - 1)]);
 	println!("instruction at ip: {:?}", machine.current_instruction());
