@@ -6,6 +6,7 @@ pub enum Error {
 	OutOfBoundsWrite { index: i64 },
 	InvalidOpcode { opcode: i64, ip: i64 },
 	IpOutOfRange { ip: i64 },
+	ImmediateModeDestParam,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -223,12 +224,12 @@ impl Machine {
 			1 | 2 | 7 | 8 => Ok(ParamValues {
 				arg0: Some(self.rvalue(&instruction, 0)?),
 				arg1: Some(self.rvalue(&instruction, 1)?),
-				dest: Some(self.checked_read(self.ip + 3)?),
+				dest: Some(self.lvalue(&instruction, 2)?),
 			}),
 			3 => Ok(ParamValues {
 				arg0: None,
 				arg1: None,
-				dest: Some(self.checked_read(self.ip + 1)?),
+				dest: Some(self.lvalue(&instruction, 0)?),
 			}),
 			4 => Ok(ParamValues {
 				arg0: Some(self.rvalue(&instruction, 0)?),
@@ -251,6 +252,16 @@ impl Machine {
 				dest: None,
 			}),
 			_ => Err(Error::InvalidOpcode {opcode: self.mem[self.ip as usize], ip: self.ip as i64})
+		}
+	}
+
+	fn lvalue(&self, instruction: &Instruction, param_ix: usize)
+			-> Result<i64, Error> {
+		let x = self.checked_read(self.ip + param_ix as i64 + 1)?;
+		match instruction.param_mode(param_ix) {
+			Mode::Immed => Err(Error::ImmediateModeDestParam),
+			Mode::Pos => Ok(x),
+			Mode::Rel => Ok(x + self.relative_base),
 		}
 	}
 
@@ -462,6 +473,14 @@ fn test_combined_day9_1_features_3() {
 	let mut machine = Machine::new(program.clone());
 	machine.execute().unwrap();
 	assert_eq!(read_all(&mut machine.output), vec![1125899906842624]);
+}
+
+#[test]
+fn test_execute_203() {
+	let mut machine = Machine::new(vec![109,10,203,-5,99,-1]);
+	machine.input.enqueue(50);
+	machine.execute().unwrap();
+	assert_eq!(machine.mem, vec![109,10,203,-5,99,50]);
 }
 
 #[cfg(test)]
