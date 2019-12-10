@@ -409,7 +409,7 @@ fn test_execute_relative_mode() {
 	let program = vec![204,9,109,19,109,-2,204,-7,99,50,51];
 	let mut machine = Machine::new(program);
 	machine.execute().unwrap();
-	assert_eq!(read_all(&mut machine.output), vec![50, 51]);
+	assert_eq!(machine.output.contents(), vec![50, 51]);
 }
 
 #[test]
@@ -455,7 +455,7 @@ fn test_combined_day9_1_features_1() {
 	let program = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
 	let mut machine = Machine::new(program.clone());
 	machine.execute().unwrap();
-	assert_eq!(read_all(&mut machine.output), program);
+	assert_eq!(machine.output.contents(), program);
 }
 
 #[test]
@@ -472,7 +472,7 @@ fn test_combined_day9_1_features_3() {
 	let program = vec![104,1125899906842624,99];
 	let mut machine = Machine::new(program.clone());
 	machine.execute().unwrap();
-	assert_eq!(read_all(&mut machine.output), vec![1125899906842624]);
+	assert_eq!(machine.output.contents(), vec![1125899906842624]);
 }
 
 #[test]
@@ -495,23 +495,12 @@ fn num_to_digits(mut n: i64) -> Vec<i64> {
 	digits
 }
 
-#[cfg(test)]
-fn read_all(queue: &mut Queue<i64>) -> Vec<i64> {
-	let mut result: Vec<i64> = vec![];
 
-	loop {
-		match queue.dequeue() {
-			Some(x) => result.push(x),
-			None => return result
-		}
-	}
-}
-
-pub struct Queue<T> {
+pub struct Queue<T> where T: Copy {
 	buf: Vec<T>
 }
 
-impl<T> Queue<T> {
+impl<T> Queue<T> where T: Copy {
 	pub fn new() -> Queue<T> {
 		Queue {buf: vec![]}
 	}
@@ -523,4 +512,12 @@ impl<T> Queue<T> {
 	pub fn dequeue(&mut self) -> Option<T> {
 		self.buf.pop()
 	}
+
+	pub fn contents(&self) -> Vec<T> {
+		reverse(&self.buf)
+	}
+}
+
+fn reverse<T>(input: &Vec<T>) -> Vec<T> where T: Copy {
+	input.iter().rev().map(|&x| x).collect()
 }
