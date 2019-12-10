@@ -1,4 +1,4 @@
-use crate::machine::Machine;
+use crate::machine::{Machine, Event};
 use std::io;
 use std::io::Write;
 use std::cmp::min;
@@ -7,6 +7,8 @@ pub fn debug(mut machine: &mut Machine) {
 	println!("{} words of memory", machine.mem.len());
 	show_machine_state(&machine);
 
+	machine.event_handler = Some(report_event);
+
 	loop {
 		print!("debugger> ");
 		io::stdout().flush().unwrap();
@@ -14,7 +16,10 @@ pub fn debug(mut machine: &mut Machine) {
 		let tokens: Vec<&str> = line.split(" ").collect();
 
 		match tokens[0] {
-			"q" | "quit" => return,
+			"q" | "quit" => {
+				machine.event_handler = None;
+				return;
+			},
 			"mem" => {
 				dump_mem(tokens, &machine);
 			},
@@ -38,6 +43,18 @@ pub fn debug(mut machine: &mut Machine) {
 				println!("q, quit:         exit");
 			}
 		}
+	}
+}
+
+fn report_event(event: Event) {
+	match event {
+		Event::MemWrite(addr, val) => println!("Stored {} at address {}", val, addr),
+		Event::Output(val) => println!("Wrote {} to output", val),
+		Event::Input(maybe_val) => match maybe_val {
+			Some(val) => println!("Read {} from input", val),
+			None => println!("Tried to read input but blocked")
+		},
+		Event::RelBaseSet(b) => println!("Adjusted relative base by {}", b)
 	}
 }
 

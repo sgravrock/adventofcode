@@ -81,6 +81,15 @@ pub enum MachineState {
 	Halted
 }
 
+pub enum Event {
+	MemWrite(usize, i64),
+	Output(i64),
+	Input(Option<i64>),
+	RelBaseSet(i64),
+}
+
+pub type EventHandler = fn(event: Event);
+
 pub struct Machine {
 	pub mem: Vec<i64>,
 	pub input: Queue<i64>,
@@ -88,6 +97,7 @@ pub struct Machine {
 	pub ip: i64,
 	pub relative_base: i64,
 	pub state: MachineState,
+	pub event_handler: Option<EventHandler>,
 }
 
 impl Machine {
@@ -99,6 +109,7 @@ impl Machine {
 			ip: 0,
 			relative_base: 0,
 			state: MachineState::Running,
+			event_handler: None,
 		}
 	}
 
@@ -144,9 +155,12 @@ impl Machine {
 					},
 					None => self.state = MachineState::Blocked
 				}
+				self.emit_event(Event::Input(rvalue));
 			},
 			4 => {
-				self.output.enqueue(params.arg0.unwrap());
+				let value = params.arg0.unwrap();
+				self.output.enqueue(value);
+				self.emit_event(Event::Output(value));
 				self.ip += 2;
 			},
 			5 => {
@@ -184,7 +198,9 @@ impl Machine {
 				self.ip += 4;
 			},
 			9 => {
-				self.relative_base = params.arg0.unwrap();
+				let offset = params.arg0.unwrap();
+				self.relative_base = offset;
+				self.emit_event(Event::RelBaseSet(offset));
 				self.ip += 2;
 			}
 			99 => {
@@ -267,8 +283,16 @@ impl Machine {
 				}
 
 				self.mem[i] = value;
+				self.emit_event(Event::MemWrite(i, value));
 				Ok(())
 			}
+		}
+	}
+
+	fn emit_event(&self, event: Event) {
+		match self.event_handler {
+			Some(handler) => handler(event),
+			None => {}
 		}
 	}
 }
