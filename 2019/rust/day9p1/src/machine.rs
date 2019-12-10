@@ -199,7 +199,7 @@ impl Machine {
 			},
 			9 => {
 				let offset = params.arg0.unwrap();
-				self.relative_base = offset;
+				self.relative_base += offset;
 				self.emit_event(Event::RelBaseSet(offset));
 				self.ip += 2;
 			}
@@ -395,13 +395,10 @@ fn test_execute_immediate_mode() {
 
 #[test]
 fn test_execute_relative_mode() {
-	let mut machine1 = Machine::new(vec![2201,6,7,5,99,0,2,3]);
-	machine1.execute().unwrap();
-	assert_eq!(machine1.mem, vec![2201,6,7,5,99,5,2,3]);
-
-	let mut machine2 = Machine::new(vec![109,19,204,-14,99,17]);
-	machine2.execute().unwrap();
-	assert_eq!(machine2.output.dequeue(), Some(17));
+	let program = vec![204,9,109,19,109,-2,204,-7,99,50,51];
+	let mut machine = Machine::new(program);
+	machine.execute().unwrap();
+	assert_eq!(read_all(&mut machine.output), vec![50, 51]);
 }
 
 #[test]
@@ -440,6 +437,55 @@ fn test_execute_detects_invalid_opcode() {
 fn test_execute_detects_oob_jumps() {
 	let mut machine = Machine::new(vec![1105,1,-1,99]);
 	assert_eq!(machine.execute(), Err(Error::IpOutOfRange {ip: -1}));
+}
+
+#[test]
+fn test_combined_day9_1_features_1() {
+	let program = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
+	let mut machine = Machine::new(program.clone());
+	machine.execute().unwrap();
+	assert_eq!(read_all(&mut machine.output), program);
+}
+
+#[test]
+fn test_combined_day9_1_features_2() {
+	let program = vec![1102,34915192,34915192,7,4,7,99,0];
+	let mut machine = Machine::new(program.clone());
+	machine.execute().unwrap();
+	let output = machine.output.dequeue().unwrap();
+	assert_eq!(num_to_digits(output).len(), 16);
+}
+
+#[test]
+fn test_combined_day9_1_features_3() {
+	let program = vec![104,1125899906842624,99];
+	let mut machine = Machine::new(program.clone());
+	machine.execute().unwrap();
+	assert_eq!(read_all(&mut machine.output), vec![1125899906842624]);
+}
+
+#[cfg(test)]
+fn num_to_digits(mut n: i64) -> Vec<i64> {
+	let mut digits: Vec<i64> = vec![];
+
+	while n > 0 {
+		digits.insert(0, n % 10);
+		n /= 10;
+	}
+
+	digits
+}
+
+#[cfg(test)]
+fn read_all(queue: &mut Queue<i64>) -> Vec<i64> {
+	let mut result: Vec<i64> = vec![];
+
+	loop {
+		match queue.dequeue() {
+			Some(x) => result.push(x),
+			None => return result
+		}
+	}
 }
 
 pub struct Queue<T> {
