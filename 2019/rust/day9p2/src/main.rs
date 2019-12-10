@@ -8,7 +8,7 @@ extern crate permutohedron;
 
 fn main() {
 	let mut machine = Machine::new(input::puzzle_input());
-	machine.input.enqueue(1);
+	machine.input.enqueue(2);
 	execute_or_debug(&mut machine);
 	let output = machine.output.contents();
 
