@@ -56,21 +56,41 @@ impl PartialOrd for Bearing {
 struct VaporizationOrder {
 	laser_pos: Coord,
 	remaining_targets: HashSet<Coord>,
-	prev_bearing: Option<Bearing>
+	current_targets: Vec<(Bearing, Coord)>,
+	current_target_ix: usize,
 }
 
 impl VaporizationOrder {
 	fn new(asteroids: &HashSet<Coord>, laser_pos: Coord) -> VaporizationOrder {
-		let except_laser = asteroids.iter()
+		let except_laser: HashSet<Coord> = asteroids.iter()
 			.cloned()
 			.filter(|a| *a != laser_pos)
 			.collect();
-	
-		VaporizationOrder {
+
+		let mut result = VaporizationOrder {
 			laser_pos,
 			remaining_targets: except_laser,
-			prev_bearing: None
-		}
+			current_targets: vec![],
+			current_target_ix: 0,
+		};
+		result.load_next_chunk();
+		result
+	}
+
+	fn sorted_targets(
+		asteroids: &HashSet<Coord>,
+		laser_pos: Coord
+	) -> Vec<(Bearing, Coord)> {
+		let mut result = reachable_asteroids(asteroids, laser_pos);
+		result.sort_by_key(|x| x.1);
+		result
+	}
+
+	fn load_next_chunk(&mut self) {
+		self.current_targets = VaporizationOrder::sorted_targets(
+			&self.remaining_targets, self.laser_pos);
+		assert!(self.current_targets.len() > 0);
+		self.current_target_ix = 0;
 	}
 }
 
@@ -79,43 +99,16 @@ impl Iterator for VaporizationOrder {
 
 	fn next(&mut self) -> Option<Coord> {
 		if self.remaining_targets.len() == 0 {
-			return None;
+			None
+		} else if self.current_target_ix < self.current_targets.len() {
+			let target = self.current_targets[self.current_target_ix].1;
+			self.remaining_targets.remove(&target);
+			self.current_target_ix += 1;
+			Some(target)
+		} else {
+			self.load_next_chunk();
+			self.next()
 		}
-
-		// TODO: Do this without recomputing all the bearings
-		// every time.
-		let mut candidates = reachable_asteroids(&self.remaining_targets,
-		self.laser_pos);
-		assert!(candidates.len() > 0);
-		candidates.sort();
-
-		let chosen = match self.prev_bearing {
-			None => {
-				println!("No previous bearing. Using {:?}", candidates[0]);
-				candidates[0]
-			},
-			Some(prev) => {
-				let first_candidate = candidates.iter()
-					.cloned()
-					.filter(|c| c.0 >= prev)
-					.next();
-
-				match first_candidate {
-					Some(c) => {
-						println!("Prev was {:?}, using candidate {:?}", prev, c);
-						c
-					},
-					None => {
-						println!("Prev was {:?}, no match, falling back to {:?}", prev, candidates[0]);
-						candidates[0]
-					}
-				}
-			}
-		};
-
-		self.prev_bearing = Some(chosen.0);
-		self.remaining_targets.remove(&chosen.1);
-		Some(chosen.1)
 	}
 }
 
