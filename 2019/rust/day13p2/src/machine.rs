@@ -513,6 +513,12 @@ impl<T> Queue<T> where T: Copy {
 		self.buf.pop()
 	}
 
+	pub fn dequeue_all(&mut self) -> Vec<T> {
+		let result = self.contents();
+		self.buf.truncate(0);
+		result
+	}
+
 	pub fn contents(&self) -> Vec<T> {
 		reverse(&self.buf)
 	}
