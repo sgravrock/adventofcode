@@ -4,17 +4,37 @@ mod machine;
 mod debugger;
 use machine::Machine;
 use debugger::debug;
-extern crate permutohedron;
+use std::collections::HashMap;
 
 fn main() {
 	let mut machine = Machine::new(input::puzzle_input());
 	machine.input.enqueue(2);
 	execute_or_debug(&mut machine);
-	let output = machine.output.contents();
-	let n = output.iter()
-		.filter(|n| **n == 2)
-		.count();
-	println!("{:?}", n); // 233 is too high
+	let mut screen: HashMap<(i64, i64), char> = HashMap::new();
+
+	for chunk in machine.output.contents().chunks(3) {
+		screen.insert((chunk[0], chunk[1]), match chunk[2] {
+			0 => ' ',
+			1 => '=',
+			2 => '-',
+			3 => '_',
+			4 => '*',
+			_ => panic!("Unrecognized tile {}", chunk[2])
+		});
+	}
+
+	let xmax = screen.keys().map(|(x, _)| *x).max().unwrap();
+	let ymax = screen.keys().map(|(_, y)| *y).max().unwrap();
+
+	for y in 0..ymax {
+		for x in 0..xmax {
+			print!("{}", screen.get(&(x, y)).unwrap_or(&' '));
+		}
+		println!("");
+	}
+
+	let nblocks = screen.values().filter(|tile| **tile == '-').count();
+	println!("{} blocks.", nblocks);
 }
 
 
