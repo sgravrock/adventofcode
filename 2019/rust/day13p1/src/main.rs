@@ -11,11 +11,10 @@ fn main() {
 	machine.input.enqueue(2);
 	execute_or_debug(&mut machine);
 	let output = machine.output.contents();
-
-	match output.len() {
-		1 => println!("Success. Output is {}.", output[0]),
-		_ => println!("Failure. Output is {:?}.", output),
-	}
+	let n = output.iter()
+		.filter(|n| **n == 2)
+		.count();
+	println!("{:?}", n); // 233 is too high
 }
 
 
