@@ -52,20 +52,24 @@ impl PartialOrd for Bearing {
 	}
 }
 
+
 struct VaporizationOrder {
 	laser_pos: Coord,
 	remaining_targets: HashSet<Coord>,
-	bearings: Vec<Bearing>,
-	bi: usize
+	prev_bearing: Option<Bearing>
 }
 
 impl VaporizationOrder {
-	fn advance(&mut self) {
-		self.bi += 1;
-
-		if self.bi == self.bearings.len() {
-			self.bearings = firing_order(&self.remaining_targets, self.laser_pos);
-			self.bi = 0;
+	fn new(asteroids: &HashSet<Coord>, laser_pos: Coord) -> VaporizationOrder {
+		let except_laser = asteroids.iter()
+			.cloned()
+			.filter(|a| *a != laser_pos)
+			.collect();
+	
+		VaporizationOrder {
+			laser_pos,
+			remaining_targets: except_laser,
+			prev_bearing: None
 		}
 	}
 }
@@ -78,71 +82,48 @@ impl Iterator for VaporizationOrder {
 			return None;
 		}
 
-		loop {
-			let maybe_a = nearest_on_bearing(
-				&self.remaining_targets,
-				self.laser_pos,
-				self.bearings[self.bi]
-			);
-			self.advance();
+		// TODO: Do this without recomputing all the bearings
+		// every time.
+		let mut candidates = reachable_asteroids(&self.remaining_targets,
+		self.laser_pos);
+		assert!(candidates.len() > 0);
+		candidates.sort();
 
-			match maybe_a {
-				Some(a) => {
-					self.remaining_targets.remove(&a);
-					return Some(a);
+		let chosen = match self.prev_bearing {
+			None => {
+				println!("No previous bearing. Using {:?}", candidates[0]);
+				candidates[0]
+			},
+			Some(prev) => {
+				let first_candidate = candidates.iter()
+					.cloned()
+					.filter(|c| c.0 >= prev)
+					.next();
+
+				match first_candidate {
+					Some(c) => {
+						println!("Prev was {:?}, using candidate {:?}", prev, c);
+						c
+					},
+					None => {
+						println!("Prev was {:?}, no match, falling back to {:?}", prev, candidates[0]);
+						candidates[0]
+					}
 				}
-				None => {}
 			}
-		}
+		};
+
+		self.prev_bearing = Some(chosen.0);
+		self.remaining_targets.remove(&chosen.1);
+		Some(chosen.1)
 	}
 }
 
-fn vaporization_order(
-	asteroids: &HashSet<Coord>,
-	laser_pos: Coord
-) -> VaporizationOrder {
-	let except_laser = asteroids.iter()
-		.cloned()
-		.filter(|a| *a != laser_pos)
-		.collect();
-
-	VaporizationOrder {
-		laser_pos,
-		remaining_targets: except_laser,
-		bearings: firing_order(asteroids, laser_pos),
-		bi: 0
-	}
-}
-
-fn firing_order(
-	asteroids: &HashSet<Coord>,
-	observer: Coord
-) -> Vec<Bearing> {
-	// TODO: Don't recompute the bearings
-	let mut bearings: Vec<Bearing> = reachable_asteroids(&asteroids, observer)
-		.iter()
-		.map(|a| {
-			let b = bearing(observer, *a);
-			println!("{:?} is reachable on {:?}", a, b);
-			b
-		})
-		.collect();
-	bearings.sort();
-	bearings
-}
-
-fn nearest_on_bearing(
-	asteroids: &HashSet<Coord>,
-	observer: Coord,
-	bearing: Bearing
-) -> Option<Coord> {
-	unimplemented!();
-}
 
 fn reachable_asteroids(
 	asteroids: &HashSet<Coord>,
 	observer: Coord
-) -> HashSet<Coord> {
+) -> Vec<(Bearing, Coord)> {
 	let mut nearest_by_bearing: HashMap<Bearing, (f32, Coord)> = HashMap::new();
 
 	for a in asteroids {
@@ -160,7 +141,9 @@ fn reachable_asteroids(
 		}
 	}
 
-	HashSet::from_iter(nearest_by_bearing.values().map(|(_, a)| a).cloned())
+	nearest_by_bearing.iter()
+		.map(|(b, (_, c))| (*b, *c))
+		.collect()
 }
 
 fn bearing(src: Coord, dest: Coord) -> Bearing {
@@ -236,37 +219,6 @@ fn asteroids_from_str(input: &str) -> HashSet<Coord> {
 }
 
 #[test]
-fn test_firing_order() {
-	let input = asteroids_from_str("
-		.#....#####...#..
-		##...##.#####..##
-		##...#...#.#####.
-		..#.....#...###..
-		..#.#.....#....##
-	");
-	/* Firing order (laser is at X):
-		.#....###24...#..
-		##...##.13#67..9#
-		##...#...5.8####.
-		..#.....X...###..
-		..#.#.....#....##
-	*/
-	let laser_pos = (8, 3);
-	let first_asteroids_in_order = vec![
-		(8, 1), (9, 0), (9, 1),
-		(10, 0), (9, 2), (10, 1),
-		(11, 1), (11, 2), (15, 1),
-	];
-	let expected: Vec<Bearing> = first_asteroids_in_order
-		.iter()
-		.map(|a| bearing(laser_pos, *a))
-		.collect();
-	let actual = firing_order(&input, laser_pos);
-	assert_eq!(actual, expected);
-}
-
-
-#[test]
 fn test_vaporization_order() {
 	let input = asteroids_from_str("
 		.#....#####...#..
@@ -275,6 +227,35 @@ fn test_vaporization_order() {
 		..#.....#...###..
 		..#.#.....#....##
 	");
+	/*
+	First 9:
+	.#....###24...#..
+	##...##.13#67..9#
+	##...#...5.8####.
+	..#.....X...###..
+	..#.#.....#....##
+
+	2nd 9:
+	.#....###.....#..
+	##...##...#.....#
+	##...#......1234.
+	..#.....X...5##..
+	..#.9.....8....76
+
+	3rd 9:
+	.8....###.....#..
+	56...9#...#.....#
+	34...7...........
+	..2.....X....##..
+	..1..............
+	
+	Last three cycles (1-3, 4-8, and 9):
+	......234.....6..
+	......1...5.....7
+	.................
+	........X....89..
+	.................
+	*/
 	let laser = (8,3);
 	let expected = vec![
 		// 1-8
@@ -291,67 +272,70 @@ fn test_vaporization_order() {
 		(6, 1), (6, 0), (7, 0), (8, 0), (10, 1), (14, 0), (16, 0),
 		(13, 3), (14, 3)
 	];
-	let actual: Vec<Coord> = vaporization_order(&input, laser).collect();
+	let actual: Vec<Coord> = VaporizationOrder::new(&input, laser).collect();
 	assert_eq!(actual, expected);
 }
 
-//#[test]
-//fn test_reachable_asteroids() {
-//	let input = asteroids_from_str("
-//		.#..#
-//		.....
-//		#####
-//		....#
-//		...##
-//	");
-//
-//	assert_eq!(reachable_asteroids(&input, (1, 0)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (4, 0)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (0, 2)).len(), 6);
-//	assert_eq!(reachable_asteroids(&input, (1, 2)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (2, 2)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (3, 2)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (4, 2)).len(), 5);
-//	assert_eq!(reachable_asteroids(&input, (4, 3)).len(), 7);
-//	assert_eq!(reachable_asteroids(&input, (3, 4)).len(), 8);
-//	assert_eq!(reachable_asteroids(&input, (4, 4)).len(), 7);
-//}
-//
-//
-//#[test]
-//fn test_reachable_asteroids_cases_requiring_small_epsilon() {
-//	let grid = asteroids_from_str("
-//		.#..##.###...#######
-//		##.############..##.
-//		.#.######.########.#
-//		.###.#######.####.#.
-//		#####.##.#.##.###.##
-//		..#####..#.#########
-//		####################
-//		#.####....###.#.#.##
-//		##.#################
-//		#####.##.###..####..
-//		..######..##.#######
-//		####.##.####...##..#
-//		.#####..#.######.###
-//		##...#.##########...
-//		#.##########.#######
-//		.####.#.###.###.#.##
-//		....##.##.###..#####
-//		.#.#.###########.###
-//		#.#.#.#####.####.###
-//		###.##.####.##.#..##
-//	");
-//	let result = reachable_asteroids(&grid, (11,13));
-//	assert!(result.contains(&(0,1)));
-//	assert!(result.contains(&(1,4)));
-//	assert!(result.contains(&(3,4)));
-//	assert!(result.contains(&(4,2)));
-//	assert!(result.contains(&(5,2)));
-//	assert!(result.contains(&(6,2)));
-//	assert!(result.contains(&(8,0)));
-//	assert!(result.contains(&(17,0)));
-//}
+#[test]
+fn test_reachable_asteroids() {
+	let input = asteroids_from_str("
+		.#..#
+		.....
+		#####
+		....#
+		...##
+	");
+
+	assert_eq!(reachable_asteroids(&input, (1, 0)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (4, 0)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (0, 2)).len(), 6);
+	assert_eq!(reachable_asteroids(&input, (1, 2)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (2, 2)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (3, 2)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (4, 2)).len(), 5);
+	assert_eq!(reachable_asteroids(&input, (4, 3)).len(), 7);
+	assert_eq!(reachable_asteroids(&input, (3, 4)).len(), 8);
+	assert_eq!(reachable_asteroids(&input, (4, 4)).len(), 7);
+}
+
+
+#[test]
+fn test_reachable_asteroids_cases_requiring_small_epsilon() {
+	let grid = asteroids_from_str("
+		.#..##.###...#######
+		##.############..##.
+		.#.######.########.#
+		.###.#######.####.#.
+		#####.##.#.##.###.##
+		..#####..#.#########
+		####################
+		#.####....###.#.#.##
+		##.#################
+		#####.##.###..####..
+		..######..##.#######
+		####.##.####...##..#
+		.#####..#.######.###
+		##...#.##########...
+		#.##########.#######
+		.####.#.###.###.#.##
+		....##.##.###..#####
+		.#.#.###########.###
+		#.#.#.#####.####.###
+		###.##.####.##.#..##
+	");
+	let result: Vec<Coord> = reachable_asteroids(&grid, (11,13))
+		.iter()
+		.map(|(_, c)| *c)
+		.collect();
+	assert!(result.contains(&(0,1)));
+	assert!(result.contains(&(1,4)));
+	assert!(result.contains(&(3,4)));
+	assert!(result.contains(&(4,2)));
+	assert!(result.contains(&(5,2)));
+	assert!(result.contains(&(6,2)));
+	assert!(result.contains(&(8,0)));
+	assert!(result.contains(&(17,0)));
+}
 
 #[test]
 fn test_bearing_right_angles() {
