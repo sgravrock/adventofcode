@@ -6,11 +6,15 @@ use machine::Machine;
 use debugger::debug;
 use std::collections::HashMap;
 use std::io::{stdin, stdout};
-use std::io::Read;
 use std::io::Write;
 
 fn main() {
-	Game::new().play();
+	print!("Show the game state as we go? No is faster. (y/n) ");
+	stdout().lock().flush().unwrap();
+	let mut line = String::new();
+	stdin().read_line(&mut line).unwrap();
+
+	Game::new().play(line == "y\n");
 }
 
 struct Game {
@@ -27,13 +31,17 @@ impl Game {
 		Game { machine, screen: HashMap::new(), score: 0 }
 	}
 
-	fn play(&mut self) {
+	fn play(&mut self, show_output: bool) {
 		self.machine.input.enqueue(2);
 		let mut prev_ball_pos: Option<(i64, i64)> = None;
 
 		loop {
 			execute_or_debug(&mut self.machine);
-			self.show();
+			self.update_screen();
+
+			if show_output {
+				self.show();
+			}
 
 			if self.num_blocks() == 0 {
 				println!("You have won. Final score: {}", self.score);
@@ -52,7 +60,6 @@ impl Game {
 			} else if bp.0 > pp.0 {
 				1
 			} else {
-				println!("bp=pp");
 				if bp.1 == pp.1 - 1 {
 					// Don't move out from under the ball.
 					0
@@ -68,13 +75,12 @@ impl Game {
 					}
 				}
 			};
-			println!("Paddle command: {}", cmd);
 			self.machine.input.enqueue(cmd);
 			prev_ball_pos = Some(bp);
 		}
 	}
 
-	fn show(&mut self) {
+	fn update_screen(&mut self) {
 		for chunk in self.machine.output.dequeue_all().chunks(3) {
 			if chunk[0] == -1 && chunk[1] == 0 {
 				self.score = chunk[2];
@@ -89,7 +95,9 @@ impl Game {
 				});
 			}
 		}
-	
+	}
+
+	fn show(&self) {
 		for y in 0..self.ymax() + 1 {
 			for x in 0..self.xmax() + 1 {
 				print!("{}", self.screen.get(&(x, y)).unwrap_or(&' '));
