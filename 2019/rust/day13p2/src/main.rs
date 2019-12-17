@@ -29,28 +29,48 @@ impl Game {
 
 	fn play(&mut self) {
 		self.machine.input.enqueue(2);
+		let mut prev_ball_pos: Option<(i64, i64)> = None;
 
 		loop {
 			execute_or_debug(&mut self.machine);
 			self.show();
-			let cmd = self.prompt();
-			self.machine.input.enqueue(cmd);
-		}
-	}
 
-	fn prompt(&mut self) -> i64 {
-		loop {
-			print!("Enter joystick command (-1=left, 0=middle, 1=right): ");
-			stdout().lock().flush().unwrap();
-			let mut line = String::new();
-			stdin().read_line(&mut line).unwrap();
-
-			match line.as_str() {
-				"-1\n" => return -1,
-				"0\n" => return 0,
-				"1\n" => return 1,
-				_ => {}
+			if self.num_blocks() == 0 {
+				println!("You have won. Final score: {}", self.score);
+				return;
 			}
+
+			let bp = self.ball_pos();
+			if bp.1 == self.ymax() {
+				println!("You have lost.");
+				return;
+			}
+
+			let pp = self.paddle_pos();
+			let cmd = if bp.0 < pp.0 {
+				-1
+			} else if bp.0 > pp.0 {
+				1
+			} else {
+				println!("bp=pp");
+				if bp.1 == pp.1 - 1 {
+					// Don't move out from under the ball.
+					0
+				} else {
+					// Move in the direction the ball is going, if known.
+					match prev_ball_pos {
+						Some(pbp) => if bp.0 < pbp.0 {
+							-1
+						} else {
+							1
+						},
+						None => 0,
+					}
+				}
+			};
+			println!("Paddle command: {}", cmd);
+			self.machine.input.enqueue(cmd);
+			prev_ball_pos = Some(bp);
 		}
 	}
 
@@ -70,17 +90,46 @@ impl Game {
 			}
 		}
 	
-		let xmax = self.screen.keys().map(|(x, _)| *x).max().unwrap();
-		let ymax = self.screen.keys().map(|(_, y)| *y).max().unwrap();
-	
-		for y in 0..ymax {
-			for x in 0..xmax {
+		for y in 0..self.ymax() + 1 {
+			for x in 0..self.xmax() + 1 {
 				print!("{}", self.screen.get(&(x, y)).unwrap_or(&' '));
 			}
 			println!("");
 		}
 	
+		println!("{} blocks left", self.num_blocks());
 		println!("Score: {}", self.score);
+	}
+
+	fn num_blocks(&self) -> usize {
+		self.screen.values()
+			.filter(|v| **v == '-')
+			.count()
+	}
+
+	fn ball_pos(&self) -> (i64, i64) {
+		self.screen.iter()
+			.filter(|(_, v)| **v == '*')
+			.map(|(k, _)| k)
+			.cloned()
+			.next()
+			.unwrap()
+	}
+
+	fn paddle_pos(&self) -> (i64, i64) {
+		self.screen.iter()
+			.filter(|(_, v)| **v == '_')
+			.map(|(k, _)| k)
+			.cloned()
+			.next()
+			.unwrap()
+	}
+
+	fn xmax(&self) -> i64 {
+		self.screen.keys().map(|(x, _)| *x).max().unwrap()
+	}
+	fn ymax(&self) -> i64 {
+		self.screen.keys().map(|(_, y)| *y).max().unwrap()
 	}
 }
 
