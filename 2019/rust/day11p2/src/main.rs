@@ -8,12 +8,27 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 fn main() {
-	println!("{}", num_panels_painted(input::puzzle_input()));
+	let grid = paint_panels(input::puzzle_input());
+	let xmin = grid.keys().map(|(x, _)| *x).min().unwrap();
+	let xmax = grid.keys().map(|(x, _)| *x).max().unwrap() + 1;
+	let ymin = grid.keys().map(|(_, y)| *y).min().unwrap();
+	let ymax = grid.keys().map(|(_, y)| *y).max().unwrap() + 1;
+
+	for y in ymin..ymax {
+		for x in xmin..xmax {
+			print!("{}", match grid.get(&(x, y)) {
+				Some(1) => '#',
+				_ => '.'
+			});
+		}
+
+		println!("");
+	}
 }
 
 type Coord = (i64, i64);
 
-fn num_panels_painted(program: Vec<i64>) -> usize {
+fn paint_panels(program: Vec<i64>) -> HashMap<Coord, i64> {
 	let directions = vec![
 		(0, -1),
 		(1, 0),
@@ -25,6 +40,8 @@ fn num_panels_painted(program: Vec<i64>) -> usize {
 	let mut robot_pos = (0, 0);
 	let mut robot_direction: isize = 0;
 	let mut machine = Machine::new(program);
+
+	grid.insert(robot_pos, 1);
 
 	while machine.state != MachineState::Halted {
 		let color = grid.get(&robot_pos).unwrap_or(&0);
@@ -50,7 +67,7 @@ fn num_panels_painted(program: Vec<i64>) -> usize {
 		}
 	}
 
-	painted.len()
+	grid
 }
 
 fn execute_or_debug(mut machine: &mut Machine) {
