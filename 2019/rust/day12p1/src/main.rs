@@ -3,6 +3,13 @@ use std::fmt;
 use regex::Regex;
 
 fn main() {
+	let mut moons = parse_input(input::puzzle_input());
+
+	for _ in 0..1000 {
+		step(&mut moons)
+	}
+
+	println!("{}", energy(&moons));
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -117,6 +124,16 @@ fn apply_velocity(moons: &mut Moons) {
 	}
 }
 
+fn energy(moons: &Moons) -> i32 {
+	moons.v.iter()
+		.map(|moon| {
+			let potential = moon.pos.x.abs() + moon.pos.y.abs() + moon.pos.z.abs();
+			let kinetic = moon.vel.x.abs() + moon.vel.y.abs() + moon.vel.z.abs();
+			potential * kinetic
+		})
+		.sum()
+}
+
 #[cfg(test)]
 fn parse_state(input: Vec<&str>) -> Moons {
 	let num_pat = "[\\s]*(-?[\\d]+)";
@@ -216,4 +233,16 @@ fn test_step_repeated() {
 	}
 
 	assert_eq!(moons, expected);
+}
+
+#[test]
+fn test_energy() {
+	let moons = parse_state(vec![
+		"pos=<x=  8, y=-12, z= -9>, vel=<x= -7, y=  3, z=  0>",
+		"pos=<x= 13, y= 16, z= -3>, vel=<x=  3, y=-11, z= -5>",
+		"pos=<x=-29, y=-11, z= -1>, vel=<x= -3, y=  7, z=  4>",
+		"pos=<x= 16, y=-13, z= 23>, vel=<x=  7, y=  1, z=  1>",
+	]);
+
+	assert_eq!(energy(&moons), 1940);
 }
