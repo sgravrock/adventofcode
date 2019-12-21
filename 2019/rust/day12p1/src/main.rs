@@ -3,24 +3,28 @@ use std::fmt;
 use regex::Regex;
 
 fn main() {
-	let mut moons = parse_input(input::puzzle_input());
+	let mut moons = Moons::parse(input::puzzle_input());
 
 	for _ in 0..1000 {
-		step(&mut moons)
+		moons.step();
 	}
 
-	println!("{}", energy(&moons));
+	println!("{}", moons.energy());
 }
 
 #[derive(PartialEq, Copy, Clone)]
-struct Position { x: i32, y: i32, z: i32 }
-#[derive(PartialEq, Copy, Clone)]
-struct Velocity { x: i32, y: i32, z: i32 }
+struct Triplet { x: i32, y: i32, z: i32 }
+
+impl Triplet {
+	fn energy(&self) -> i32 {
+		self.x.abs() + self.y.abs() + self.z.abs()
+	}
+}
 
 #[derive(PartialEq, Copy, Clone)]
 struct Moon {
-	pos: Position,
-	vel: Velocity
+	pos: Triplet,
+	vel: Triplet
 }
 
 impl fmt::Debug for Moon {
@@ -32,10 +36,80 @@ impl fmt::Debug for Moon {
 	}
 }
 
-// Wrap a Moons just to be able to get nicer test failure output.
 #[derive(PartialEq)]
 struct Moons {
 	v: Vec<Moon>
+}
+
+impl Moons {
+	fn parse(input: &str) -> Moons {
+		let re = Regex::new("<x=([0-9\\-]+), y=([0-9\\-]+), z=([0-9\\-]+)>")
+			.unwrap();
+	
+		let v = input.lines()
+			.map(|line| {
+				let caps = re.captures(line).unwrap();
+				let x = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
+				let y = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
+				let z = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
+				Moon {
+					pos: Triplet {x: x, y: y, z: z},
+					vel: Triplet { x: 0, y: 0, z: 0}
+				}
+			})
+			.collect();
+		
+		Moons { v }
+	}
+
+	fn energy(&self) -> i32 {
+		self.v.iter()
+			.map(|moon| moon.pos.energy() * moon.vel.energy())
+			.sum()
+	}
+
+	fn step(&mut self) {
+		self.apply_gravity();
+		self.apply_velocity();
+	}
+
+	fn apply_gravity(&mut self) {
+		for (i, j) in each_pair(self.v.len()) {
+			self.v[i].vel.x +=
+				if self.v[i].pos.x < self.v[j].pos.x {
+					1
+				} else if self.v[i].pos.x > self.v[j].pos.x {
+					-1
+				} else {
+					0
+				};
+			self.v[i].vel.y +=
+				if self.v[i].pos.y < self.v[j].pos.y {
+					1
+				} else if self.v[i].pos.y > self.v[j].pos.y {
+					-1
+				} else {
+					0
+				};
+			self.v[i].vel.z +=
+				if self.v[i].pos.z < self.v[j].pos.z {
+					1
+				} else if self.v[i].pos.z > self.v[j].pos.z {
+					-1
+				} else {
+					0
+				};
+		}
+	}
+	
+	fn apply_velocity(&mut self) {
+		for moon in &mut self.v {
+			moon.pos.x += moon.vel.x;
+			moon.pos.y += moon.vel.y;
+			moon.pos.z += moon.vel.z;
+		}
+	}
+
 }
 
 impl fmt::Debug for Moons {
@@ -52,57 +126,6 @@ impl fmt::Debug for Moons {
 	}
 }
 
-fn parse_input(input: &str) -> Moons {
-	let re = Regex::new("<x=([0-9\\-]+), y=([0-9\\-]+), z=([0-9\\-]+)>")
-		.unwrap();
-
-	let v = input.lines()
-		.map(|line| {
-			let caps = re.captures(line).unwrap();
-			let x = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-			let y = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
-			let z = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
-			Moon { pos: Position {x: x, y: y, z: z}, vel: Velocity { x: 0, y: 0, z: 0} }
-		})
-		.collect();
-	
-	Moons { v }
-}
-
-fn step(mut moons: &mut Moons) {
-	apply_gravity(&mut moons);
-	apply_velocity(&mut moons);
-}
-
-fn apply_gravity(moons: &mut Moons) {
-	for (i, j) in each_pair(moons.v.len()) {
-		moons.v[i].vel.x +=
-			if moons.v[i].pos.x < moons.v[j].pos.x {
-				1
-			} else if moons.v[i].pos.x > moons.v[j].pos.x {
-				-1
-			} else {
-				0
-			};
-		moons.v[i].vel.y +=
-			if moons.v[i].pos.y < moons.v[j].pos.y {
-				1
-			} else if moons.v[i].pos.y > moons.v[j].pos.y {
-				-1
-			} else {
-				0
-			};
-		moons.v[i].vel.z +=
-			if moons.v[i].pos.z < moons.v[j].pos.z {
-				1
-			} else if moons.v[i].pos.z > moons.v[j].pos.z {
-				-1
-			} else {
-				0
-			};
-	}
-}
-
 fn each_pair(n: usize) -> Vec<(usize, usize)> {
 	let mut result = Vec::new();
 
@@ -114,24 +137,6 @@ fn each_pair(n: usize) -> Vec<(usize, usize)> {
 	}
 
 	result
-}
-
-fn apply_velocity(moons: &mut Moons) {
-	for moon in &mut moons.v {
-		moon.pos.x += moon.vel.x;
-		moon.pos.y += moon.vel.y;
-		moon.pos.z += moon.vel.z;
-	}
-}
-
-fn energy(moons: &Moons) -> i32 {
-	moons.v.iter()
-		.map(|moon| {
-			let potential = moon.pos.x.abs() + moon.pos.y.abs() + moon.pos.z.abs();
-			let kinetic = moon.vel.x.abs() + moon.vel.y.abs() + moon.vel.z.abs();
-			potential * kinetic
-		})
-		.sum()
 }
 
 #[cfg(test)]
@@ -152,8 +157,8 @@ fn parse_state(input: Vec<&str>) -> Moons {
 			let vz = caps.get(6).unwrap().as_str().parse::<i32>().unwrap();
 		
 			Moon {
-				pos: Position {x: px, y: py, z: pz},
-				vel: Velocity { x: vx, y: vy, z: vz}
+				pos: Triplet {x: px, y: py, z: pz},
+				vel: Triplet { x: vx, y: vy, z: vz}
 			}
 		})
 		.collect();
@@ -166,8 +171,8 @@ fn test_parse_state() {
 	let input = vec!["pos=<x= 30, y= -8, z=  3>, vel=<x=  3, y=  -3, z=  0>"];
 	let expected = Moons { v: vec![
 		Moon {
-			pos: Position { x: 30, y: -8, z: 3 },
-			vel: Velocity { x: 3, y: -3, z: 0}
+			pos: Triplet { x: 30, y: -8, z: 3 },
+			vel: Triplet { x: 3, y: -3, z: 0}
 		}
 	]};
 	assert_eq!(parse_state(input), expected);
@@ -175,30 +180,30 @@ fn test_parse_state() {
 
 
 #[test]
-fn test_parse_input() {
+fn test_moons_parse() {
 	let input = "<x=-1, y=0, z=2>
 <x=2, y=-10, z=7>
 <x=3, y=5, z=-1>";
 	let expected = Moons { v: vec![
 		Moon {
-			pos: Position {x: -1, y: 0, z: 2},
-			vel: Velocity {x: 0, y: 0, z: 0}
+			pos: Triplet {x: -1, y: 0, z: 2},
+			vel: Triplet {x: 0, y: 0, z: 0}
 		},
 		Moon {
-			pos: Position {x: 2, y: -10, z: 7},
-			vel: Velocity {x: 0, y: 0, z: 0}
+			pos: Triplet {x: 2, y: -10, z: 7},
+			vel: Triplet {x: 0, y: 0, z: 0}
 		},
 		Moon {
-			pos: Position {x: 3, y: 5, z: -1},
-			vel: Velocity {x: 0, y: 0, z: 0}
+			pos: Triplet {x: 3, y: 5, z: -1},
+			vel: Triplet {x: 0, y: 0, z: 0}
 		},
 	]};
-	assert_eq!(parse_input(input), expected);
+	assert_eq!(Moons::parse(input), expected);
 }
 
 #[test]
 fn test_step() {
-	let mut moons = parse_input("<x=-1, y=0, z=2>
+	let mut moons = Moons::parse("<x=-1, y=0, z=2>
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>");
@@ -210,13 +215,13 @@ fn test_step() {
 		"pos=<x= 2, y= 2, z= 0>, vel=<x=-1, y=-3, z= 1>"
 	]);
 
-	step(&mut moons);
+	moons.step();
 	assert_eq!(moons, expected);
 }
 
 #[test]
 fn test_step_repeated() {
-	let mut moons = parse_input("<x=-8, y=-10, z=0>
+	let mut moons = Moons::parse("<x=-8, y=-10, z=0>
 <x=5, y=5, z=10>
 <x=2, y=-7, z=3>
 <x=9, y=-8, z=-3>");
@@ -229,7 +234,7 @@ fn test_step_repeated() {
 	]);
 
 	for _ in 0..100 {
-		step(&mut moons);
+		moons.step();
 	}
 
 	assert_eq!(moons, expected);
@@ -244,5 +249,5 @@ fn test_energy() {
 		"pos=<x= 16, y=-13, z= 23>, vel=<x=  7, y=  1, z=  1>",
 	]);
 
-	assert_eq!(energy(&moons), 1940);
+	assert_eq!(moons.energy(), 1940);
 }
