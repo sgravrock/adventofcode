@@ -1,27 +1,47 @@
 mod input;
+use std::collections::HashSet;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::fmt;
 use regex::Regex;
 
 fn main() {
 	let mut moons = Moons::parse(input::puzzle_input());
-
-	for _ in 0..1000 {
-		moons.step();
-	}
-
-	println!("{}", moons.energy());
+	let steps = find_repeat(&mut moons);
+	println!("The universe repeats after {} steps.", steps);
 }
 
-#[derive(PartialEq, Copy, Clone)]
+fn find_repeat(moons: &mut Moons) -> u64 {
+	// Hash the hash codes rather than the states themselves.
+	// This saves huge amounts of memory.
+	let mut seen = HashSet::new();
+	seen.insert(hash(moons));
+	let mut i = 0;
+
+	loop {
+		moons.step();
+		i += 1;
+
+		if !seen.insert(hash(&moons)) {
+			return i;
+		}
+
+		if i % 1000000 == 0 {
+			println!("{} steps...", i);
+		}
+	}
+}
+
+fn hash(moons: &Moons) -> u64 {
+	let mut hasher = DefaultHasher::new();
+	moons.hash(&mut hasher);
+	hasher.finish()
+}
+
+#[derive(PartialEq, Hash, Copy, Clone)]
 struct Triplet { x: i32, y: i32, z: i32 }
 
-impl Triplet {
-	fn energy(&self) -> i32 {
-		self.x.abs() + self.y.abs() + self.z.abs()
-	}
-}
-
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Hash, Copy, Clone)]
 struct Moon {
 	pos: Triplet,
 	vel: Triplet
@@ -36,7 +56,7 @@ impl fmt::Debug for Moon {
 	}
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Hash)]
 struct Moons {
 	v: Vec<Moon>
 }
@@ -60,12 +80,6 @@ impl Moons {
 			.collect();
 		
 		Moons { v }
-	}
-
-	fn energy(&self) -> i32 {
-		self.v.iter()
-			.map(|moon| moon.pos.energy() * moon.vel.energy())
-			.sum()
 	}
 
 	fn step(&mut self) {
@@ -241,13 +255,14 @@ fn test_step_repeated() {
 }
 
 #[test]
-fn test_energy() {
-	let moons = parse_state(vec![
-		"pos=<x=  8, y=-12, z= -9>, vel=<x= -7, y=  3, z=  0>",
-		"pos=<x= 13, y= 16, z= -3>, vel=<x=  3, y=-11, z= -5>",
-		"pos=<x=-29, y=-11, z= -1>, vel=<x= -3, y=  7, z=  4>",
-		"pos=<x= 16, y=-13, z= 23>, vel=<x=  7, y=  1, z=  1>",
+fn test_find_repeat() {
+	let mut moons = parse_state(vec![
+		"pos=<x= -1, y=  0, z=  2>, vel=<x=  0, y=  0, z=  0>",
+		"pos=<x=  2, y=-10, z= -7>, vel=<x=  0, y=  0, z=  0>",
+		"pos=<x=  4, y= -8, z=  8>, vel=<x=  0, y=  0, z=  0>",
+		"pos=<x=  3, y=  5, z= -1>, vel=<x=  0, y=  0, z=  0>",
 	]);
 
-	assert_eq!(moons.energy(), 1940);
+	assert_eq!(find_repeat(&mut moons), 2772);
 }
+
