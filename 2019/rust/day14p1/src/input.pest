@@ -1,0 +1,17 @@
+WHITESPACE = _{ " " | "\t" }
+
+name = @{ ASCII_ALPHA+ }
+qty = @{ ASCII_DIGIT+ }
+
+component = { qty ~ name }
+
+input_list = { (component ~ ",")* ~ component }
+reaction = { input_list ~ "=>" ~ component }
+
+recipe = {
+    SOI ~
+    (WHITESPACE | NEWLINE)* ~
+    (reaction ~ NEWLINE)* ~
+    (WHITESPACE | NEWLINE)* ~
+    EOI
+}
