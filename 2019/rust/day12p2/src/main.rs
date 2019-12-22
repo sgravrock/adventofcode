@@ -2,130 +2,97 @@ mod input;
 use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::fmt;
 use regex::Regex;
 use num::integer::lcm;
 
 fn main() {
-	let mut moons = Moons::parse(input::puzzle_input());
-	let steps = find_repeat(&mut moons);
+	let axes = parse_moons(input::puzzle_input());
+	let steps = find_repeat(axes);
 	println!("The universe repeats after {} steps.", steps);
 }
 
-fn find_repeat(mut moons: &mut Moons) -> u64 {
-	let periods: Vec<u64> = [0, 1, 2].iter()
-		.map(|axis| find_repeat_for_axis(&mut moons, *axis))
-		.collect();
-
-	println!("Cycles: {:?}", periods);
-	lcm(periods[0], lcm(periods[1], periods[2]))
+fn find_repeat(axes: Vec<Vec<MoonAxis>>) -> u64 {
+	let x = find_repeat_for_axis(axes[0].clone());
+	let y = find_repeat_for_axis(axes[1].clone());
+	let z = find_repeat_for_axis(axes[2].clone());
+	lcm(x, lcm(y, z))
 }
 
-fn find_repeat_for_axis(moons: &mut Moons, axis: usize) -> u64 {
+fn find_repeat_for_axis(mut axis: Vec<MoonAxis>) -> u64 {
 	let mut seen = HashSet::new();
-	seen.insert(hash(moons, axis));
+	seen.insert(hash(&axis));
 	let mut i = 0u64;
 
 	loop {
-		moons.step(axis);
+		step(&mut axis);
 		i += 1;
 
-		if !seen.insert(hash(moons, axis)) {
+		if !seen.insert(hash(&axis)) {
 			return i;
 		}
 	}
 }
 
  
-fn hash(moons: &Moons, axis: usize) -> u64 {
+fn hash(axis: &Vec<MoonAxis>) -> u64 {
 	let mut hasher = DefaultHasher::new();
 
-	for m in &moons.v {
-		hasher.write_i32(m.pos[axis]);
-		hasher.write_i32(m.vel[axis]);
+	for ma in axis {
+		hasher.write_i32(ma.pos);
+		hasher.write_i32(ma.vel);
 	}
 
 	hasher.finish()
 }
 
-#[derive(PartialEq, Hash, Clone)]
-struct Moon {
-	pos: Vec<i32>,
-	vel: Vec<i32>,
+#[derive(PartialEq, Hash, Copy, Clone, Debug)]
+struct MoonAxis {
+	pos: i32,
+	vel: i32,
 }
 
-impl fmt::Debug for Moon {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "pos=<x={}, y={}, z={}>, vel=<x={}, y={}, z={}>",
-			self.pos[0], self.pos[1], self.pos[2],
-			self.vel[0], self.vel[1], self.vel[2]
-		)
-	}
-}
+fn parse_moons(input: &str) -> Vec<Vec<MoonAxis>> {
+	let re = Regex::new("<x=([0-9\\-]+), y=([0-9\\-]+), z=([0-9\\-]+)>")
+		.unwrap();
+	let mut x_axis: Vec<MoonAxis> = Vec::new();
+	let mut y_axis: Vec<MoonAxis> = Vec::new();
+	let mut z_axis: Vec<MoonAxis> = Vec::new();
 
-#[derive(PartialEq, Hash)]
-struct Moons {
-	v: Vec<Moon>
-}
-
-impl Moons {
-	fn parse(input: &str) -> Moons {
-		let re = Regex::new("<x=([0-9\\-]+), y=([0-9\\-]+), z=([0-9\\-]+)>")
-			.unwrap();
-	
-		let v = input.lines()
-			.map(|line| {
-				let caps = re.captures(line).unwrap();
-				let x = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-				let y = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
-				let z = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
-				Moon {
-					pos: vec![x, y, z],
-					vel: vec![0, 0, 0]
-				}
-			})
-			.collect();
-		
-		Moons { v }
-	}
-
-	fn step(&mut self, axis: usize) {
-		self.apply_gravity(axis);
-		self.apply_velocity(axis);
-	}
-
-	fn apply_gravity(&mut self, axis: usize) {
-		for (i, j) in each_pair(self.v.len()) {
-			self.v[i].vel[axis] +=
-				if self.v[i].pos[axis] < self.v[j].pos[axis] {
-					1
-				} else if self.v[i].pos[axis] > self.v[j].pos[axis] {
-					-1
-				} else {
-					0
-				};
-		}
+	for line in input.lines() {
+		let caps = re.captures(line).unwrap();
+		let x = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
+		let y = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
+		let z = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
+		x_axis.push(MoonAxis { pos: x, vel: 0 });
+		y_axis.push(MoonAxis { pos: y, vel: 0 });
+		z_axis.push(MoonAxis { pos: z, vel: 0 });
 	}
 	
-	fn apply_velocity(&mut self, axis: usize) {
-		for moon in &mut self.v {
-			moon.pos[axis] += moon.vel[axis];
-		}
-	}
-
+	vec![x_axis, y_axis, z_axis]
 }
 
-impl fmt::Debug for Moons {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "[\n")?;
 
-		for m in &self.v {
-			write!(f, "   ")?;
-			m.fmt(f)?;
-			write!(f, "\n")?;
-		}
+fn step(mut axis: &mut Vec<MoonAxis>) {
+	apply_gravity(&mut axis);
+	apply_velocity(&mut axis);
+}
 
-		write!(f, "]\n")
+fn apply_gravity(axis: &mut Vec<MoonAxis>) {
+	for (i, j) in each_pair(axis.len()) {
+		axis[i].vel +=
+			if axis[i].pos < axis[j].pos {
+				1
+			} else if axis[i].pos > axis[j].pos {
+				-1
+			} else {
+				0
+			};
+	}
+}	
+
+fn apply_velocity(axis: &mut Vec<MoonAxis>) {
+	for ma in axis {
+		ma.pos += ma.vel;
 	}
 }
 
@@ -142,130 +109,58 @@ fn each_pair(n: usize) -> Vec<(usize, usize)> {
 	result
 }
 
-#[cfg(test)]
-fn parse_state(input: Vec<&str>) -> Moons {
-	let num_pat = "[\\s]*(-?[\\d]+)";
-	let triple_pat = format!("<x={}, y={}, z={}>", num_pat, num_pat, num_pat);
-	let pat = format!("pos={}, vel={}", triple_pat, triple_pat);
-	let re = Regex::new(&pat).unwrap();
-
-	let v = input.iter()
-		.map(|line| {
-			let caps = re.captures(line).unwrap();
-			let px = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-			let py = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
-			let pz = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
-			let vx = caps.get(4).unwrap().as_str().parse::<i32>().unwrap();
-			let vy = caps.get(5).unwrap().as_str().parse::<i32>().unwrap();
-			let vz = caps.get(6).unwrap().as_str().parse::<i32>().unwrap();
-		
-			Moon {
-				pos: vec![px, py, pz],
-				vel: vec![vx, vy, vz]
-			}
-		})
-		.collect();
-
-	Moons { v }
-}
-
-#[test]
-fn test_parse_state() {
-	let input = vec!["pos=<x= 30, y= -8, z=  3>, vel=<x=  3, y=  -3, z=  0>"];
-	let expected = Moons { v: vec![
-		Moon {
-			pos: vec![30, -8, 3 ],
-			vel: vec![3, -3, 0]
-		}
-	]};
-	assert_eq!(parse_state(input), expected);
-}
-
-
-#[test]
-fn test_moons_parse() {
-	let input = "<x=-1, y=0, z=2>
-<x=2, y=-10, z=7>
-<x=3, y=5, z=-1>";
-	let expected = Moons { v: vec![
-		Moon {
-			pos: vec![-1, 0, 2],
-			vel: vec![0, 0, 0]
-		},
-		Moon {
-			pos: vec![2, -10, 7],
-			vel: vec![0, 0, 0]
-		},
-		Moon {
-			pos: vec![3, 5, -1],
-			vel: vec![0, 0, 0]
-		},
-	]};
-	assert_eq!(Moons::parse(input), expected);
-}
-
 #[test]
 fn test_step() {
-	let mut moons = Moons::parse("<x=-1, y=0, z=2>
+	let mut axes = parse_moons("<x=-1, y=0, z=2>
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>");
-	
-	let expected = parse_state(vec![
-		"pos=<x= 2, y=-1, z= 1>, vel=<x= 3, y=-1, z=-1>",
-		"pos=<x= 3, y=-7, z=-4>, vel=<x= 1, y= 3, z= 3>",
-		"pos=<x= 1, y=-7, z= 5>, vel=<x=-3, y= 1, z=-3>",
-		"pos=<x= 2, y= 2, z= 0>, vel=<x=-1, y=-3, z= 1>"
-	]);
 
-	moons.step(0);
-	moons.step(1);
-	moons.step(2);
-	assert_eq!(moons, expected);
-}
+	let expected_x = vec![
+		MoonAxis {pos: 2, vel: 3},
+		MoonAxis {pos: 3, vel: 1},
+		MoonAxis {pos: 1, vel: -3},
+		MoonAxis {pos: 2, vel: -1},
+	];
+	step(&mut axes[0]);
+	assert_eq!(axes[0], expected_x);
 
-#[test]
-fn test_step_repeated() {
-	let mut moons = Moons::parse("<x=-8, y=-10, z=0>
-<x=5, y=5, z=10>
-<x=2, y=-7, z=3>
-<x=9, y=-8, z=-3>");
+	let expected_y = vec![
+		MoonAxis {pos: -1, vel: -1},
+		MoonAxis {pos: -7, vel: 3},
+		MoonAxis {pos: -7, vel: 1},
+		MoonAxis {pos: 2, vel: -3},
+	];
+	step(&mut axes[1]);
+	assert_eq!(axes[1], expected_y);
 
-	let expected = parse_state(vec![
-		"pos=<x=  8, y=-12, z= -9>, vel=<x= -7, y=  3, z=  0>",
-		"pos=<x= 13, y= 16, z= -3>, vel=<x=  3, y=-11, z= -5>",
-		"pos=<x=-29, y=-11, z= -1>, vel=<x= -3, y=  7, z=  4>",
-		"pos=<x= 16, y=-13, z= 23>, vel=<x=  7, y=  1, z=  1>",
-	]);
-
-	for _ in 0..100 {
-		moons.step(0);
-		moons.step(1);
-		moons.step(2);
-	}
-
-	assert_eq!(moons, expected);
+	let expected_z = vec![
+		MoonAxis {pos: 1, vel: -1},
+		MoonAxis {pos: -4, vel: 3},
+		MoonAxis {pos: 5, vel: -3},
+		MoonAxis {pos: 0, vel: 1},
+	];
+	step(&mut axes[2]);
+	assert_eq!(axes[2], expected_z);
 }
 
 #[test]
 fn test_find_repeat() {
-	let mut moons = parse_state(vec![
-		"pos=<x= -1, y=  0, z=  2>, vel=<x=  0, y=  0, z=  0>",
-		"pos=<x=  2, y=-10, z= -7>, vel=<x=  0, y=  0, z=  0>",
-		"pos=<x=  4, y= -8, z=  8>, vel=<x=  0, y=  0, z=  0>",
-		"pos=<x=  3, y=  5, z= -1>, vel=<x=  0, y=  0, z=  0>",
-	]);
+	let moons = parse_moons("<x=-1, y=0, z=2>
+<x=2, y=-10, z=-7>
+<x=4, y=-8, z=8>
+<x=3, y=5, z=-1>");
 
-	assert_eq!(find_repeat(&mut moons), 2772);
+	assert_eq!(find_repeat(moons), 2772);
 }
 
 #[test]
 fn test_find_repeat_long() {
-	let mut moons = Moons::parse("<x=-8, y=-10, z=0>
+	let moons = parse_moons("<x=-8, y=-10, z=0>
 <x=5, y=5, z=10>
 <x=2, y=-7, z=3>
 <x=9, y=-8, z=-3>");
 
-	assert_eq!(find_repeat(&mut moons), 4686774924);
+	assert_eq!(find_repeat(moons), 4686774924);
 }
 
