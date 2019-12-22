@@ -4,6 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::fmt;
 use regex::Regex;
+use num::integer::lcm;
 
 fn main() {
 	let mut moons = Moons::parse(input::puzzle_input());
@@ -11,47 +12,53 @@ fn main() {
 	println!("The universe repeats after {} steps.", steps);
 }
 
-fn find_repeat(moons: &mut Moons) -> u64 {
-	// Hash the hash codes rather than the states themselves.
-	// This saves huge amounts of memory.
+fn find_repeat(mut moons: &mut Moons) -> u64 {
+	let periods: Vec<u64> = [0, 1, 2].iter()
+		.map(|axis| find_repeat_for_axis(&mut moons, *axis))
+		.collect();
+
+	println!("Cycles: {:?}", periods);
+	lcm(periods[0], lcm(periods[1], periods[2]))
+}
+
+fn find_repeat_for_axis(moons: &mut Moons, axis: usize) -> u64 {
 	let mut seen = HashSet::new();
-	seen.insert(hash(moons));
-	let mut i = 0;
+	seen.insert(hash(moons, axis));
+	let mut i = 0u64;
 
 	loop {
-		moons.step();
+		moons.step(axis);
 		i += 1;
 
-		if !seen.insert(hash(&moons)) {
+		if !seen.insert(hash(moons, axis)) {
 			return i;
-		}
-
-		if i % 1000000 == 0 {
-			println!("{} steps...", i);
 		}
 	}
 }
 
-fn hash(moons: &Moons) -> u64 {
+ 
+fn hash(moons: &Moons, axis: usize) -> u64 {
 	let mut hasher = DefaultHasher::new();
-	moons.hash(&mut hasher);
+
+	for m in &moons.v {
+		hasher.write_i32(m.pos[axis]);
+		hasher.write_i32(m.vel[axis]);
+	}
+
 	hasher.finish()
 }
 
-#[derive(PartialEq, Hash, Copy, Clone)]
-struct Triplet { x: i32, y: i32, z: i32 }
-
-#[derive(PartialEq, Hash, Copy, Clone)]
+#[derive(PartialEq, Hash, Clone)]
 struct Moon {
-	pos: Triplet,
-	vel: Triplet
+	pos: Vec<i32>,
+	vel: Vec<i32>,
 }
 
 impl fmt::Debug for Moon {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "pos=<x={}, y={}, z={}>, vel=<x={}, y={}, z={}>",
-			self.pos.x, self.pos.y, self.pos.z,
-			self.vel.x, self.vel.y, self.vel.z
+			self.pos[0], self.pos[1], self.pos[2],
+			self.vel[0], self.vel[1], self.vel[2]
 		)
 	}
 }
@@ -73,8 +80,8 @@ impl Moons {
 				let y = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
 				let z = caps.get(3).unwrap().as_str().parse::<i32>().unwrap();
 				Moon {
-					pos: Triplet {x: x, y: y, z: z},
-					vel: Triplet { x: 0, y: 0, z: 0}
+					pos: vec![x, y, z],
+					vel: vec![0, 0, 0]
 				}
 			})
 			.collect();
@@ -82,33 +89,17 @@ impl Moons {
 		Moons { v }
 	}
 
-	fn step(&mut self) {
-		self.apply_gravity();
-		self.apply_velocity();
+	fn step(&mut self, axis: usize) {
+		self.apply_gravity(axis);
+		self.apply_velocity(axis);
 	}
 
-	fn apply_gravity(&mut self) {
+	fn apply_gravity(&mut self, axis: usize) {
 		for (i, j) in each_pair(self.v.len()) {
-			self.v[i].vel.x +=
-				if self.v[i].pos.x < self.v[j].pos.x {
+			self.v[i].vel[axis] +=
+				if self.v[i].pos[axis] < self.v[j].pos[axis] {
 					1
-				} else if self.v[i].pos.x > self.v[j].pos.x {
-					-1
-				} else {
-					0
-				};
-			self.v[i].vel.y +=
-				if self.v[i].pos.y < self.v[j].pos.y {
-					1
-				} else if self.v[i].pos.y > self.v[j].pos.y {
-					-1
-				} else {
-					0
-				};
-			self.v[i].vel.z +=
-				if self.v[i].pos.z < self.v[j].pos.z {
-					1
-				} else if self.v[i].pos.z > self.v[j].pos.z {
+				} else if self.v[i].pos[axis] > self.v[j].pos[axis] {
 					-1
 				} else {
 					0
@@ -116,11 +107,9 @@ impl Moons {
 		}
 	}
 	
-	fn apply_velocity(&mut self) {
+	fn apply_velocity(&mut self, axis: usize) {
 		for moon in &mut self.v {
-			moon.pos.x += moon.vel.x;
-			moon.pos.y += moon.vel.y;
-			moon.pos.z += moon.vel.z;
+			moon.pos[axis] += moon.vel[axis];
 		}
 	}
 
@@ -171,8 +160,8 @@ fn parse_state(input: Vec<&str>) -> Moons {
 			let vz = caps.get(6).unwrap().as_str().parse::<i32>().unwrap();
 		
 			Moon {
-				pos: Triplet {x: px, y: py, z: pz},
-				vel: Triplet { x: vx, y: vy, z: vz}
+				pos: vec![px, py, pz],
+				vel: vec![vx, vy, vz]
 			}
 		})
 		.collect();
@@ -185,8 +174,8 @@ fn test_parse_state() {
 	let input = vec!["pos=<x= 30, y= -8, z=  3>, vel=<x=  3, y=  -3, z=  0>"];
 	let expected = Moons { v: vec![
 		Moon {
-			pos: Triplet { x: 30, y: -8, z: 3 },
-			vel: Triplet { x: 3, y: -3, z: 0}
+			pos: vec![30, -8, 3 ],
+			vel: vec![3, -3, 0]
 		}
 	]};
 	assert_eq!(parse_state(input), expected);
@@ -200,16 +189,16 @@ fn test_moons_parse() {
 <x=3, y=5, z=-1>";
 	let expected = Moons { v: vec![
 		Moon {
-			pos: Triplet {x: -1, y: 0, z: 2},
-			vel: Triplet {x: 0, y: 0, z: 0}
+			pos: vec![-1, 0, 2],
+			vel: vec![0, 0, 0]
 		},
 		Moon {
-			pos: Triplet {x: 2, y: -10, z: 7},
-			vel: Triplet {x: 0, y: 0, z: 0}
+			pos: vec![2, -10, 7],
+			vel: vec![0, 0, 0]
 		},
 		Moon {
-			pos: Triplet {x: 3, y: 5, z: -1},
-			vel: Triplet {x: 0, y: 0, z: 0}
+			pos: vec![3, 5, -1],
+			vel: vec![0, 0, 0]
 		},
 	]};
 	assert_eq!(Moons::parse(input), expected);
@@ -229,7 +218,9 @@ fn test_step() {
 		"pos=<x= 2, y= 2, z= 0>, vel=<x=-1, y=-3, z= 1>"
 	]);
 
-	moons.step();
+	moons.step(0);
+	moons.step(1);
+	moons.step(2);
 	assert_eq!(moons, expected);
 }
 
@@ -248,7 +239,9 @@ fn test_step_repeated() {
 	]);
 
 	for _ in 0..100 {
-		moons.step();
+		moons.step(0);
+		moons.step(1);
+		moons.step(2);
 	}
 
 	assert_eq!(moons, expected);
@@ -264,5 +257,15 @@ fn test_find_repeat() {
 	]);
 
 	assert_eq!(find_repeat(&mut moons), 2772);
+}
+
+#[test]
+fn test_find_repeat_long() {
+	let mut moons = Moons::parse("<x=-8, y=-10, z=0>
+<x=5, y=5, z=10>
+<x=2, y=-7, z=3>
+<x=9, y=-8, z=-3>");
+
+	assert_eq!(find_repeat(&mut moons), 4686774924);
 }
 
