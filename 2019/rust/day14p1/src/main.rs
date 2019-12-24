@@ -1,3 +1,10 @@
+-   Consume 64 ORE to produce 24 B.
+/   Consume 64 ORE to produce 23 B.
+
+-   Consume 56 ORE to produce 40 C.
+/   Consume 63 ORE to produce 37 C.
+
+
 #![feature(vec_remove_item)]
 mod input;
 use std::fmt;
@@ -50,19 +57,32 @@ fn ore_required_for(reactions: &Vec<Reaction>, product_name: &str, qty_needed: i
 	let times_reaction_run = 
 		(qty_needed as f32 / output_unit_qty as f32).ceil() as i32;
 
-	product.inputs.iter()
+	let mut input_qtys_consumed: Vec<i32> = Vec::new();
+
+	let result = product.inputs.iter()
 		.map(|input| {
 			let input_unit_qty = input.1;
 			let input_reactions_needed =
 				(qty_needed as f32 / (input_unit_qty * times_reaction_run) as f32)
 					.ceil() as i32;
+			input_qtys_consumed.push(input_reactions_needed * input_unit_qty * times_reaction_run);
 			ore_required_for(
 				&reactions,
 				&input.0,
 				input_reactions_needed * input_unit_qty * times_reaction_run
 			)
 		})
-		.sum()
+		.sum();
+
+	print!("Consume ");
+
+	for i in 0..product.inputs.len() {
+		print!("{} {}, ", input_qtys_consumed[i], product.inputs[i].0);
+	}
+
+	println!(" to produce {} {}", qty_needed, product_name);
+
+	result
 }
 
 
