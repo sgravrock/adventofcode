@@ -71,7 +71,10 @@ fn ore_required_for(reactions: &Vec<Reaction>, product_name: &str, qty_needed: i
 struct InputParser;
 
 fn parse_input(input: &str) -> Vec<Reaction> {
-	let mut pairs = InputParser::parse(Rule::recipe, input).unwrap();
+	let mut pairs = match InputParser::parse(Rule::recipe, input) {
+			Ok(p) => p,
+			Err(e) => panic!("Parse error:\n{}", e)
+	};
 	let root = pairs.next().unwrap();
 	assert!(pairs.next().is_none());
 
@@ -143,25 +146,19 @@ fn test_ore_required_example_1() {
 
 #[test]
 fn test_ore_required_for_exact() {
-	let reactions = parse_input("
-		9 ORE => 1 FUEL
-	");
+	let reactions = parse_input("9 ORE => 1 FUEL");
 	assert_eq!(ore_required_for(&reactions, "FUEL", 1), 9);
 }
 
 #[test]
 fn test_ore_required_for_can_multiply() {
-	let reactions = parse_input("
-		9 ORE => 2 FUEL
-	");
+	let reactions = parse_input("9 ORE => 2 FUEL");
 	assert_eq!(ore_required_for(&reactions, "FUEL", 5), 27);
 }
 
 #[test]
 fn test_ore_required_for_cannot_divide() {
-	let reactions = parse_input("
-		9 ORE => 2 FUEL
-	");
+	let reactions = parse_input("9 ORE => 2 FUEL");
 	assert_eq!(ore_required_for(&reactions, "FUEL", 1), 9);
 }
 

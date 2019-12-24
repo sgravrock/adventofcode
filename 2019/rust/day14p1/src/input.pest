@@ -11,7 +11,7 @@ reaction = { input_list ~ "=>" ~ component }
 recipe = {
     SOI ~
     (WHITESPACE | NEWLINE)* ~
-    (reaction ~ NEWLINE)* ~
+    ((reaction ~ NEWLINE)+ | reaction) ~
     (WHITESPACE | NEWLINE)* ~
     EOI
 }
