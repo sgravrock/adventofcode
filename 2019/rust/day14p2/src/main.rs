@@ -9,7 +9,7 @@ use pest::Parser;
 use pest::iterators::Pair;
 
 fn main() {
-	let result = ore_required(parse_input(input::puzzle_input()));
+	let result = ore_required(parse_input(input::puzzle_input()), 1);
 	println!("Need {} ore to produce 1 FUEL", result);
 }
 
@@ -35,8 +35,9 @@ impl fmt::Debug for Reaction {
 	}
 }
 
-fn ore_required(mut reactions: Vec<Reaction>) -> i32 {
+fn ore_required(mut reactions: Vec<Reaction>, num_fuel: i32) -> i32 {
 	let mut needs: HashMap<String, i32> = HashMap::new();
+	needs.insert("FUEL".to_string(), num_fuel);
 
 	while reactions.len() > 0 {
 		// Find a reaction whose output isn't an input to anything we haven't
@@ -44,15 +45,8 @@ fn ore_required(mut reactions: Vec<Reaction>) -> i32 {
 		// and process it once. Otherwise we might round off multiple times.
 		let root = reactions.remove(find_first_root(&reactions));
 		let output_name = root.output.0;
-
-		// Figure out how many of this reaction's output we need.
-		let output_qty_needed = if output_name == "FUEL" {
-			1
-		} else {
-			needs.remove(&output_name).unwrap_or_else(|| {
-				panic!("Didn't find {} in needs");
-			})
-		};
+		let output_qty_needed = needs.remove(&output_name)
+			.unwrap_or_else(|| panic!("Didn't find {} in needs"));
 
 		// Round up to the nearest integer multiple of the reaction's output qty
 		let reactions_needed =
@@ -169,13 +163,19 @@ fn test_ore_required_example_1() {
 		4 C, 1 A => 1 CA
 		2 AB, 3 BC, 4 CA => 1 FUEL
 	");
-	assert_eq!(ore_required(reactions), 165);
+	assert_eq!(ore_required(reactions, 1), 165);
 }
 
 #[test]
 fn test_ore_required_exact() {
 	let reactions = parse_input("9 ORE => 1 FUEL");
-	assert_eq!(ore_required(reactions), 9);
+	assert_eq!(ore_required(reactions, 1), 9);
+}
+
+#[test]
+fn test_ore_required_multiple_fuel() {
+	let reactions = parse_input("9 ORE => 1 FUEL");
+	assert_eq!(ore_required(reactions, 10), 90);
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn test_ore_required_can_multiply() {
 		9 ORE => 2 A
 		5 A => 1 FUEL
 	");
-	assert_eq!(ore_required(reactions), 27);
+	assert_eq!(ore_required(reactions, 1), 27);
 }
 
 #[test]
@@ -193,7 +193,7 @@ fn test_ore_required_for_cannot_divide() {
 		9 ORE => 2 A
 		1 A => 1 FUEL
 	");
-	assert_eq!(ore_required(reactions), 9);
+	assert_eq!(ore_required(reactions, 1), 9);
 }
 
 
@@ -203,7 +203,7 @@ fn test_ore_required_multiple_inputs() {
 		3 ORE => 2 X
 		3 X, 2 ORE => 1 FUEL
 	");
-	assert_eq!(ore_required(reactions), 8);
+	assert_eq!(ore_required(reactions, 1), 8);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn test_ore_required_merges_reactions_for_same_product() {
 		3 A => 1 B
 		1 A, 1 B => 1 FUEL
 	");
-	assert_eq!(ore_required(reactions), 3);
+	assert_eq!(ore_required(reactions, 1), 3);
 }
 
 #[test]
