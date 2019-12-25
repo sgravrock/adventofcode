@@ -82,15 +82,9 @@ fn find_first_root(reactions: &Vec<Reaction>) -> usize {
 }
 
 fn is_dependency(output_name: &str, reactions: &Vec<Reaction>) -> bool {
-	any(reactions.iter(), |r| {
-		any(r.inputs.iter(), |input| input.0 == output_name)
+	reactions.iter().any(|r| {
+		r.inputs.iter().any(|input| input.0 == output_name)
 	})
-}
-
-fn any<I, E, P>(iter: I, predicate: P) -> bool
-		where I: Iterator<Item=E>,
-		P: FnMut(&E) -> bool {
-	iter.filter(predicate).next().is_some()
 }
 
 
