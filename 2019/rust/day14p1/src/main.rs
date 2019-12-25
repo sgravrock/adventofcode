@@ -1,6 +1,6 @@
-#![feature(vec_remove_item)]
 mod input;
 use std::fmt;
+use std::collections::HashMap;
 
 #[macro_use]
 extern crate pest_derive;
@@ -9,6 +9,8 @@ use pest::Parser;
 use pest::iterators::Pair;
 
 fn main() {
+	let result = ore_required(parse_input(input::puzzle_input()));
+	println!("Need {} ore to produce 1 FUEL", result);
 }
 
 type Component = (String, i32);
@@ -33,36 +35,62 @@ impl fmt::Debug for Reaction {
 	}
 }
 
-fn ore_required(reactions: &Vec<Reaction>) -> i32 {
-	ore_required_for(&reactions, "FUEL", 1)
-}
+fn ore_required(mut reactions: Vec<Reaction>) -> i32 {
+	let mut needs: HashMap<String, i32> = HashMap::new();
 
-fn ore_required_for(reactions: &Vec<Reaction>, product_name: &str, qty_needed: i32) -> i32 {
-	if product_name == "ORE" {
-		return qty_needed;
+	while reactions.len() > 0 {
+		// Find a reaction whose output isn't an input to anything we haven't
+		// yet processed. This ensures that we add up all the needed quantities
+		// and process it once. Otherwise we might round off multiple times.
+		let root = reactions.remove(find_first_root(&reactions));
+		let output_name = root.output.0;
+
+		// Figure out how many of this reaction's output we need.
+		let output_qty_needed = if output_name == "FUEL" {
+			1
+		} else {
+			needs.remove(&output_name).unwrap_or_else(|| {
+				panic!("Didn't find {} in needs");
+			})
+		};
+
+		// Round up to the nearest integer multiple of the reaction's output qty
+		let reactions_needed =
+			(output_qty_needed as f32 / root.output.1 as f32).ceil() as i32;
+
+		// Figure out how many of each input we need and add them to NEEDS.
+		for input in root.inputs {
+			let input_qty_needed = needs.entry(input.0).or_insert(0);
+			*input_qty_needed += input.1 * reactions_needed;
+		}
 	}
 
-	let product = reactions.iter()
-		.filter(|r| r.output.0 == product_name)
-		.next()
-		.unwrap_or_else(|| panic!("Couldn't find reaction for {}", product_name));
-	let output_unit_qty = product.output.1;
-	let times_reaction_run = 
-		(qty_needed as f32 / output_unit_qty as f32).ceil() as i32;
+	assert_eq!(needs.len(), 1);
+	*needs.get("ORE").unwrap_or_else(|| panic!("Didn't produce an ORE"))
 
-	product.inputs.iter()
-		.map(|input| {
-			let input_unit_qty = input.1;
-			let input_reactions_needed =
-				(qty_needed as f32 / (input_unit_qty * times_reaction_run) as f32)
-					.ceil() as i32;
-			ore_required_for(
-				&reactions,
-				&input.0,
-				input_reactions_needed * input_unit_qty * times_reaction_run
-			)
-		})
-		.sum()
+}
+
+// Finds a reaction that is not an input to any othe reactions.
+fn find_first_root(reactions: &Vec<Reaction>) -> usize {
+	for i in 0..reactions.len() {
+		if !is_dependency(&reactions[i].output.0, &reactions) {
+			return i;
+		}
+	}
+
+	panic!("Couldn't find a root in {:?}", reactions);
+}
+
+fn is_dependency(output_name: &str, reactions: &Vec<Reaction>) -> bool {
+	any(reactions.iter(), |r| {
+		any(r.inputs.iter(), |input| input.0 == output_name)
+	})
+}
+
+fn any<I, E, P>(iter: I, predicate: P) -> bool
+		where I: Iterator<Item=E>,
+		P: FnMut(&E) -> bool {
+	iter.filter(predicate).next().is_some()
 }
 
 
@@ -141,35 +169,33 @@ fn test_ore_required_example_1() {
 		4 C, 1 A => 1 CA
 		2 AB, 3 BC, 4 CA => 1 FUEL
 	");
-	assert_eq!(ore_required(&reactions), 165);
+	assert_eq!(ore_required(reactions), 165);
 }
 
 #[test]
-fn test_ore_required_for_exact() {
+fn test_ore_required_exact() {
 	let reactions = parse_input("9 ORE => 1 FUEL");
-	assert_eq!(ore_required_for(&reactions, "FUEL", 1), 9);
+	assert_eq!(ore_required(reactions), 9);
 }
 
 #[test]
-fn test_ore_required_for_can_multiply() {
-	let reactions = parse_input("9 ORE => 2 FUEL");
-	assert_eq!(ore_required_for(&reactions, "FUEL", 5), 27);
+fn test_ore_required_can_multiply() {
+	let reactions = parse_input("
+		9 ORE => 2 A
+		5 A => 1 FUEL
+	");
+	assert_eq!(ore_required(reactions), 27);
 }
 
 #[test]
 fn test_ore_required_for_cannot_divide() {
-	let reactions = parse_input("9 ORE => 2 FUEL");
-	assert_eq!(ore_required_for(&reactions, "FUEL", 1), 9);
+	let reactions = parse_input("
+		9 ORE => 2 A
+		1 A => 1 FUEL
+	");
+	assert_eq!(ore_required(reactions), 9);
 }
 
-#[test]
-fn test_ore_required_recursive() {
-	let reactions = parse_input("
-		3 ORE => 2 X
-		3 X => 1 FUEL
-	");
-	assert_eq!(ore_required_for(&reactions, "FUEL", 2), 9);
-}
 
 #[test]
 fn test_ore_required_multiple_inputs() {
@@ -177,8 +203,17 @@ fn test_ore_required_multiple_inputs() {
 		3 ORE => 2 X
 		3 X, 2 ORE => 1 FUEL
 	");
+	assert_eq!(ore_required(reactions), 8);
+}
 
-	assert_eq!(ore_required_for(&reactions, "FUEL", 2), 13);
+#[test]
+fn test_ore_required_merges_reactions_for_same_product() {
+	let reactions = parse_input("
+		3 ORE => 4 A
+		3 A => 1 B
+		1 A, 1 B => 1 FUEL
+	");
+	assert_eq!(ore_required(reactions), 3);
 }
 
 #[test]
