@@ -9,13 +9,18 @@ use pest::Parser;
 use pest::iterators::Pair;
 
 fn main() {
-	let result = ore_required(parse_input(input::puzzle_input()), 1);
-	println!("Need {} ore to produce 1 FUEL", result);
+	let ore_per_fuel = ore_required(parse_input(input::puzzle_input()), 1);
+	let ore_available = 1000000000000u64;
+	let max_fuel = ore_available / ore_per_fuel as u64;
+
+	// 2757000 is too low
+	println!("At {} ORE per FUEL, {} ORE can produce {} FUEL",
+		ore_per_fuel, ore_available, max_fuel);
 }
 
-type Component = (String, i32);
+type Component = (String, u64);
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 struct Reaction {
 	inputs: Vec<Component>,
 	output: Component
@@ -35,8 +40,30 @@ impl fmt::Debug for Reaction {
 	}
 }
 
-fn ore_required(mut reactions: Vec<Reaction>, num_fuel: i32) -> i32 {
-	let mut needs: HashMap<String, i32> = HashMap::new();
+fn fuel_per_trillion_ore(reactions: &Vec<Reaction>, ore_per_fuel: u64) -> u64 {
+	let ore_available = 1000000000000u64;
+	let mut floor = (ore_available as f64/ ore_per_fuel as f64).ceil() as u64;
+	let mut ceiling = floor * 2;
+	let increment = floor;
+
+	while ore_required(*reactions, ceiling) < ore_available {
+		floor += increment;
+		ceiling += increment;
+	}
+
+	todo!("binary search for the answer");
+}
+
+// TODO move this down
+#[test]
+fn test_fuel_per_trillion_ore() {
+	assert_eq!(fuel_per_trillion_ore(13312), 82892753);
+	assert_eq!(fuel_per_trillion_ore(180697), 5586022);
+	assert_eq!(fuel_per_trillion_ore(2210736), 460664);
+}
+
+fn ore_required(mut reactions: Vec<Reaction>, num_fuel: u64) -> u64 {
+	let mut needs: HashMap<String, u64> = HashMap::new();
 	needs.insert("FUEL".to_string(), num_fuel);
 
 	while reactions.len() > 0 {
@@ -50,7 +77,7 @@ fn ore_required(mut reactions: Vec<Reaction>, num_fuel: i32) -> i32 {
 
 		// Round up to the nearest integer multiple of the reaction's output qty
 		let reactions_needed =
-			(output_qty_needed as f32 / root.output.1 as f32).ceil() as i32;
+			(output_qty_needed as f32 / root.output.1 as f32).ceil() as u64;
 
 		// Figure out how many of each input we need and add them to NEEDS.
 		for input in root.inputs {
@@ -142,7 +169,7 @@ fn untree_component<'a>(pair: Pair<'a, Rule>) -> Component {
 			let qty = inner_rules
 				.next().unwrap()
 				.as_str()
-				.parse::<i32>().unwrap();
+				.parse::<u64>().unwrap();
 			let name = inner_rules
 				.next().unwrap()
 				.as_str().to_string();
