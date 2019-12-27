@@ -2,6 +2,8 @@
 mod input;
 mod machine;
 mod debugger;
+mod bot;
+#[cfg(test)] mod testing_bot;
 use machine::Machine;
 use debugger::debug;
 
