@@ -3,6 +3,8 @@ mod input;
 mod machine;
 mod debugger;
 mod bot;
+mod map;
+mod builder;
 #[cfg(test)] mod testing_bot;
 use machine::Machine;
 use debugger::debug;
