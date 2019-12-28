@@ -16,3 +16,13 @@ pub struct Map {
 	pub xrange: Range<i32>,
 	pub yrange: Range<i32>,
 }
+
+impl Map {
+	pub fn new() -> Map {
+		Map {
+			grid: HashMap::new(),
+			xrange: 0..0,
+			yrange: 0..0,
+		}
+	}
+}
