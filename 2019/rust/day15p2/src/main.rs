@@ -4,9 +4,9 @@ mod machine;
 mod debugger;
 mod bot;
 mod machine_bot;
-mod testing_bot;
 mod pathfinder;
-mod map;
+#[cfg(test)] mod map;
+#[cfg(test)] mod testing_bot;
 use machine_bot::MachineBot;
 use pathfinder::minutes_to_fill;
 

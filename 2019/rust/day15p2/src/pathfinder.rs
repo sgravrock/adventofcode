@@ -1,8 +1,6 @@
 use crate::bot::{Bot, Cell, Coord, Direction};
-use crate::map::Map;
 #[cfg(test)] use crate::testing_bot::TestingBot;
 use std::collections::{VecDeque, HashSet};
-use std::cmp::max;
 
 struct Path {
 	moves: Vec<Direction>,
@@ -29,11 +27,8 @@ pub fn minutes_to_fill<T>(
 	let o2_generator = find_o2(bot.clone(), (0, 0));
 	// Start future moves at the o2 generator's position
 	move_bot(&mut bot, &o2_generator);
-	println!("o2 generator is at {:?}", o2_generator.pos);
 	let mut minutes = 0;
 	let mut minutes_last_o2_filled = 0;
-	let mut map = Map::new();
-	map.insert(o2_generator.pos, Cell::Oxygen);
 	let mut visited: HashSet<Coord> = HashSet::new();
 	visited.insert(o2_generator.pos);
 	let mut frontier: VecDeque<Path> = VecDeque::new();
@@ -50,11 +45,8 @@ pub fn minutes_to_fill<T>(
 
 			if cell == Cell::Empty {
 				filled_o2 = true;
-				map.insert(path.pos, Cell::Oxygen);
 				visited.insert(path.pos);
 				enqueue_neighbors(&mut frontier, &visited, path);
-			} else {
-				map.insert(path.pos, cell);
 			}
 		}
 
@@ -63,8 +55,6 @@ pub fn minutes_to_fill<T>(
 		if filled_o2 {
 			minutes_last_o2_filled = minutes;
 		}
-
-		println!("After {} minutes:\n{:?}", minutes, map);
 	}
 
 	minutes_last_o2_filled
