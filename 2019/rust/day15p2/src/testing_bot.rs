@@ -1,17 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
-use std::ops::Range;
-use std::cmp::{min, max};
 use regex::Regex;
 use crate::bot::{Bot, Cell, Coord, Direction};
-
-#[derive(Debug, PartialEq, Clone)]
-struct Map {
-	pub grid: HashMap<Coord, Cell>,
-	pub xrange: Range<i32>,
-	pub yrange: Range<i32>,
-}
-
+use crate::map::Map;
 
 #[derive(PartialEq, Clone)]
 pub struct TestingBot {
@@ -23,11 +14,7 @@ impl TestingBot {
 	pub fn from_input(input: &str,  pos: Coord) -> TestingBot {
 		let not_blank = Regex::new(r"[^\s]").unwrap();
 		let prefix = Regex::new(r"^([\s]*\|)?").unwrap();
-		let mut grid: HashMap<Coord, Cell> = HashMap::new();
-		let mut xmin = 0;
-		let mut xmax = 0;
-		let mut ymin = 0;
-		let mut ymax = 0;
+		let mut map = Map::new();
 
 		let lines = input.lines()
 			.filter(|line| not_blank.is_match(line))
@@ -38,38 +25,16 @@ impl TestingBot {
 			let chars = line.chars().enumerate();
 
 			for (x, c) in chars {
-				grid.insert((x as i32, y as i32), match c {
+				map.insert((x as i32, y as i32), match c {
 					'#' => Cell::Wall,
 					'o' => Cell::Oxygen,
 					' ' => Cell::Empty,
 					_ => panic!("Unexpected input char '{}'", c)
 				});
-				xmin = min(xmin, x as i32);
-				xmax = max(xmax, x as i32);
-				ymin = min(ymin, y as i32);
-				ymax = max(ymax, y as i32);
 			}
 		}
 
-		TestingBot {
-			map: Map {
-				grid,
-				xrange: xmin..(xmax + 1),
-				yrange: ymin..(ymax + 1),
-			},
-			pos
-		}
-	}
-
-	fn expand_ranges(&mut self) {
-		self.map.xrange = 
-			min(self.map.xrange.start, self.pos.0)
-			..
-			max(self.map.xrange.end, self.pos.0 + 1);
-		self.map.yrange = 
-			min(self.map.yrange.start, self.pos.1)
-			..
-			max(self.map.yrange.end, self.pos.1 + 1);
+		TestingBot { map, pos }
 	}
 }
 
@@ -79,7 +44,7 @@ impl fmt::Debug for TestingBot {
 		for y in self.map.yrange.clone() {
 			for x in self.map.xrange.clone() {
 				let bot_here = x == self.pos.0 && y == self.pos.1;
-				let cell = self.map.grid.get(&(x, y)).unwrap_or(&Cell::Empty);
+				let cell = self.map.get_without_expanding((x, y));
 				write!(f, "{}", match cell {
 					Cell::Empty => if bot_here { 'x' } else { ' ' },
 					Cell::Oxygen => if bot_here { '!' } else { 'o' },
@@ -104,11 +69,10 @@ impl Bot for TestingBot {
 			Direction::W => (1, 0),
 		};
 		let new_pos = (self.pos.0 + delta.0, self.pos.1 + delta.1);
-		let cell = *(self.map.grid.entry(new_pos).or_insert(Cell::Empty));
+		let cell = self.map.get(new_pos);
 
 		if cell != Cell::Wall {
 			self.pos = new_pos;
-			self.expand_ranges();
 		}
 
 		cell
@@ -125,7 +89,7 @@ fn test_advance_n() {
 	assert_eq!(bot.pos, (0, 0));
 	assert_eq!(bot.advance(Direction::N), Cell::Empty);
 	assert_eq!(bot.pos, (0, -1));
-	assert_eq!(bot.map.grid[&bot.pos], Cell::Empty);
+	assert_eq!(bot.map.get(bot.pos), Cell::Empty);
 	assert_eq!(bot.map.yrange.start, -1);
 	assert_eq!(format!("{:?}", bot), "\nx\n \n \n");
 }
@@ -140,7 +104,7 @@ fn test_advance_s() {
 	assert_eq!(bot.pos, (0, 1));
 	assert_eq!(bot.advance(Direction::S), Cell::Empty);
 	assert_eq!(bot.pos, (0, 2));
-	assert_eq!(bot.map.grid[&bot.pos], Cell::Empty);
+	assert_eq!(bot.map.get(bot.pos), Cell::Empty);
 	assert_eq!(bot.map.yrange.end, 3);
 	assert_eq!(format!("{:?}", bot), "\n \n \nx\n");
 }
@@ -152,7 +116,7 @@ fn test_advance_e() {
 	assert_eq!(bot.pos, (0, 0));
 	assert_eq!(bot.advance(Direction::E), Cell::Empty);
 	assert_eq!(bot.pos, (-1, 0));
-	assert_eq!(bot.map.grid[&bot.pos], Cell::Empty);
+	assert_eq!(bot.map.get(bot.pos), Cell::Empty);
 	assert_eq!(bot.map.xrange.start, -1);
 	assert_eq!(format!("{:?}", bot), "\nx  \n");
 }
@@ -164,7 +128,7 @@ fn test_advance_w() {
 	assert_eq!(bot.pos, (1, 0));
 	assert_eq!(bot.advance(Direction::W), Cell::Empty);
 	assert_eq!(bot.pos, (2, 0));
-	assert_eq!(bot.map.grid[&bot.pos], Cell::Empty);
+	assert_eq!(bot.map.get(bot.pos), Cell::Empty);
 	assert_eq!(bot.map.xrange.end, 3);
 	assert_eq!(format!("{:?}", bot), "\n  x\n");
 }

@@ -6,11 +6,13 @@ mod bot;
 mod machine_bot;
 mod testing_bot;
 mod pathfinder;
+mod map;
 use machine_bot::MachineBot;
-use pathfinder::shortest_path_len;
+use pathfinder::minutes_to_fill;
 
 fn main() {
 	let bot = MachineBot::new(input::puzzle_input());
-	println!("{}", shortest_path_len(bot, (0, 0)));
+	// 341 is too large
+	println!("{}", minutes_to_fill(bot));
 }
 

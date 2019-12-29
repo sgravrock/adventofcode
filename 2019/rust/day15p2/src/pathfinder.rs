@@ -1,6 +1,8 @@
 use crate::bot::{Bot, Cell, Coord, Direction};
+use crate::map::Map;
 #[cfg(test)] use crate::testing_bot::TestingBot;
 use std::collections::{VecDeque, HashSet};
+use std::cmp::max;
 
 struct Path {
 	moves: Vec<Direction>,
@@ -21,10 +23,57 @@ impl Path {
 	}
 }
 
-pub fn shortest_path_len<T>(
+pub fn minutes_to_fill<T>(
+	mut bot: T
+) -> usize where T: Bot, T: Clone {
+	let o2_generator = find_o2(bot.clone(), (0, 0));
+	// Start future moves at the o2 generator's position
+	move_bot(&mut bot, &o2_generator);
+	println!("o2 generator is at {:?}", o2_generator.pos);
+	let mut minutes = 0;
+	let mut minutes_last_o2_filled = 0;
+	let mut map = Map::new();
+	map.insert(o2_generator.pos, Cell::Oxygen);
+	let mut visited: HashSet<Coord> = HashSet::new();
+	visited.insert(o2_generator.pos);
+	let mut frontier: VecDeque<Path> = VecDeque::new();
+	enqueue_neighbors(&mut frontier, &visited,
+		Path { moves: vec![], pos: o2_generator.pos });
+
+	while frontier.len() > 0 {
+		let to_visit = frontier;
+		frontier = VecDeque::new();
+		let mut filled_o2 = false;
+
+		for path in to_visit {
+			let cell = move_bot(&mut bot.clone(), &path);
+
+			if cell == Cell::Empty {
+				filled_o2 = true;
+				map.insert(path.pos, Cell::Oxygen);
+				visited.insert(path.pos);
+				enqueue_neighbors(&mut frontier, &visited, path);
+			} else {
+				map.insert(path.pos, cell);
+			}
+		}
+
+		minutes += 1;
+
+		if filled_o2 {
+			minutes_last_o2_filled = minutes;
+		}
+
+		println!("After {} minutes:\n{:?}", minutes, map);
+	}
+
+	minutes_last_o2_filled
+}
+
+fn find_o2<T>(
 	bot: T,
 	start: Coord
-) -> usize where T: Bot, T: Clone {
+) -> Path where T: Bot, T: Clone {
 	let mut visited: HashSet<Coord> = HashSet::new();
 	visited.insert(start);
 	let mut todo: VecDeque<Path> = VecDeque::new();
@@ -35,8 +84,8 @@ pub fn shortest_path_len<T>(
 			panic!("Didn't find the oxygen generator");
 		});
 
-		match move_bot(bot.clone(), &path) {
-			Cell::Oxygen => return path.moves.len(),
+		match move_bot(&mut bot.clone(), &path) {
+			Cell::Oxygen => return path,
 			Cell::Wall => {},
 			Cell::Empty => {
 				visited.insert(path.pos);
@@ -59,7 +108,7 @@ fn enqueue_neighbors(queue: &mut VecDeque<Path>, visited: &HashSet<Coord>, path:
 }
 
 
-fn move_bot<T>(mut bot: T, path: &Path) -> Cell where T: Bot {
+fn move_bot<T>(bot: &mut T, path: &Path) -> Cell where T: Bot {
 	for i in 0..path.moves.len() {
 		let move_result = bot.advance(path.moves[i]);
 
@@ -75,6 +124,18 @@ fn move_bot<T>(mut bot: T, path: &Path) -> Cell where T: Bot {
 }
 
 #[test]
+fn test_minutes_to_fill() {
+	let bot = TestingBot::from_input("
+		| ##   
+		|#  ## 
+		|# #  #
+		|# o # 
+		| ###  
+	", (1, 1));
+	assert_eq!(minutes_to_fill(bot), 4);
+}
+
+#[test]
 fn test_find_o2_simple() {
 	let bot = TestingBot::from_input("
 		|####
@@ -84,7 +145,7 @@ fn test_find_o2_simple() {
 		|####
 	", (1, 1));
 
-	assert_eq!(shortest_path_len(bot, (1, 1)), 4);
+	assert_eq!(find_o2(bot, (1, 1)).pos, (1, 3));
 }
 
 #[test]
@@ -98,7 +159,7 @@ fn test_find_o2_dead_end() {
 		|####
 	", (1, 2));
 
-	assert_eq!(shortest_path_len(bot, (1, 2)), 4);
+	assert_eq!(find_o2(bot, (1, 2)).pos, (1, 4));
 }
 
 #[test]
@@ -109,5 +170,5 @@ fn test_find_o2_unbounded() {
 		| o 
 	", (1, 0));
 
-	assert_eq!(shortest_path_len(bot, (1, 0)), 4);
+	assert_eq!(find_o2(bot, (1, 0)).pos, (1, 2));
 }
