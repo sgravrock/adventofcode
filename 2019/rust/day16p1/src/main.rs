@@ -12,28 +12,26 @@ fn fft(input: Vec<u32>, times: u32) -> Vec<u32> {
 }
 
 fn fft_once(signal: Vec<u32>) -> Vec<u32> {
-	let mut result: Vec<u32> = signal.iter().enumerate()
-		.map(|(i, _)| {
-			let multipliers = fft_multipliers(i, signal.len());
-			signal.iter().enumerate()
-				.map(|(j, sv)| *sv as i32 * multipliers[j])
+	(0..signal.len())
+		.map(|i| {
+			signal.iter()
+				.zip(fft_multipliers(i))
+				.map(|(sv, mult)| *sv as i32 * mult)
 				.sum::<i32>()
 				.abs() as u32 % 10
 		})
-		.collect();
-	result.resize(8, 0);
-	result
+		.take(8)
+		.collect()
 }
 
-fn fft_multipliers(digit_ix: usize, len: usize) -> Vec<i32> {
+fn fft_multipliers(digit_ix: usize) -> impl Iterator<Item=i32> {
 	static BASE_PATTERN: [i32; 4] = [0, 1, 0, -1];
-
-	(0..len)
-		.map(|i| {
-			let bi = (i + 1) / (digit_ix + 1);
-			BASE_PATTERN[bi % 4]
-		})
-		.collect()
+	BASE_PATTERN
+		.iter()
+		.cloned()
+		.flat_map(move |p| std::iter::repeat(p).take(digit_ix + 1))
+		.cycle()
+		.skip(1)
 }
 
 #[test]
@@ -69,7 +67,25 @@ fn test_fft_long_3() {
 }
 
 #[test]
-fn test_fft_multipliers() {
-	assert_eq!(fft_multipliers(0, 8), vec![1, 0, -1, 0, 1, 0, -1, 0]);
-	assert_eq!(fft_multipliers(1, 8), vec![0, 1, 1, 0, 0, -1, -1, 0]);
+fn test_fft_multipliers_0() {
+	let actual: Vec<i32> = fft_multipliers(0).take(8).collect();
+	assert_eq!(actual, vec![1, 0, -1, 0, 1, 0, -1, 0]);
+}
+
+#[test]
+fn test_fft_multipliers_1() {
+	let actual: Vec<i32> = fft_multipliers(1).take(8).collect();
+	assert_eq!(actual, vec![0, 1, 1, 0, 0, -1, -1, 0]);
+}
+
+#[test]
+fn test_fft_multipliers_repeats() {
+	let actual: Vec<i32> = fft_multipliers(1).take(16).collect();
+	assert_eq!(
+		actual,
+		vec![
+			0, 1, 1, 0, 0, -1, -1, 0,
+			0, 1, 1, 0, 0, -1, -1, 0,
+		]
+	);
 }
