@@ -2,19 +2,15 @@
 mod input;
 mod machine;
 mod debugger;
-use machine::Machine;
-use debugger::debug;
+mod bot;
+mod machine_bot;
+mod testing_bot;
+mod pathfinder;
+use machine_bot::MachineBot;
+use pathfinder::shortest_path_len;
 
 fn main() {
+	let bot = MachineBot::new(input::puzzle_input());
+	println!("{}", shortest_path_len(bot, (0, 0)));
 }
 
-fn execute_or_debug(mut machine: &mut Machine) {
-	match machine.execute() {
-		Ok(_) => {},
-		Err(error) => {
-			println!("Execution failed: {:?}", error);
-			debug(&mut machine);
-			panic!("Aborting because of previous execution failure");
-		}
-	}
-}

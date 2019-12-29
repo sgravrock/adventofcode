@@ -75,7 +75,7 @@ struct ParamValues {
 	dest: Option<i64>
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MachineState {
 	Running,
 	Blocked,
@@ -91,6 +91,7 @@ pub enum Event {
 
 pub type EventHandler = fn(event: Event);
 
+#[derive(Clone)]
 pub struct Machine {
 	pub mem: Vec<i64>,
 	pub input: Queue<i64>,
@@ -496,6 +497,7 @@ fn num_to_digits(mut n: i64) -> Vec<i64> {
 }
 
 
+#[derive(Clone)]
 pub struct Queue<T> where T: Copy {
 	buf: Vec<T>
 }
