@@ -35,6 +35,17 @@ fn test_fft_first_8() {
 }
 
 fn fft(input: Vec<u32>, times: u32) -> Vec<u32> {
+	let patterns: Vec<Vec<i32>> = (0..input.len())
+		.map(|i| repeated_pattern(i, input.len()))
+		.collect();
+	fft_cached(input, times, &patterns)
+}
+
+fn fft_cached(
+	input: Vec<u32>,
+	times: u32,
+	patterns: &Vec<Vec<i32>>
+) -> Vec<u32> {
 	if times == 0 {
 		return input;
 	}
@@ -42,19 +53,22 @@ fn fft(input: Vec<u32>, times: u32) -> Vec<u32> {
 	let mut next_state = Vec::with_capacity(input.len());
 
 	for i in 0..input.len() {
-		next_state.push(fft_digit(&input, i));
+		next_state.push(fft_digit(&input, i, &patterns));
 	}
 
-	fft(next_state, times - 1)
+	fft_cached(next_state, times - 1, &patterns)
 }
 
-fn fft_digit(input: &Vec<u32>, output_pos: usize) -> u32 {
-	let pat = repeated_pattern(output_pos, input.len());
+fn fft_digit(
+	input: &Vec<u32>,
+	output_pos: usize,
+	patterns: &Vec<Vec<i32>>
+) -> u32 {
 	let mut total: i32 = 0;
 
 	for i in 0..input.len() {
 		let v: i32 = input[i].try_into().unwrap();
-		total += v * pat[i];
+		total += v * patterns[output_pos][i];
 	}
 
 	(total % 10).abs().try_into().unwrap()
