@@ -1,0 +1,27 @@
+mod input;
+
+fn main() {
+	let solution = solve(&input::puzzle_input());
+	println!("{:?}", solution);
+	// 158661360
+}
+
+fn solve(entries: &Vec<u32>) -> Option<u32> {
+	for i in 0..entries.len() {
+		for j in 0..entries.len() {
+			for k in 0..entries.len() {
+				if i != j && i != k && entries[i] + entries[j] + entries[k] == 2020 {
+					return Some(entries[i] * entries[j] * entries[k])
+				}
+			}
+		}
+	}
+
+	None
+}
+
+#[test]
+fn test_solve() {
+	let input = vec![1721, 979, 366, 299, 675, 1456];
+	assert_eq!(solve(&input), Some(241861950));
+}
