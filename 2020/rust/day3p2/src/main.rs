@@ -2,10 +2,11 @@ mod input;
 use std::collections::HashMap;
 
 fn main() {
-    println!("{}", n_trees_visited(&Grid::parse(input::puzzle_input())));
+    println!("{}", solve(&Grid::parse(input::puzzle_input())));
+	// 2421944712
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 struct Coord { x: usize, y: usize }
 
 
@@ -37,8 +38,10 @@ impl Grid {
 			x: pos.x % (self.max.x + 1),
 			y: pos.y
 		};
-		let space = self.pattern.get(&adjusted).unwrap();
-		*space == '#'
+		match self.pattern.get(&adjusted) {
+			Some(c) => *c == '#',
+			None => false
+		}
 	}
 }
 
@@ -60,11 +63,15 @@ fn test_parse() {
 	assert_eq!(Grid::parse(input), expected);
 }
 
-fn n_trees_visited(grid: &Grid) -> u32 {
+fn n_trees_visited(grid: &Grid, slope: Coord) -> u32 {
 	let mut result = 0;
+	let mut pos = Coord { x: 0, y: 0 };
 
-	for y in 0..=grid.max.y {
-		if grid.tree_at(Coord { x: 3*y, y }) {
+	while pos.y <= grid.max.y {
+		pos.x += slope.x;
+		pos.y += slope.y;
+
+		if grid.tree_at(pos) {
 			result += 1;
 		}
 	}
@@ -85,5 +92,39 @@ fn test_n_trees_visited() {
 #.##...#...
 #...##....#
 .#..#...#.#");
-	assert_eq!(n_trees_visited(&grid), 7);
+	assert_eq!(n_trees_visited(&grid, Coord { x: 1, y: 1 }), 2);
+	assert_eq!(n_trees_visited(&grid, Coord { x: 3, y: 1 }), 7);
+	assert_eq!(n_trees_visited(&grid, Coord { x: 5, y: 1 }), 3);
+	assert_eq!(n_trees_visited(&grid, Coord { x: 7, y: 1 }), 4);
+	assert_eq!(n_trees_visited(&grid, Coord { x: 1, y: 2 }), 2);
+}
+
+fn solve(grid: &Grid) -> u32 {
+	static SLOPES: &[Coord; 5] = &[
+		Coord { x: 1, y: 1 },
+		Coord { x: 3, y: 1 },
+		Coord { x: 5, y: 1 },
+		Coord { x: 7, y: 1 },
+		Coord { x: 1, y: 2 },
+	];
+
+	SLOPES.iter()
+		.map(|s| n_trees_visited(&grid, *s))
+		.fold(1, |acc, n| acc * n)
+}
+
+#[test]
+fn test_solve() {
+	let grid = Grid::parse("..##.......
+#...#...#..
+.#....#..#.
+..#.#...#.#
+.#...##..#.
+..#.##.....
+.#.#.#....#
+.#........#
+#.##...#...
+#...##....#
+.#..#...#.#");
+	assert_eq!(solve(&grid), 336);
 }
