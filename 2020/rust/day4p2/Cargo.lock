@@ -10,9 +10,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "day4p1"
+name = "day4p2"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "regex",
 ]
 
