@@ -1,12 +1,23 @@
 mod input;
 
 fn main() {
-	let highest = input::puzzle_input()
+	let taken_seat_ids: Vec<u32> = input::puzzle_input()
 		.lines()
 		.map(seat_id)
-		.max().unwrap();
-	println!("{}", highest);
-	// 930
+		.collect();
+
+	let candidates: Vec<u32> = (0..=MAX_COL)
+		.flat_map(|c| (0..=MAX_ROW).map(move |r| r * 8 + c))
+		.filter(|&id| {
+			!taken_seat_ids.contains(&id) &&
+				id != 0 && taken_seat_ids.contains(&(id - 1)) && 
+				taken_seat_ids.contains(&(id + 1))
+		})
+		.collect();
+
+	assert!(candidates.len() == 1);
+	println!("{}", candidates[0]);
+	// 515
 }
 
 static MAX_ROW: u32 = 127;
