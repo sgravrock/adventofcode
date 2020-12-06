@@ -1,17 +1,27 @@
 mod input;
-use itertools::Itertools;
+use std::collections::HashSet;
 
 fn main() {
     println!("{}", solve(input::puzzle_input()));
+	 // 3122
 }
 
 fn solve(input: &str) -> usize {
 	input.split("\n\n")
 		.map(|group_input| {
-			group_input.chars()
-				.filter(|c| *c != '\n')
-				.unique()
-				.count()
+			let mut people: Vec<HashSet<char>> = group_input.lines()
+				.map(|line| line.chars().collect())
+				.collect();
+
+			let mut intersection = people.pop().unwrap();
+
+			for p in people {
+				intersection = intersection.into_iter()
+					.filter(|c| p.contains(c))
+					.collect();
+			}
+
+			intersection.len()
 		})
 		.sum()
 }
@@ -33,5 +43,5 @@ a
 a
 
 b";
-	assert_eq!(solve(input), 11);
+	assert_eq!(solve(input), 6);
 }
