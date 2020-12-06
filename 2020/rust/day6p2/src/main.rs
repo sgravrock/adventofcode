@@ -9,21 +9,16 @@ fn main() {
 fn solve(input: &str) -> usize {
 	input.split("\n\n")
 		.map(|group_input| {
-			let mut people: Vec<HashSet<char>> = group_input.lines()
-				.map(|line| line.chars().collect())
-				.collect();
-
-			let mut intersection = people.pop().unwrap();
-
-			for p in people {
-				intersection = intersection.into_iter()
-					.filter(|c| p.contains(c))
-					.collect();
-			}
-
-			intersection.len()
+			let people = group_input.lines()
+				.map(|line| line.chars().collect::<HashSet<char>>());
+			intersection(people).len()
 		})
 		.sum()
+}
+
+fn intersection<T: Iterator<Item = HashSet<char>>>(mut iter: T) -> HashSet<char> {
+	let first = iter.next().unwrap();
+	iter.fold(first, |acc, p| &p & &acc)
 }
 
 #[test]
