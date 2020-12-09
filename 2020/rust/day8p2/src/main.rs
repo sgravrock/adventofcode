@@ -2,9 +2,10 @@ mod input;
 
 fn main() {
     println!("{}", solve(input::puzzle_input()));
+	 // 552
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 struct Instruction {
 	opcode: String,
 	operand: i32,
@@ -18,15 +19,48 @@ impl Instruction {
 
 fn solve(input: &str) -> i32 {
 	let program = parse(input);
+
+	for ip in 0..program.len() {
+		let opcode = &program[ip].opcode;
+
+		if opcode != "acc" {
+			let mut updated = program.clone();
+			updated[ip].opcode = if opcode == "jmp" {
+				"nop"
+			} else {
+				"jmp"
+			}.to_string();
+			let (halted, acc) = halts(&updated);
+
+			if halted {
+				return acc;
+			}
+		}
+	}
+
+	panic!("No variants halted");
+}
+
+#[test]
+fn test_solve() {
+	let input = "nop +0
+acc +1
+jmp +4
+acc +3
+jmp -3
+acc -99
+acc +1
+jmp -4
+acc +6";
+	assert_eq!(solve(input), 8);
+}
+
+fn halts(program: &Vec<Instruction>) -> (bool, i32) {
 	let mut acc: i32 = 0;
 	let mut ip: usize = 0;
 	let mut visited: Vec<bool> = program.iter().map(|_| false).collect();
 
-	loop {
-		if visited[ip] {
-			return acc;
-		}
-
+	while ip < visited.len() && !visited[ip] {
 		visited[ip] = true;
 		let mut delta: i32 = 1;
 
@@ -42,11 +76,13 @@ fn solve(input: &str) -> i32 {
 
 		ip = ((ip as i32) + delta) as usize;
 	}
+
+	(ip == visited.len(), acc)
 }
 
 #[test]
-fn test_solve() {
-	let input = "nop +0
+fn test_halts_false() {
+	let program = parse("nop +0
 acc +1
 jmp +4
 acc +3
@@ -54,8 +90,22 @@ jmp -3
 acc -99
 acc +1
 jmp -4
-acc +6";
-	assert_eq!(solve(input), 5);
+acc +6");
+	assert_eq!(halts(&program).0, false);
+}
+
+#[test]
+fn test_halts_true() {
+	let program = parse("nop +0
+acc +1
+jmp +4
+acc +3
+jmp -3
+acc -99
+acc +1
+nop -4
+acc +6");
+	assert_eq!(halts(&program), (true, 8));
 }
 
 fn parse(input: &str) -> Vec<Instruction> {
