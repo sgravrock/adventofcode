@@ -1,10 +1,11 @@
 mod input;
-use std::fmt;
+mod grid;
 
 fn main() {
-	println!("{}", solve(parse_grid(input::puzzle_input())));
+	println!("{}", solve(grid::parse(input::puzzle_input())));
 	// 2346
 }
+
 
 #[derive(PartialEq, Clone, Copy)]
 enum Cell {
@@ -13,7 +14,7 @@ enum Cell {
 	Occupied
 }
 
-impl Cell {
+impl grid::FromChar for Cell {
 	fn from_c(c: char) -> Cell {
 		match c {
 			'.' => Cell::Floor,
@@ -24,13 +25,13 @@ impl Cell {
 	}
 }
 
-impl fmt::Debug for Cell {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(match self {
+impl grid::ToStr for Cell {
+	fn to_s(&self) -> &'static str {
+		match self {
 			Cell::Floor => ".",
 			Cell::Empty => "L",
 			Cell::Occupied => "#",
-		})
+		}
 	}
 }
 
@@ -44,7 +45,7 @@ fn solve(grid: Vec<Vec<Cell>>) -> usize {
 
 #[test]
 fn test_solve() {
-	let initial = parse_grid("
+	let initial = grid::parse("
 L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -118,7 +119,7 @@ fn adj_occupied(grid: &Vec<Vec<Cell>>, i: usize, j: usize) -> usize {
 
 #[test]
 fn test_tick() {
-	let initial = parse_grid("
+	let initial = grid::parse("
 L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -131,7 +132,7 @@ L.LLLLLL.L
 L.LLLLL.LL
 ");
 	let tick1 = tick(initial).0;
-	assert_eq!(wg(&tick1), wg(&parse_grid("
+	assert_eq_grids!(tick1, grid::parse("
 #.##.##.##
 #######.##
 #.#.#..#..
@@ -142,9 +143,9 @@ L.LLLLL.LL
 ##########
 #.######.#
 #.#####.##
-")));
+"));
 	let tick2 = tick(tick1).0;
-	assert_eq!(wg(&tick2), wg(&parse_grid("
+	assert_eq_grids!(tick2, grid::parse("
 #.LL.L#.##
 #LLLLLL.L#
 L.L.L..L..
@@ -155,21 +156,9 @@ L.L.L..L..
 #LLLLLLLL#
 #.LLLLLL.L
 #.#LLLL.##
-")));	
+"));	
 }
 
-
-fn parse_grid(input: &str) -> Vec<Vec<Cell>> {
-	input
-		.lines()
-		.filter(|line| line.len() > 0)
-		.map(|line| {
-			line.chars()
-				.map(Cell::from_c)
-				.collect()
-		})
-		.collect()
-}
 
 #[test]
 fn test_parse_grid() {
@@ -181,34 +170,5 @@ L#
 		vec![Cell::Occupied, Cell::Floor],
 		vec![Cell::Empty, Cell::Occupied],
 	];
-	assert_eq!(wg(&parse_grid(input)), wg(&expected));
-}
-
-
-#[cfg(test)]
-#[derive(PartialEq)]
-struct DebugGridWrapper<'a> {
-	grid: &'a Vec<Vec<Cell>>
-}
-
-#[cfg(test)]
-fn wg(grid: &Vec<Vec<Cell>>) -> DebugGridWrapper {
-	DebugGridWrapper { grid }
-}
-
-#[cfg(test)]
-impl fmt::Debug for DebugGridWrapper<'_> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str("\n")?;
-
-		for row in self.grid {
-			for cell in row {
-				cell.fmt(f)?
-			}
-
-			f.write_str("\n")?
-		}
-
-		Ok(())
-	}
+	assert_eq_grids!(grid::parse(input), expected);
 }
