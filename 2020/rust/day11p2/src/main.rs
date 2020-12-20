@@ -3,7 +3,7 @@ mod grid;
 
 fn main() {
 	println!("{}", solve(grid::parse(input::puzzle_input())));
-	// 2346
+	// 2111
 }
 
 
@@ -57,7 +57,7 @@ LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL
 ");
-	assert_eq!(solve(initial), 37);
+	assert_eq!(solve(initial), 26);
 }
 
 fn advance_until_settled(mut grid: Vec<Vec<Cell>>) -> Vec<Vec<Cell>> {
@@ -80,10 +80,11 @@ fn tick(grid: Vec<Vec<Cell>>) -> (Vec<Vec<Cell>>, bool) {
 			(0..grid[i].len())
 				.map(|j| {
 					let c = grid[i][j];
-					if c == Cell::Empty && adj_occupied(&grid, i, j) == 0 {
+					if c == Cell::Empty && visible_occupied(&grid, i, j) == 0 {
 						any_changed = true;
 						Cell::Occupied
-					} else if c == Cell::Occupied && adj_occupied(&grid, i, j) >= 4 {
+					} else if c == Cell::Occupied
+							&& visible_occupied(&grid, i, j) >= 5 {
 						any_changed = true;
 						Cell::Empty
 					} else {
@@ -96,25 +97,46 @@ fn tick(grid: Vec<Vec<Cell>>) -> (Vec<Vec<Cell>>, bool) {
 	(result_grid, any_changed)
 }
 
-fn adj_occupied(grid: &Vec<Vec<Cell>>, i: usize, j: usize) -> usize {
-	static DELTAS: &[(i32, i32); 8] = &[
+fn visible_occupied(grid: &Vec<Vec<Cell>>, i: usize, j: usize) -> usize {
+	static DIRECTIONS: &[(isize, isize); 8] = &[
 		(-1, -1), (0, -1), (1, -1),
 		(-1, 0), (1, 0),
 		(-1, 1), (0, 1), (1, 1)
 	];
 
-	DELTAS.iter()
-		.filter(|d| {
-			let ni = i as i32 + d.0;
-			let nj = j as i32 + d.1;
-
-			if ni < 0 || nj < 0 || ni >= grid.len() as i32 || nj >= grid[i].len() as i32 {
-				false // Out of bounds
-			} else {
-				grid[ni as usize][nj as usize] == Cell::Occupied
-			}
-		})
+	DIRECTIONS.iter()
+		.filter(|d| can_see_occupied(&grid, i, j, **d))
 		.count()
+}
+
+fn can_see_occupied(
+	grid: &Vec<Vec<Cell>>,
+	i: usize,
+	j: usize,
+	dir: (isize, isize)
+)-> bool {
+	let mut ci = i as isize + dir.0;
+	let mut cj = j as isize + dir.1;
+
+	while in_bounds(&grid, ci, cj) {
+		match grid[ci as usize][cj as usize] {
+			Cell::Occupied => return true,
+			Cell::Empty => return false,
+			Cell::Floor => {}
+		}
+
+		ci += dir.0;
+		cj += dir.1;
+	}
+
+	false
+}
+
+fn in_bounds(grid: &Vec<Vec<Cell>>, i: isize, j: isize) -> bool {
+	i >= 0
+		&& j >= 0
+		&& i < grid.len() as isize
+		&& j < grid[i as usize].len() as isize 
 }
 
 #[test]
@@ -146,19 +168,18 @@ L.LLLLL.LL
 "));
 	let tick2 = tick(tick1).0;
 	assert_eq_grids!(tick2, grid::parse("
-#.LL.L#.##
-#LLLLLL.L#
+#.LL.LL.L#
+#LLLLLL.LL
 L.L.L..L..
-#LLL.LL.L#
-#.LL.LL.LL
-#.LLLL#.##
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
 ..L.L.....
-#LLLLLLLL#
+LLLLLLLLL#
 #.LLLLLL.L
-#.#LLLL.##
+#.LLLLL.L#
 "));	
 }
-
 
 #[test]
 fn test_parse_grid() {
