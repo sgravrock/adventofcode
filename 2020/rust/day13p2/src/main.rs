@@ -1,4 +1,3 @@
-use itertools::Itertools;
 mod input;
 
 fn main() {
@@ -6,28 +5,36 @@ fn main() {
 }
 
 fn solve(input: &str) -> u32 {
-	let mut lines = input.lines();
-	let earliest_departure_time: u32 = lines.next().unwrap().parse().unwrap();
-	lines.next().unwrap()
+	let bus_ids: Vec<Option<u32>> = input
 		.split(',')
-		.filter(|bus_id| *bus_id != "x")
-		.map(|bus_id| bus_id.parse::<u32>().unwrap())
-		.map(|bus_id| (bus_id, next_departure(bus_id, earliest_departure_time)))
-		.sorted_by(|a, b| Ord::cmp(&a.1, &b.1)) // by departure time
-		.map(|(bus_id, departure_time)| {
-			bus_id * (departure_time - earliest_departure_time)
-		})
-		.next()
-		.unwrap()
+		.map(|bus_id| bus_id.parse::<u32>().ok())
+		.collect();
+
+	let mut t = bus_ids[0].unwrap();
+
+	while !valid_solution(&bus_ids, t) {
+		t += bus_ids[0].unwrap();
+	}
+
+	t
 }
 
-fn next_departure(bus_id: u32, earliest_departure_time: u32) -> u32 {
-	earliest_departure_time + bus_id - earliest_departure_time % bus_id
+fn valid_solution(bus_ids: &Vec<Option<u32>>, time: u32) -> bool {
+	for i in 1..bus_ids.len() {
+		match bus_ids[i] {
+			None => {},
+			Some(id) => {
+				if (time + i as u32) % id != 0 {
+					return false;
+				}
+			}
+		}
+	}
+
+	true
 }
 
 #[test]
 fn test_solve() {
-	let input = "939
-7,13,x,x,59,x,31,19";
-	assert_eq!(solve(input), 295);
+	assert_eq!(solve("7,13,x,x,59,x,31,19"), 1068781);
 }
