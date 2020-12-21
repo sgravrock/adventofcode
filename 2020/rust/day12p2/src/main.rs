@@ -4,40 +4,52 @@ fn main() {
     println!("{}", solve(input::puzzle_input()));
 }
 
+#[derive(PartialEq, Debug)]
+struct State {
+	x: i32,
+	y: i32,
+	heading: i32, // degrees
+}
+
 fn solve(input: &str) -> i32 {
-	let mut x = 0;
-	let mut y = 0;
-	let mut heading = 90; // degrees
+	let initial_state = State {
+		x: 0,
+		y: 0,
+		heading: 90
+	};
 
-	for line in input.lines() {
-		let mut chars = line.chars();
-		let cmd = chars.next().unwrap();
-		let val = chars.collect::<String>().parse::<i32>().unwrap();
+	let end_state = input.lines().fold(initial_state, handle_instruction);
+	end_state.x.abs() + end_state.y.abs()
+}
 
-		match cmd {
-			'N' => y += val,
-			'S' => y -= val,
-			'E' => x += val,
-			'W' => x -= val,
-			'F' => {
-				match heading {
-					 0 => y += val,
-					 180 => y -= val,
-					 90 => x += val,
-					 270 => x -= val,
-					 _ => {
-					 	// The puzzle input produces other headings,
-						// but they all cancel each other out.
-					}
+fn handle_instruction(mut state: State, instruction: &str) -> State {
+	let mut chars = instruction.chars();
+	let cmd = chars.next().unwrap();
+	let val = chars.collect::<String>().parse::<i32>().unwrap();
+
+	match cmd {
+		'N' => state.y += val,
+		'S' => state.y -= val,
+		'E' => state.x += val,
+		'W' => state.x -= val,
+		'F' => {
+			match state.heading {
+				 0 => state.y += val,
+				 180 => state.y -= val,
+				 90 => state.x += val,
+				 270 => state.x -= val,
+				 _ => {
+				 	// The puzzle input produces other headings,
+					// but they all cancel each other out.
 				}
-			},
-			'L' => heading = normalize_heading(heading - val),
-			'R' => heading = normalize_heading(heading + val),
-			_ => panic!("Don't know how to '{}'", cmd)
-		}
+			}
+		},
+		'L' => state.heading = normalize_heading(state.heading - val),
+		'R' => state.heading = normalize_heading(state.heading + val),
+		_ => panic!("Don't know how to '{}'", cmd)
 	}
 
-	x.abs() + y.abs()
+	state
 }
 
 fn normalize_heading(degrees: i32) -> i32 {
