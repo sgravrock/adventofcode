@@ -4,27 +4,46 @@ fn main() {
 	println!("{}", solve(input::puzzle_input()));
 }
 
-fn solve(input: &str) -> u32 {
-	let bus_ids: Vec<Option<u32>> = input
+fn solve(input: &str) -> u64 {
+	let bus_ids: Vec<Option<u64>> = input
 		.split(',')
-		.map(|bus_id| bus_id.parse::<u32>().ok())
+		.map(|bus_id| bus_id.parse::<u64>().ok())
 		.collect();
 
-	let mut t = bus_ids[0].unwrap();
+	let largest_i = index_of_largest(&bus_ids);
+	let largest_id = bus_ids[largest_i].unwrap();
+	let mut t = largest_id;
 
-	while !valid_solution(&bus_ids, t) {
-		t += bus_ids[0].unwrap();
+	while !valid_solution(&bus_ids, t - largest_i as u64) {
+		t += largest_id;
 	}
 
-	t
+	t - largest_i as u64
 }
 
-fn valid_solution(bus_ids: &Vec<Option<u32>>, time: u32) -> bool {
+fn index_of_largest(bus_ids: &Vec<Option<u64>>) -> usize {
+	let mut result = 0;
+
 	for i in 1..bus_ids.len() {
 		match bus_ids[i] {
 			None => {},
 			Some(id) => {
-				if (time + i as u32) % id != 0 {
+				if id > bus_ids[result].unwrap() {
+					result = i;
+				}
+			}
+		}
+	}
+
+	result
+}
+
+fn valid_solution(bus_ids: &Vec<Option<u64>>, time: u64) -> bool {
+	for i in 0..bus_ids.len() {
+		match bus_ids[i] {
+			None => {},
+			Some(id) => {
+				if (time + i as u64) % id != 0 {
 					return false;
 				}
 			}
