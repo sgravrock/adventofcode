@@ -1,9 +1,14 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
+#[cfg(test)]
+use std::collections::HashSet;
+#[cfg(test)]
+use std::iter::FromIterator;
 mod input;
 
 fn main() {
 	println!("{}", solve(input::puzzle_input()));
+	// 3885232834169
 }
 
 fn solve(input: &str) -> u64 {
@@ -32,11 +37,14 @@ impl Machine {
 			if lhs == "mask" {
 				self.mask = Mask::parse(rhs);
 			} else {
-				let addr: u64 = lhs.replace("mem[", "")
+				let base_addr: u64 = lhs.replace("mem[", "")
 					.replace("]", "")
 					.parse().unwrap();
 				let value: u64 = rhs.parse().unwrap();
-				self.mem[addr] = self.mask.apply_to(value);
+
+				for addr in self.mask.apply_to(base_addr) {
+					self.mem[addr] = value;
+				}
 			}
 		}
 	}
@@ -70,53 +78,65 @@ impl IndexMut<u64> for Mem {
 
 #[derive(PartialEq, Debug)]
 struct Mask {
-	bits: (u64, u64)
+	set_bits: u64,
+	floating_bits: u64,
 }
 
 impl Mask {
 	fn new() -> Mask {
-		Mask { bits: (0, 0) }
+		Mask { set_bits: 0, floating_bits: 0 }
 	}
 
 	fn parse(input: &str) -> Mask {
-		let mut bits = (0, 0);
+		let mut set_bits = 0;
+		let mut floating_bits = 0;
 	
 		for (i, c) in input.chars().enumerate() {
 			match c {
-				'0' => bits.0 |= 1 << (35 - i),
-				'1' => bits.1 |= 1 << (35 - i),
-				'X' => {},
+				'0' => {},
+				'1' => set_bits |= 1 << (35 - i),
+				'X' => floating_bits |= 1 << (35 - i),
 				_ => panic!("Unexpected '{}' in mask", c)
 			};
 		}
 	
-		Mask { bits }
+		assert!(set_bits & floating_bits == 0);
+		Mask { set_bits, floating_bits }
 	}
 
-	fn apply_to(&self, value: u64) -> u64 {
-		(value & !self.bits.0) | self.bits.1
-	}
-}
+	fn apply_to(&self, value: u64) -> Vec<u64> {
+		let known_bits = value | self.set_bits;
+		let mut result = vec![known_bits];
 
-#[test]
-fn test_solve() {
-	let input = "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
-mem[8] = 11
-mem[7] = 101
-mem[8] = 0";
-	assert_eq!(solve(input), 165);
+		for i in 0..36 {
+			if self.floating_bits & (1 << i)  != 0 {
+				let n = result.len();
+
+				for j in 0..n {
+
+					if result[j] & (1 << i) == 0 {
+						result.push(result[j] | (1 << i));
+					} else {
+						result.push(result[j] & !(1 << i));
+					}
+				}
+			}
+		}
+		result
+	}
 }
 
 #[test]
 fn test_mask_parse() {
 	assert_eq!(
-		Mask::parse("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX10"),
-		Mask { bits: (1, 2) }
+		Mask::parse("00000000000000000000000000000000001X"),
+		Mask { floating_bits: 1, set_bits: 2 }
 	);
 }
 
 #[test]
 fn test_mask_apply() {
-	let mask = Mask::parse("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X");
-	assert_eq!(mask.apply_to(11), 73);
+	let mask = Mask::parse("000000000000000000000000000000X1001X");
+	let expected: HashSet<u64> = HashSet::from_iter(vec![26,27, 58, 59]);
+	assert_eq!(HashSet::from_iter(mask.apply_to(42)), expected);
 }
