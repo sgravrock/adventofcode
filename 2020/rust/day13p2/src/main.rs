@@ -2,6 +2,7 @@ mod input;
 
 fn main() {
 	println!("{}", solve(input::puzzle_input()));
+	// 1118684865113056
 }
 
 fn solve(input: &str) -> u64 {
