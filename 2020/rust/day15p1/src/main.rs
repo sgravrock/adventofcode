@@ -17,12 +17,13 @@ fn solve(input: Vec<u32>, n_turns: usize) -> u32 {
 fn distance(spoken: &Vec<u32>) -> Option<u32> {
 	let lastnum = spoken[spoken.len() - 1];
 
-	let ret = (0..spoken.len() - 1).rev()
-		.filter(|i| spoken[*i] == lastnum)
-		.map(|i| (spoken.len() - i - 1) as u32)
-		.next();
+	for i in (0..spoken.len() - 1).rev() {
+		if spoken[i] == lastnum {
+			return Some((spoken.len() - i - 1) as u32);
+		}
+	}
 
-	ret
+	None
 }
 
 #[test]
