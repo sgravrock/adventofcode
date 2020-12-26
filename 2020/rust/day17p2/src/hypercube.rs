@@ -68,42 +68,28 @@ impl <T> Hypercube<T>
 
 impl <T> Hypercube<T> {
 	pub fn xrange(&self) -> RangeInclusive<isize> {
-		if self.cells.len() == 0 {
-			return 0..=0;
-		}
-
-		let min = self.cells.keys().map(|c| c.x).min().unwrap();
-		let max = self.cells.keys().map(|c| c.x).max().unwrap();
-		min..=max
+		self.range(|coord| coord.x)
 	}
 
 	pub fn yrange(&self) -> RangeInclusive<isize> {
-		if self.cells.len() == 0 {
-			return 0..=0;
-		}
-
-		let min = self.cells.keys().map(|c| c.y).min().unwrap();
-		let max = self.cells.keys().map(|c| c.y).max().unwrap();
-		min..=max
+		self.range(|coord| coord.y)
 	}
 
 	pub fn zrange(&self) -> RangeInclusive<isize> {
-		if self.cells.len() == 0 {
-			return 0..=0;
-		}
-
-		let min = self.cells.keys().map(|c| c.z).min().unwrap();
-		let max = self.cells.keys().map(|c| c.z).max().unwrap();
-		min..=max
+		self.range(|coord| coord.z)
 	}
 
 	pub fn wrange(&self) -> RangeInclusive<isize> {
+		self.range(|coord| coord.w)
+	}
+
+	fn range(&self, axis: impl Fn(&Coord) -> isize) -> RangeInclusive<isize> {
 		if self.cells.len() == 0 {
 			return 0..=0;
 		}
 
-		let min = self.cells.keys().map(|c| c.w).min().unwrap();
-		let max = self.cells.keys().map(|c| c.w).max().unwrap();
+		let min = self.cells.keys().map(&axis).min().unwrap();
+		let max = self.cells.keys().map(&axis).max().unwrap();
 		min..=max
 	}
 }
