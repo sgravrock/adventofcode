@@ -2,12 +2,13 @@
 extern crate lazy_static;
 mod input;
 mod grid;
-mod cube;
-use cube::{Cube, Coord};
+mod hypercube;
+use hypercube::{Hypercube, Coord};
 
 fn main() {
-	let cube = Cube::parse_plane(input::puzzle_input(), Cell::Inactive);
+	let cube = Hypercube::parse_plane(input::puzzle_input(), Cell::Inactive);
 	println!("{}", solve(cube));
+	// 1836
 }
 
 
@@ -33,7 +34,7 @@ impl grid::ToStr for Cell {
 	}
 }
 
-fn solve(mut cube: Cube<Cell>) -> usize {
+fn solve(mut cube: Hypercube<Cell>) -> usize {
 	for _ in 0..6 {
 		cube = tick(cube);
 	}
@@ -43,24 +44,27 @@ fn solve(mut cube: Cube<Cell>) -> usize {
 		.count()
 }
 
-fn tick(cube: Cube<Cell>) -> Cube<Cell> {
+fn tick(cube: Hypercube<Cell>) -> Hypercube<Cell> {
 	let xrange = cube.xrange();
 	let yrange = cube.yrange();
 	let zrange = cube.zrange();
-	let mut result = Cube::new(Cell::Inactive);
+	let wrange = cube.wrange();
+	let mut result = Hypercube::new(Cell::Inactive);
 
 	for x in (xrange.start() - 1)..=(xrange.end() + 1) {
 		for y in (yrange.start() - 1)..=(yrange.end() + 1) {
 			for z in (zrange.start() - 1)..=(zrange.end() + 1) {
-				let c = Coord {x, y, z};
-				let a = adj_active(&cube, c);
-
-				if cube[c] == Cell::Active && (a < 2 || a > 3) {
-					result[c] = Cell::Inactive;
-				} else if cube[c] == Cell::Inactive && a == 3 {
-					result[c] = Cell::Active;
-				} else {
-					result[c] = cube[c];
+				for w in (wrange.start() - 1)..=(wrange.end() + 1) {
+					let c = Coord {x, y, z, w};
+					let a = adj_active(&cube, c);
+	
+					if cube[c] == Cell::Active && (a < 2 || a > 3) {
+						result[c] = Cell::Inactive;
+					} else if cube[c] == Cell::Inactive && a == 3 {
+						result[c] = Cell::Active;
+					} else {
+						result[c] = cube[c];
+					}
 				}
 			}
 		}
@@ -69,7 +73,7 @@ fn tick(cube: Cube<Cell>) -> Cube<Cell> {
 	result
 }
 
-fn adj_active(cube: &Cube<Cell>, coord: Coord) -> usize {
+fn adj_active(cube: &Hypercube<Cell>, coord: Coord) -> usize {
 	lazy_static! {
 		static ref DELTAS: Vec<Coord> = {
 			let mut deltas = Vec::new();
@@ -77,8 +81,10 @@ fn adj_active(cube: &Cube<Cell>, coord: Coord) -> usize {
 			for x in -1..=1 {
 				for y in -1..=1 {
 					for z in -1..=1 {
-						if x != 0 || y != 0 || z != 0 {
-							deltas.push(Coord {x, y, z});
+						for w in -1..=1 {
+							if x != 0 || y != 0 || z != 0 || w != 0 {
+								deltas.push(Coord {x, y, z, w});
+							}
 						}
 					}
 				}
@@ -93,28 +99,28 @@ fn adj_active(cube: &Cube<Cell>, coord: Coord) -> usize {
 
 #[test]
 fn test_solve() {
-	let initial = Cube::parse_plane("
+	let initial = Hypercube::parse_plane("
 .#.
 ..#
 ###
 ", Cell::Inactive);
-	assert_eq!(solve(initial), 112);
+	assert_eq!(solve(initial), 848);
 }
 
 #[test]
 fn test_adj_active_single_plane() {
-	let cube = Cube::parse_plane("
+	let cube = Hypercube::parse_plane("
 .#.
 ..#
 ###
 ", Cell::Inactive);
-	assert_eq!(adj_active(&cube, Coord{x: 0, y: 0, z: 0}), 1);
-	assert_eq!(adj_active(&cube, Coord{x: 1, y: 0, z: 0}), 1);
-	assert_eq!(adj_active(&cube, Coord{x: 2, y: 0, z: 0}), 2);
-	assert_eq!(adj_active(&cube, Coord{x: 0, y: 1, z: 0}), 3);
-	assert_eq!(adj_active(&cube, Coord{x: 1, y: 1, z: 0}), 5);
-	assert_eq!(adj_active(&cube, Coord{x: 2, y: 1, z: 0}), 3);
-	assert_eq!(adj_active(&cube, Coord{x: 0, y: 2, z: 0}), 1);
-	assert_eq!(adj_active(&cube, Coord{x: 1, y: 2, z: 0}), 3);
-	assert_eq!(adj_active(&cube, Coord{x: 2, y: 2, z: 0}), 2);
+	assert_eq!(adj_active(&cube, Coord{x: 0, y: 0, z: 0, w: 0}), 1);
+	assert_eq!(adj_active(&cube, Coord{x: 1, y: 0, z: 0, w: 0}), 1);
+	assert_eq!(adj_active(&cube, Coord{x: 2, y: 0, z: 0, w: 0}), 2);
+	assert_eq!(adj_active(&cube, Coord{x: 0, y: 1, z: 0, w: 0}), 3);
+	assert_eq!(adj_active(&cube, Coord{x: 1, y: 1, z: 0, w: 0}), 5);
+	assert_eq!(adj_active(&cube, Coord{x: 2, y: 1, z: 0, w: 0}), 3);
+	assert_eq!(adj_active(&cube, Coord{x: 0, y: 2, z: 0, w: 0}), 1);
+	assert_eq!(adj_active(&cube, Coord{x: 1, y: 2, z: 0, w: 0}), 3);
+	assert_eq!(adj_active(&cube, Coord{x: 2, y: 2, z: 0, w: 0}), 2);
 }
