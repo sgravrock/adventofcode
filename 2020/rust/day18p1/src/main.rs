@@ -5,7 +5,7 @@ use crate::parser::{parse, Expression, Value, Operation, Operator};
 
 fn main() {
 	println!("{}", solve(input::puzzle_input()));
-	//50891122863118 is too high
+	// 510009915468
 }
 
 fn solve(input: &str) -> i64 {

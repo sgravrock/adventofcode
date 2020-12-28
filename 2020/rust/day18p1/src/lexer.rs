@@ -1,17 +1,18 @@
 use std::str::Chars;
+use std::iter::Rev;
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Token { Const(i32), Lparen, Rparen, Add, Mul }
 
-pub struct Lexer<'a> {
-	chars: Chars<'a>,
+pub struct ReverseLexer<'a> {
+	chars: Rev<Chars<'a>>,
 	putback: Option<Token>,
 }
 
-impl <'a> Lexer<'a> {
-	pub fn new(input: &'a str) -> Lexer<'a> {
-		Lexer {
-			chars: input.chars(),
+impl <'a> ReverseLexer<'a> {
+	pub fn new(input: &'a str) -> ReverseLexer<'a> {
+		ReverseLexer {
+			chars: input.chars().rev(),
 			putback: None
 		}
 	}
@@ -57,25 +58,27 @@ impl <'a> Lexer<'a> {
 	}
 }
 
-impl Iterator for Lexer<'_> {
+impl Iterator for ReverseLexer<'_> {
 	type Item = Token;
 
 	fn next(&mut self) -> Option<Token> {
-		self.next_from_putback().or_else(|| self.next_from_chars())
+		let r = self.next_from_putback().or_else(|| self.next_from_chars());
+		println!("lexer emitting {:?}", r);
+		r
 	}
 }
 
 #[test]
 fn test_lex() {
-	let lexer = Lexer::new("2 * (3 + 4)");
+	let lexer = ReverseLexer::new("2 * (3 + 4)");
 	let tokens: Vec<Token> = lexer.collect();
-	assert_eq!(tokens, vec![Token::Const(2), Token::Mul, Token::Lparen,
-		Token::Const(3), Token::Add, Token::Const(4), Token::Rparen]);
+	assert_eq!(tokens, vec![Token::Rparen, Token::Const(4), Token::Add,
+		Token::Const(3), Token::Lparen, Token::Mul, Token::Const(2)]);
 }
 
 #[test]
 fn test_put_back() {
-	let mut lexer = Lexer::new("2 *");
+	let mut lexer = ReverseLexer::new("* 2");
 	let t = lexer.next().unwrap();
 	assert_eq!(t, Token::Const(2));
 	lexer.put_back(t);
