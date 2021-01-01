@@ -1,99 +1,126 @@
-use crate::lexer::{ReverseLexer, Token};
+use crate::lexer::{Lexer, Token};
 
 /*
 Grammar:
+E -> E*T | T
+T -> T+F | F
+F -> (E) | const
 
-Expression -> Value MaybeOperation
-Value -> rparen Expression lparen | const
-MaybeOperation -> operator Expression | nothing
+Eliminating left recursion:
+E -> TE'
+E' -> *TE' | nothing
+T -> FT'
+T' -> +FT | nothing
+F -> (E) | const
 
-Which is of course left associative, which is the opposite of what's needed.
-The Right Thing To Do would be to write a right associative grammar, which
-would be left recursive, and then rework it to eliminate the left recursion.
-Or I could do the cheap & dirty thing: Run the lexer backwards, reverse the
-parens (did you notice that part?), and call it a day.
+This is just the standard arithmetic grammar but with the + and *
+symbols swapped.
 
-Cheap & dirty means not having to think about Chomsky Normal Form while on
-vacation. Cheap & dirty it is.
-
+Then rename E' to Mul and T' to Add, for clarity
 */
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Operator { Add, Mul }
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct Expression {
-	pub lhs: Value,
-	pub op: Option<Operation>,
+pub struct Expr {
+	pub term: Term,
+	pub mul: Option<Mul>
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Value {
-	Expression(Box<Expression>),
-	Const(i32),
+pub struct Mul {
+	pub term: Term,
+	pub mul: Option<Box<Mul>>
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Operation {
-	pub operator: Operator,
-	pub rhs: Box<Expression>,
+pub struct Term {
+	pub factor: Factor,
+	pub add: Option<Add>
 }
 
-pub fn parse(input: &str) -> Expression {
-	parse_expression(&mut ReverseLexer::new(input))
+#[derive(PartialEq, Eq, Debug)]
+pub struct Add {
+	pub factor: Factor,
+	pub add: Option<Box<Add>>
 }
 
-fn parse_expression(mut lexer: &mut ReverseLexer) -> Expression {
-	let lhs = parse_value(&mut lexer);
-	let op = parse_maybe_operation(&mut lexer);
-	Expression { lhs, op }
+#[derive(PartialEq, Eq, Debug)]
+pub enum Factor {
+	Expr(Box<Expr>), // parenthesized
+	Const(i64)
 }
 
-fn parse_value(mut lexer: &mut ReverseLexer) -> Value {
+
+pub fn parse(input: &str) -> Expr {
+	let mut lexer = Lexer::new(input);
+	let result = parse_expr(&mut lexer);
+	assert!(lexer.next().is_none());
+	result
+}
+
+fn parse_expr(mut lexer: &mut Lexer) -> Expr {
+	let term = parse_term(&mut lexer);
+	let mul = parse_mul(&mut lexer);
+	Expr { term, mul }
+}
+
+fn parse_mul(mut lexer: &mut Lexer) -> Option<Mul> {
+	let t = lexer.next();
+	match t {
+		Some(Token::Mul) => {
+			let term = parse_term(&mut lexer);
+			let mul = parse_mul(&mut lexer).map(|m| Box::new(m));
+			Some(Mul { term, mul })
+		},
+		Some(t) => {
+			lexer.put_back(t);
+			None
+		},
+		None => None
+	}
+}
+
+fn parse_term(mut lexer: &mut Lexer) -> Term {
+	let factor = parse_factor(&mut lexer);
+	let add = parse_add(&mut lexer);
+	Term { factor, add }
+}
+
+fn parse_add(mut lexer: &mut Lexer) -> Option<Add> {
+	match lexer.next() {
+		Some(Token::Add) => {
+			let factor = parse_factor(&mut lexer);
+			let add = parse_add(&mut lexer).map(|a| Box::new(a));
+			Some(Add { factor, add })
+		},
+		Some(t) => {
+			lexer.put_back(t);
+			None
+		},
+		None => None
+	}
+}
+
+fn parse_factor(mut lexer: &mut Lexer) -> Factor {
 	let t = ensure_next(&mut lexer);
 	match t {
-		Token::Const(n) => Value::Const(n),
-		Token::Rparen => {
-			let expr = parse_expression(&mut lexer);
-			require(Token::Lparen, &mut lexer);
-			Value::Expression(Box::new(expr))
+		Token::Lparen => {
+			let expr = parse_expr(&mut lexer);
+			require(Token::Rparen, &mut lexer);
+			Factor::Expr(Box::new(expr))
 		},
-		_ => panic!("Expected constant or left paren but got {:?}", t)
+		Token::Const(c) => Factor::Const(c),
+		_ => panic!("Expected lparen or const but got {:?}", t)
 	}
 }
 
-fn parse_maybe_operation(mut lexer: &mut ReverseLexer) -> Option<Operation> {
-	match lexer.next() {
-		None => None,
-		Some(t) => match t {
-			Token::Add => Some(parse_operation_rhs(&mut lexer, Operator::Add)),
-			Token::Mul => Some(parse_operation_rhs(&mut lexer, Operator::Mul)),
-			_ => {
-				lexer.put_back(t);
-				None
-			}
-		}
-	}
-}
-
-fn parse_operation_rhs(
-	mut lexer: &mut ReverseLexer,
-	operator: Operator
-) -> Operation {
-	Operation {
-		operator,
-		rhs: Box::new(parse_expression(&mut lexer))
-	}
-}
-
-fn ensure_next(lexer: &mut ReverseLexer) -> Token {
+fn ensure_next(lexer: &mut Lexer) -> Token {
 	match lexer.next() {
 		Some(t) => t,
 		None => panic!("Unexpected end of input")
 	}
 }
 
-fn require(expected: Token, mut lexer: &mut ReverseLexer) {
+fn require(expected: Token, mut lexer: &mut Lexer) {
 	let actual = ensure_next(&mut lexer);
 
 	if actual != expected {
@@ -104,81 +131,36 @@ fn require(expected: Token, mut lexer: &mut ReverseLexer) {
 #[test]
 fn test_parse_simple() {
 	let input = "2 + 3";
-	let expected = Expression {
-		lhs: Value::Const(3),
-		op: Some(Operation {
-			operator: Operator::Add,
-			rhs: Box::new(Expression {
-				lhs: Value::Const(2),
-				op: None
+	let expected = Expr {
+		term: Term {
+			factor: Factor::Const(2),
+			add: Some(Add {
+				factor: Factor::Const(3),
+				add: None
 			})
-		})
+		},
+		mul: None
 	};
 	assert_eq!(parse(input), expected);
 }
 
 #[test]
-fn test_parse() {
-	let input = "(2 * (3 + 4)) + (4 * 5)";
-	let expected = Expression {
-		lhs: Value::Expression(Box::new(Expression {
-			lhs: Value::Const(5),
-			op: Some(Operation {
-				operator: Operator::Mul,
-				rhs: Box::new(Expression {
-					lhs: Value::Const(4),
-					op: None
-				})
+fn test_parse_precedence() {
+	let input = "1 + 2 * 3";
+	let expected = Expr {
+		term: Term {
+			factor: Factor::Const(1),
+			add: Some(Add {
+				factor: Factor::Const(2),
+				add: None
 			})
-		})),
-		op: Some(Operation {
-			operator: Operator::Add,
-			rhs: Box::new(Expression {
-				lhs: Value::Expression(Box::new(Expression {
-					lhs: Value::Expression(Box::new(Expression {
-						lhs: Value::Const(4),
-						op: Some(Operation {
-							operator: Operator::Add,
-							rhs: Box::new(Expression {
-								lhs: Value::Const(3),
-								op: None
-							})
-						})
-					})),
-					op: Some(Operation {
-						operator: Operator::Mul,
-						rhs: Box::new(Expression {
-							lhs: Value::Const(2),
-							op: None
-						})
-					})
-				})),
-				op: None
-			})
-		})
-	};
-	assert_eq!(parse(input), expected);
-}
-
-
-#[test]
-fn test_parse_associates_correctly() {
-	let input = "2 * 3 + 4";
-	// Parses as (2 * 3) + 4
-	let expected = Expression {
-		lhs: Value::Const(4),
-		op: Some(Operation {
-			operator: Operator::Add,
-			rhs: Box::new(Expression {
-				lhs: Value::Const(3),
-				op: Some(Operation {
-					operator: Operator::Mul,
-					rhs: Box::new(Expression {
-						lhs: Value::Const(2),
-						op: None
-					})
-				})
-			})
+		},
+		mul: Some(Mul {
+			term: Term {
+				factor: Factor::Const(3),
+				add: None
+			},
+			mul: None
 		})
 	};
 	assert_eq!(parse(input), expected);
