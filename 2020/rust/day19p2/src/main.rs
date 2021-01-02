@@ -1,5 +1,5 @@
 mod input;
-use itertools::Itertools;
+use std::collections::HashMap;
 
 fn main() {
 	let (grammar, messages) = parse_input(input::puzzle_input());
@@ -7,6 +7,7 @@ fn main() {
 		.filter(|m| grammar.matches(m, 0))
 		.count();
 	println!("{}", n_matches);
+	// 263
 }
 
 fn parse_input<'a>(input: &'a str) -> (Grammar, Vec<&'a str>) {
@@ -18,7 +19,7 @@ fn parse_input<'a>(input: &'a str) -> (Grammar, Vec<&'a str>) {
 
 #[derive(PartialEq, Eq, Debug)]
 struct Grammar {
-	rules: Vec<Vec<Production>>
+	rules: HashMap<usize, Vec<Production>>
 }
 
 impl Grammar {
@@ -30,9 +31,8 @@ impl Grammar {
 				let rest = tokens.next().unwrap();
 				(i, rest)
 			})
-			.sorted_by_key(|(i, _)| i.clone())
-			.map(|(_, s)| {
-				s.split(" | ")
+			.map(|(i, s)| {
+				let rule = s.split(" | ")
 					.map(|p| {
 						if p.contains("\"") {
 							let c = p.replace("\"", "").chars().next().unwrap();
@@ -44,7 +44,8 @@ impl Grammar {
 							Production::Nonterminal(is)
 						}
 					})
-					.collect()
+					.collect();
+				(i, rule)
 			})
 			.collect();
 		Grammar { rules }
@@ -52,40 +53,37 @@ impl Grammar {
 
 	fn matches(&self, msg: &str, rule_ix: usize) -> bool {
 		let chars = msg.chars().collect();
-		match self.matches2(rule_ix, &chars, 0) {
-			None => false,
-			Some(n) => n == msg.len()
-		}
+		self.matches2(rule_ix, &chars, 0)
+			.iter()
+			.any(|next_char_ix| *next_char_ix == msg.len())
 	}
 
 	fn matches2(
 		&self, rule_ix: usize,
 		chars: &Vec<char>,
 		char_ix: usize
-) -> Option<usize> {
-		self.rules[rule_ix].iter()
-			.filter_map(|production| {
+) -> Vec<usize> {
+		self.rules[&rule_ix].iter()
+			.flat_map(|production| {
 				match production {
 					Production::Terminal(c) => {
-						if chars[char_ix] == *c {
-							Some(char_ix + 1)
+						if char_ix < chars.len() && chars[char_ix] == *c {
+							vec![char_ix + 1]
 						} else {
-							None
+							vec![]
 						}
 					},
 					Production::Nonterminal(rule_ixs) => {
 						rule_ixs.iter()
-							.fold(Some(char_ix), |maybe_ci, ri| {
-								match maybe_ci {
-									Some(ci) => self.matches2(*ri, &chars, ci),
-									None => None
-								}
-							})
+							.fold(vec![char_ix], |char_ixs, ri| {
+								char_ixs.iter()
+									.flat_map(|ci| self.matches2(*ri, &chars, *ci))
+									.collect()
+								})
 					}
 				}
 			})
-			.take(1)
-			.next()
+			.collect()
 	}
 }
 
@@ -97,28 +95,25 @@ enum Production {
 
 #[test]
 fn test_grammar_parse() {
-	let expected = Grammar {
-		rules: vec![
-			vec![ // 0
-				Production::Nonterminal(vec![2, 1, 3]),
-			],
-			vec![ // 1
-				Production::Nonterminal(vec![2, 3]),
-				Production::Nonterminal(vec![3, 2]),
-			],
-			vec![ // 2
-				Production::Terminal('a'),
-			],
-			vec![ // 3
-				Production::Terminal('b'),
-			],
-		]
-	};
+	let mut expected_rules: HashMap<usize, Vec<Production>> = HashMap::new();
+	expected_rules.insert(0, vec![
+		Production::Nonterminal(vec![2, 1, 3]),
+	]);
+	expected_rules.insert(1, vec![
+		Production::Nonterminal(vec![2, 3]),
+		Production::Nonterminal(vec![3, 2]),
+	]);
+	expected_rules.insert(2, vec![
+		Production::Terminal('a'),
+	]);
+	expected_rules.insert(3, vec![
+		Production::Terminal('b'),
+	]);
 	let actual = Grammar::parse("0: 2 1 3
 1: 2 3 | 3 2
 2: \"a\"
 3: \"b\"");
-	assert_eq!(actual, expected);
+	assert_eq!(actual, Grammar { rules: expected_rules });
 }
 
 #[test]
@@ -139,4 +134,75 @@ fn test_grammar_matches() {
 	assert_eq!(grammar.matches("ababbb", 0), true);
 	assert_eq!(grammar.matches("bbabbb", 0), false);
 	assert_eq!(grammar.matches("ababbbx", 0), false);
+}
+
+#[test]
+fn test_allows_non_consecutive_rule_ixs() {
+	let (grammar, messages) = parse_input("42: 9 14 | 10 1
+9: 14 27 | 1 26
+10: 23 14 | 28 1
+1: \"a\"
+11: 42 31 | 42 11 31
+5: 1 14 | 15 1
+19: 14 1 | 14 14
+12: 24 14 | 19 1
+16: 15 1 | 14 14
+31: 14 17 | 1 13
+6: 14 14 | 1 14
+2: 1 24 | 14 4
+0: 8 11
+13: 14 3 | 1 12
+15: 1 | 14
+17: 14 2 | 1 7
+23: 25 1 | 22 14
+28: 16 1
+4: 1 1
+20: 14 14 | 1 15
+3: 5 14 | 16 1
+27: 1 6 | 14 18
+14: \"b\"
+21: 14 1 | 1 14
+25: 1 1 | 1 14
+22: 14 14
+8: 42 | 42 8
+26: 14 22 | 1 20
+18: 15 15
+7: 14 5 | 1 21
+24: 14 1
+
+abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa
+bbabbbbaabaabba
+babbbbaabbbbbabbbbbbaabaaabaaa
+aaabbbbbbaaaabaababaabababbabaaabbababababaaa
+bbbbbbbaaaabbbbaaabbabaaa
+bbbababbbbaaaaaaaabbababaaababaabab
+ababaaaaaabaaab
+ababaaaaabbbaba
+baabbaaaabbaaaababbaababb
+abbbbabbbbaaaababbbbbbaaaababb
+aaaaabbaabaaaaababaa
+aaaabbaaaabbaaa
+aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
+babaaabbbaaabaababbaabababaaab
+aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba");
+	let expected_matches = vec![
+		"bbabbbbaabaabba",
+		"babbbbaabbbbbabbbbbbaabaaabaaa",
+		"aaabbbbbbaaaabaababaabababbabaaabbababababaaa",
+		"bbbbbbbaaaabbbbaaabbabaaa",
+		"bbbababbbbaaaaaaaabbababaaababaabab",
+		"ababaaaaaabaaab",
+		"ababaaaaabbbaba",
+		"baabbaaaabbaaaababbaababb",
+		"abbbbabbbbaaaababbbbbbaaaababb",
+		"aaaaabbaabaaaaababaa",
+		"aaaabbaabbaaaaaaabbbabbbaaabbaabaaa",
+		"aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"
+	];
+	let actual_matches: Vec<&str> = messages.iter()
+		.filter(|m| grammar.matches(m, 0))
+		.map(|m| *m)
+		.collect();
+	assert_eq!(actual_matches, expected_matches);
+
 }
