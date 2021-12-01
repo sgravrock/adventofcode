@@ -1,31 +1,8 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
-def sum_window(a, max_ix)
-	n = 0
-	start = max_ix - 2
-	if start < 0
-		start = 0
-	end
-
-	(start..max_ix).each do |i|
-		n += a[i]
-	end
-
-	n
-end
-
-result = 0
 nums = DATA.read.split("\n").map {|s| s.to_i}
-
-(3...nums.length).each do |i|
-	prev = sum_window(nums, i - 1)
-	curr = sum_window(nums, i)
-	if curr > prev
-		result += 1
-	end
-end
-
-puts result
+candidates = nums.each_cons(3).each_cons(2)
+puts candidates.count {|a, b| a.sum < b.sum}
 
 
 __END__
