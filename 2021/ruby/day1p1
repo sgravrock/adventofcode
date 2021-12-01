@@ -1,15 +1,9 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
-result = 0
-prev = nil
-DATA.read.split("\n").each do |s|
-	n = s.to_i
-	if !prev.nil? && n > prev
-		result += 1
-	end
-	prev = n
-end
-puts result
+puts DATA.read.split("\n")
+	.map(&:to_i)
+	.each_cons(2)
+	.count {|a, b| b > a}
 
 
 __END__
