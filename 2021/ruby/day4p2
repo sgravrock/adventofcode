@@ -9,7 +9,7 @@ class Game
 			numbers = lines.shift.split(",").map(&:to_i)
 			boards = lines.each_slice(5).map do |slice|
 				slice.map do |line|
-					line.split(/ +/).map(&:to_i)
+					line.sub(/^ +/, "").split(/ +/).map(&:to_i)
 				end
 			end
 			Game.new numbers, boards
@@ -24,18 +24,29 @@ class Game
 				(0...5).map { || false }
 			end
 		end
+		@still_playing = boards.map { || true }
 	end
 
 	def play
-		w = nil
+		boards_to_go = @boards.length
 
-		while w.nil? do
-			n = @numbers.shift
-			mark_boards n
-			w = winner
+		while boards_to_go > 0
+			winners = []
+			while winners.empty? do
+				n = @numbers.shift
+				mark_boards n
+				winners = find_winners
+			end
+
+			boards_to_go -= winners.length
+			winners.each do |w|
+				@still_playing[w] = false
+			end
 		end
 
-		[w, score(@boards[w], @marks[w], n)]
+		winners.map do |w|
+			[w, score(@boards[w], @marks[w], n)]
+		end
 	end
 
 	def mark_boards(n)
@@ -50,8 +61,10 @@ class Game
 		end
 	end
 
-	def winner
-		(0...@marks.length).find { |i| is_winner(@marks[i]) }
+	def find_winners
+		(0...@marks.length).find_all do |i|
+			@still_playing[i] && is_winner(@marks[i])
+		end
 	end
 end
 
@@ -158,9 +171,7 @@ class Tests < Microtest::Test
 			22 11 13  6  5
 			 2  0 12  3  7
 		END
-		winner, score = game.play
-		assert_equal 2, winner
-		assert_equal 4512, score
+		assert_equal [[1, 1924]], game.play
 	end
 end
 
