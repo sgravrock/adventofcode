@@ -40,10 +40,6 @@ class Grid
 	end
 
 	def counts
-		unless @counts.nil?
-			@counts
-		end
-
 		result = (0..max_y).map do ||
 			(0..max_x).map { || 0 }
 		end
@@ -54,7 +50,7 @@ class Grid
 			end
 		end
 
-		@counts = result
+		result
 	end
 
 	def max_x
