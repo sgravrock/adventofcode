@@ -95,30 +95,25 @@ class Line
 	end
 
 	def coords
-		a = ep1
-		b = ep2
-		a, b = [b, a] if ep1.y > ep2.y
+		a, b = ep1.y > ep2.y ? [ep2, ep1] : [ep1, ep2]
+		dy_range = 0..(b.y - a.y)
 
 		if is_slash
-			dy_range = 0..(b.y - a.y)
 			dy_range.map { |dy| Coord::new(a.x - dy, a.y + dy) }
 		elsif is_backslash
-			dy_range = 0..(b.y - a.y)
 			dy_range.map { |dy| Coord::new(a.x + dy, a.y + dy) }
 		elsif ep1.x == ep2.x
-			(a.y..b.y).map do |y|
-				Coord::new(ep1.x, y)
-			end
+			(a.y..b.y).map { |y| Coord::new(a.x, y) }
 		else
 			a, b = [b, a] if ep1.x > ep2.x
-			(a.x..b.x).map do |x|
-				Coord::new(x, ep1.y)
-			end
+			(a.x..b.x).map { |x| Coord::new(x, a.y) }
 		end
 	end
 end
 
 Coord = Struct.new(:x, :y)
+
+$puzzle_input = DATA.read
 
 class Tests < Microtest::Test
 	def sample_input
@@ -154,6 +149,10 @@ class Tests < Microtest::Test
 
 	def test_num_dangerous_points
 		assert_equal 12, Grid::parse(sample_input).num_dangerous_points
+	end
+
+	def test_num_dangerous_points_full_input
+		assert_equal 19374, Grid::parse($puzzle_input).num_dangerous_points
 	end
 
 	def test_line_coords_horiz_asc
@@ -194,7 +193,7 @@ class Tests < Microtest::Test
 end
 
 Microtest.run(Tests.new)
-grid = Grid::parse(DATA.read)
+grid = Grid::parse($puzzle_input)
 puts grid.num_dangerous_points
 
 
