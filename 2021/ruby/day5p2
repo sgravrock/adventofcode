@@ -17,7 +17,7 @@ class Grid
 	end
 
 	def initialize(lines)
-		@lines = lines.filter { |line| !line.is_diag }
+		@lines = lines
 	end
 
 	def num_dangerous_points
@@ -86,25 +86,32 @@ class Line
 		ep1.x != ep2.x && ep1.y != ep2.y
 	end
 
-	def coords
-		if ep1.x == ep2.x
-			yrange = if ep1.y > ep2.y
-				(ep2.y..ep1.y)
-			else
-				(ep1.y..ep2.y)
-			end
+	def is_slash
+		is_diag && !is_backslash
+	end
 
-			yrange.map do |y|
+	def is_backslash
+		is_diag && ep1.x - ep2.x == ep1.y - ep2.y
+	end
+
+	def coords
+		a = ep1
+		b = ep2
+		a, b = [b, a] if ep1.y > ep2.y
+
+		if is_slash
+			dy_range = 0..(b.y - a.y)
+			dy_range.map { |dy| Coord::new(a.x - dy, a.y + dy) }
+		elsif is_backslash
+			dy_range = 0..(b.y - a.y)
+			dy_range.map { |dy| Coord::new(a.x + dy, a.y + dy) }
+		elsif ep1.x == ep2.x
+			(a.y..b.y).map do |y|
 				Coord::new(ep1.x, y)
 			end
 		else
-			xrange = if ep1.x > ep2.x
-				(ep2.x..ep1.x)
-			else
-				(ep1.x..ep2.x)
-			end
-
-			xrange.map do |x|
+			a, b = [b, a] if ep1.x > ep2.x
+			(a.x..b.x).map do |x|
 				Coord::new(x, ep1.y)
 			end
 		end
@@ -114,8 +121,8 @@ end
 Coord = Struct.new(:x, :y)
 
 class Tests < Microtest::Test
-	def test_grid_visualize
-		input = <<~END
+	def sample_input
+		<<~END
 			0,9 -> 5,9
 			8,0 -> 0,8
 			9,4 -> 3,4
@@ -127,19 +134,26 @@ class Tests < Microtest::Test
 			0,0 -> 8,8
 			5,5 -> 8,2
 		END
+	end
+
+	def test_grid_visualize
 		expected = <<~END
-			.......1..
-			..1....1..
-			..1....1..
-			.......1..
-			.112111211
-			..........
-			..........
-			..........
-			..........
+			1.1....11.
+			.111...2..
+			..2.1.111.
+			...1.2.2..
+			.112313211
+			...1.2....
+			..1...1...
+			.1.....1..
+			1.......1.
 			222111....
 		END
-		assert_equal expected, Grid::parse(input).visualize
+		assert_equal expected, Grid::parse(sample_input).visualize
+	end
+
+	def test_num_dangerous_points
+		assert_equal 12, Grid::parse(sample_input).num_dangerous_points
 	end
 
 	def test_line_coords_horiz_asc
@@ -163,6 +177,18 @@ class Tests < Microtest::Test
 	def test_line_coords_vert_desc
 		line = Line::new(Coord::new(9, 2), Coord::new(9, 0))
 		expected = [Coord::new(9, 0), Coord::new(9, 1), Coord::new(9, 2)]
+		assert_equal expected, line.coords
+	end
+
+	def test_line_coords_slash
+		line = Line::new(Coord::new(9, 7), Coord::new(7, 9))
+		expected = [Coord::new(9, 7), Coord::new(8, 8), Coord::new(7, 9)]
+		assert_equal expected, line.coords
+	end
+
+	def test_line_coords_backslash
+		line = Line::new(Coord::new(1, 2), Coord::new(3, 4))
+		expected = [Coord::new(1, 2), Coord::new(2, 3), Coord::new(3, 4)]
 		assert_equal expected, line.coords
 	end
 end
