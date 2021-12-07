@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+def parse(input)
+	input.split(',').map(&:to_i)
+end
+
+def tick(fishes)
+	spawns = fishes
+		.filter { |f| f == 0 }
+		.map { || 8 }
+	existing = fishes.map do |f|
+		if f == 0
+			6
+		else
+			f - 1
+		end
+	end
+
+	existing + spawns
+end
+
+def num_after_80_days(fishes)
+	(1..80).each do ||
+		fishes = tick(fishes)
+	end
+
+	fishes.length
+end
+
+
+class Tests < Microtest::Test
+	def test_parse
+		assert_equal [3, 4], parse('3,4')
+	end
+	
+	def test_tick_no_spawns
+		assert_equal [2, 3], tick([3, 4])
+	end
+
+	def test_tick_spawns
+		assert_equal [6, 8], tick([0])
+	end
+
+	def test_num_after_80_days
+		assert_equal 5934, num_after_80_days([3, 4, 3, 1, 2])
+	end
+end
+
+Microtest.run(Tests.new)
+puts num_after_80_days(parse(DATA.read))
+
+
+__END__
+1,1,3,5,1,1,1,4,1,5,1,1,1,1,1,1,1,3,1,1,1,1,2,5,1,1,1,1,1,2,1,4,1,4,1,1,1,1,1,3,1,1,5,1,1,1,4,1,1,1,4,1,1,3,5,1,1,1,1,4,1,5,4,1,1,2,3,2,1,1,1,1,1,1,1,1,1,1,1,1,1,5,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,5,1,1,1,3,4,1,1,1,1,3,1,1,1,1,1,4,1,1,3,1,1,3,1,1,1,1,1,3,1,5,2,3,1,2,3,1,1,2,1,2,4,5,1,5,1,4,1,1,1,1,2,1,5,1,1,1,1,1,5,1,1,3,1,1,1,1,1,1,4,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,2,1,1,1,1,2,2,1,2,1,1,1,5,5,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,4,2,1,4,1,1,1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,5,1,1,1,1,1,1,1,1,3,1,1,3,3,1,1,1,3,5,1,1,4,1,1,1,1,1,4,1,1,3,1,1,1,1,1,1,1,1,2,1,5,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1
