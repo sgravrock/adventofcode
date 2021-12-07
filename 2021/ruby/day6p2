@@ -3,53 +3,73 @@
 require './microtest'
 
 def parse(input)
-	input.split(',').map(&:to_i)
+	r = {}
+	(0..8).each { |i| r[i] = 0 }
+	input.split(',').map(&:to_i).each do |n|
+		r[n] += 1
+	end
+	r
 end
 
 def tick(fishes)
-	spawns = fishes
-		.filter { |f| f == 0 }
-		.map { || 8 }
-	existing = fishes.map do |f|
-		if f == 0
-			6
-		else
-			f - 1
-		end
+	spawns = fishes[0]
+
+	(1..8).each do |timer|
+		fishes[timer - 1] = fishes[timer]
 	end
 
-	existing + spawns
+	fishes[6] += spawns
+	fishes[8] = spawns
 end
 
-def num_after_80_days(fishes)
-	(1..80).each do ||
-		fishes = tick(fishes)
+def num_after_days(ndays, fishes)
+	(1..ndays).each do ||
+		tick(fishes)
 	end
 
-	fishes.length
+	fishes.values.sum
 end
 
 
 class Tests < Microtest::Test
-	def test_parse
-		assert_equal [3, 4], parse('3,4')
+	def empty_fishes
+		h = {}
+		(0..7).each { |i| h[i] = 0 }
+		h
+	end
+
+	def xtest_parse
+		expected = empty_fishes
+		expected[3] = 1
+		expected[4] = 2
+		assert_equal expected, parse("4,3,4")
 	end
 	
 	def test_tick_no_spawns
-		assert_equal [2, 3], tick([3, 4])
+		fishes = parse("3,3,4")
+		expected = parse("2,2,3")
+		tick(fishes)
+		assert_equal expected, fishes
 	end
 
 	def test_tick_spawns
-		assert_equal [6, 8], tick([0])
+		fishes = parse("7,1,1,0,0,0")
+		expected = parse("6,6,6,6,0,0,8,8,8")
+		tick(fishes)
+		assert_equal expected, fishes
+	end
+
+	def test_num_after_18_days
+		assert_equal 26, num_after_days(18, parse("3,4,3,1,2"))
 	end
 
 	def test_num_after_80_days
-		assert_equal 5934, num_after_80_days([3, 4, 3, 1, 2])
+		assert_equal 5934, num_after_days(80, parse("3,4,3,1,2"))
 	end
 end
 
 Microtest.run(Tests.new)
-puts num_after_80_days(parse(DATA.read))
+puts num_after_days(256, parse(DATA.read))
 
 
 __END__
