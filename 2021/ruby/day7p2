@@ -7,17 +7,22 @@ def parse(input)
 end
 
 def cheapest_position(crab_positions)
-	puts "Got #{crab_positions.length} crabs"
 	all_positions = ((crab_positions.min)..(crab_positions.max))
 	with_cost = all_positions.map do |pos|
 		{
 			pos: pos,
-			cost: crab_positions.map { |cp| (pos - cp).abs }.sum
+			cost: crab_positions.map { |cp| cost(pos, cp) }.sum
 		}
 	end
 	with_cost.sort_by { |x| x[:cost] }.first
 end
 
+def cost(p1, p2)
+	# There's probably an obvious closed form solution to this,
+	# but it's 7 AM and I haven't had any coffee yet.
+	dist = (p1 - p2).abs
+	(1..dist).sum
+end
 
 class Tests < Microtest::Test
 	def test_parse
@@ -25,7 +30,7 @@ class Tests < Microtest::Test
 	end
 	
 	def test_cheapest_position
-		assert_equal({pos: 2, cost: 37},
+		assert_equal({pos: 5, cost: 168},
 			cheapest_position(parse("16,1,2,0,4,2,7,1,2,14")))
 	end
 end
