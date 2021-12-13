@@ -1,11 +1,71 @@
 #!/usr/bin/env ruby
 
+require 'set'
 require './microtest'
 
+Coord = Struct::new(:x, :y)
+
+class DefaultPopulatingHash
+	def initialize
+		@data = {}
+	end
+
+	def [](key)
+		@data[key] ||= Set::new
+	end
+end
+
 def solve(input)
-	low_points(parse(input))
-		.map { |h| h + 1 }
-		.sum
+	find_basins(parse(input))
+		.map { |b| b.size }
+		.sort
+		.reverse
+		.take(3)
+		.reduce(1, :*)
+end
+
+def find_basins(grid)
+	higher_neighbors = DefaultPopulatingHash::new
+	basins = []
+
+	grid.each_with_index do |row, y|
+		row.each_with_index do |height, x|
+			h = grid[y][x]
+
+			if h != 9
+				c = Coord::new(x, y)
+				all_neighbors = neighbors_of_cell(grid, c)
+				lower_neighbors = all_neighbors.filter do
+					|nc| grid[nc.y][nc.x] < grid[y][x]
+				end
+
+				if lower_neighbors.empty?
+					basins.push(c)
+				else
+					lower_neighbors.each do |nc|
+						higher_neighbors[nc].add(c)
+					end
+				end
+			end
+		end
+	end
+
+	basins.map do |b| 
+		cells_in_subbasin(b, grid, higher_neighbors)
+	end
+end
+
+def cells_in_subbasin(bottom, grid, higher_neighbors, dest=nil)
+	if dest.nil?
+		dest = Set::new
+	end
+
+	higher_neighbors[bottom].each do |nc|
+		cells_in_subbasin(nc, grid, higher_neighbors, dest)
+	end
+
+	dest.add(bottom)
+	dest
 end
 
 def parse(input)
@@ -26,13 +86,13 @@ def low_points(points)
 	result
 end
 
-def all_neighbors_higher(points, x, y)
+def neighbors_of_cell(points, c)
 	neighbors = []
-	neighbors.push(points[y - 1][x]) if y > 0
-	neighbors.push(points[y + 1][x]) if y + 1 < points.length
-	neighbors.push(points[y][x - 1]) if x + 1 > 0
-	neighbors.push(points[y][x + 1]) if x + 1 < points[y].length
-	neighbors.all? { |nv| nv > points[y][x] }
+	neighbors.push(Coord.new(c.x, c.y - 1)) if c.y > 0
+	neighbors.push(Coord.new(c.x, c.y + 1)) if c.y + 1 < points.length
+	neighbors.push(Coord.new(c.x - 1, c.y)) if c.x + 1 > 0
+	neighbors.push(Coord.new(c.x + 1, c.y)) if c.x + 1 < points[c.y].length
+	neighbors
 end
 
 class Tests < Microtest::Test
@@ -46,17 +106,13 @@ class Tests < Microtest::Test
 		END
 	end
 
-	def test_low_points
-		assert_equal [0, 1, 5, 5], low_points(parse(sample_input)).sort()
-	end
-
 	def test_solve
-		assert_equal 15, solve(sample_input)
+		assert_equal 1134, solve(sample_input)
 	end
 end
 
 Microtest.run(Tests.new)
-puts solve(DATA.read)
+puts solve(DATA.read) # 949905
 
 __END__
 5432345678989998934579789765459876765467892399767954567893212987898410456789329876710145678998765432
