@@ -2,18 +2,40 @@
 
 require './microtest'
 
-def solve(input)
-	input.split("\n")
-		.map { |line| corruption_score(line) }
+def solve(lines)
+	scores = lines
+		.map { |line| score(line) }
 		.reject { |score| score.nil? }
-		.sum
+		.sort()
+
+	scores[scores.length / 2]
 end
 
-def is_corrupted(line)
-	!corruption_score(line).nil?
+def score(line)
+	ac = autocomplete(line)
+
+	if ac.nil?
+		return nil
+	end
+
+	ac
+		.split("")
+		.map do |c|
+			case c
+			when ")"
+				1
+			when "]"
+				2
+			when "}"
+				3
+			when ">"
+				4
+			end
+		end
+		.reduce(0) { |s, cs| s * 5 + cs }
 end
 
-def corruption_score(line)
+def autocomplete(line)
 	delims = {
 		"(" => ")",
 		"[" => "]",
@@ -32,21 +54,21 @@ def corruption_score(line)
 		if delims.include?(c)
 			# an opening delimiter
 			expected.push(delims[c])
-		else 
+		else
 			# a closing delimiter
 			if c != expected.pop()
-				return scores[c]
+				return nil
 			end
 		end
 	end
 
-	return nil
+	return expected.reverse().join("")
 end
 
 
 class Tests < Microtest::Test
-	def test_is_corrupted
-		input = [
+	def sample_input
+		[
 			"[({(<(())[]>[[{[]{<()<>>",
 			"[(()[<>])]({[<{<<[]>>(",
 			"{([(<{}[<>[]}>{[]{[(<()>",
@@ -58,19 +80,47 @@ class Tests < Microtest::Test
 			"<{([([[(<>()){}]>(<<{{",
 			"<{([{{}}[<[[[<>{}]]]>[]]"
 		]
+	end
+
+	def test_autocomplete
 		expected = [
-			"{([(<{}[<>[]}>{[]{[(<()>",
-			"[[<[([]))<([[{}[[()]]]",
-			"[{[{({}]{}}([{[{{{}}([]",
-			"[<(<(<(<{}))><([]([]()",
-			"<{([([[(<>()){}]>(<<{{"
+			"}}]])})]",
+			")}>]})",
+			nil,
+			"}}>}>))))",
+			nil,
+			nil,
+			"]]}}]}]}>",
+			nil,
+			nil,
+			"])}>"
 		]
-		assert_equal expected, input.filter { |line| is_corrupted(line) }
+		assert_equal expected, sample_input.map { |line| autocomplete(line) }
+	end
+
+	def test_score
+		expected = [
+			288957,
+			5566,
+			nil,
+			1480781,
+			nil,
+			nil,
+			995444,
+			nil,
+			nil,
+			294,
+		]
+		assert_equal expected, sample_input.map { |line| score(line) }
+	end
+
+	def test_solve
+		assert_equal 288957, solve(sample_input)
 	end
 end
 
 Microtest.run(Tests.new)
-puts solve(DATA.read) # 278475
+puts solve(DATA.read.split("\n")) # 3015539998
 
 __END__
 {<<<[<(<{[[[[<<><>>({}())]<<[]{}>{<><>}>]]<({<[]{}>}<[[]{}]{[]<>}>){({{}<>}[<>[]))<({}())<{}<>>>}>]([{[<{}<>
