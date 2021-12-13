@@ -35,8 +35,8 @@ def find_basins(grid)
 			if h != 9
 				c = Coord::new(x, y)
 				all_neighbors = neighbors_of_cell(grid, c)
-				lower_neighbors = all_neighbors.filter do
-					|nc| grid[nc.y][nc.x] < grid[y][x]
+				lower_neighbors = all_neighbors.filter do |nc|
+					grid[nc.y][nc.x] < grid[y][x]
 				end
 
 				if lower_neighbors.empty?
@@ -72,18 +72,6 @@ def parse(input)
 	input
 		.split("\n")
 		.map { |line| line.split("").map(&:to_i) }
-end
-
-def low_points(points)
-	result = []
-	points.each_with_index do |row, y|
-		row.each_with_index do |height, x|
-			if all_neighbors_higher(points, x, y)
-				result.push(height)
-			end
-		end
-	end
-	result
 end
 
 def neighbors_of_cell(points, c)
