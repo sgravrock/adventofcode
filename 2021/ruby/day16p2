@@ -1,0 +1,159 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+def solve(hexstr)
+	version_sum(extract_packet(Bitstream::new(hexstr)))
+end
+
+def version_sum(packet)
+	subversions = if packet.subpackets.nil?
+		[]
+	else
+		packet.subpackets.map { |p| version_sum(p) }
+	end
+
+	packet.version + subversions.sum
+end
+
+class Bitstream
+	# Invariants:
+	# * Each element of @data is an integer with at most the first 4 bits set
+	# * The next bits to be fetched are the most significant bits (of the first
+	#   4) in @data.first
+	# * @current_bits_left is the number of usable bits still to be retrieved
+	#   from @data.first
+
+	def initialize(hexstr)
+		@data = hexstr.chars.map { |c| Integer("0x#{c}") }
+		@current_bits_left = 4
+	end
+
+	def next(nbits)
+		if @data.empty?
+			nil
+		elsif nbits > @current_bits_left
+			# The requested bits span more than one element of @data.
+			msc_nbits = @current_bits_left
+			lsc_nbits = nbits - msc_nbits
+			msc = self.next(msc_nbits)
+			lsc = self.next(lsc_nbits)
+			(msc << lsc_nbits) | lsc
+		else
+			# The requested bits will come entirely from one element.
+			result = @data.first >> (4 - nbits)
+			@current_bits_left -= nbits
+
+			if @current_bits_left == 0
+				@data.shift
+				@current_bits_left = 4
+			else
+				@data[0] = (@data[0] << nbits) & 0xF
+			end
+
+			result
+		end
+	end
+
+	def bits_remaining
+		(@data.length - 1) * 4 + @current_bits_left
+	end
+end
+
+Packet = Struct::new(:version, :type, :length_type, :subpackets)
+
+def extract_packet(bitstream)
+	version = bitstream.next(3)
+
+	if bitstream.next(3) == 4
+		extract_literal(version, bitstream)
+	else
+		extract_operator(version, bitstream)
+	end
+end
+
+def extract_literal(version, bitstream)
+	while true do
+		chunk = bitstream.next(5)
+
+		if chunk & (1 << 4) == 0
+			return Packet::new(version, :literal)
+		end
+	end
+end
+
+def extract_operator(version, bitstream)
+	subpackets = []
+
+	if bitstream.next(1) == 0
+		length_type = :total
+		length = bitstream.next(15)
+		target = bitstream.bits_remaining - length
+	
+		while bitstream.bits_remaining > target
+			subpackets << extract_packet(bitstream)
+		end
+	else
+		length_type = :num_packets
+		bitstream.next(11).times do
+			subpackets << extract_packet(bitstream)
+		end
+	end
+
+	Packet::new(version, :operator, length_type, subpackets)
+end
+
+
+class Tests < Microtest::Test
+	def test_bitstream_whole_chars
+		subject = Bitstream::new("F5")
+		assert_equal 15, subject.next(4)
+		assert_equal 5, subject.next(4)
+		assert_equal nil, subject.next(4)
+	end
+
+	def test_bitstream_partial_chars
+		subject = Bitstream::new("9")
+		assert_equal 4, subject.next(3)
+		assert_equal 1, subject.next(1)
+		assert_equal nil, subject.next(1)
+	end
+
+	def test_bitstream_span_chars
+		subject = Bitstream::new("D2")
+		assert_equal 3, subject.next(2)
+		assert_equal 4, subject.next(4)
+		assert_equal 2, subject.next(2)
+		assert_equal nil, subject.next(1)
+	end
+
+	def test_extract_packet_literal
+		stream = Bitstream::new("D2FE28")
+		result = extract_packet(stream)
+		assert_equal 6, result.version
+		assert_equal :literal, result.type
+		assert_equal 0, stream.next(3)
+	end
+
+	def test_extract_packet_operator
+		stream = Bitstream::new("38006F45291200")
+		result = extract_packet(stream)
+		assert_equal 1, result.version
+		assert_equal :operator, result.type
+		assert_equal :total, result.length_type
+		assert_equal 2, result.subpackets.length
+	end
+
+	def test_solve
+		assert_equal 16, solve("8A004A801A8002F478")
+		assert_equal 12, solve("620080001611562C8802118E34")
+		assert_equal 23, solve("C0015000016115A2E0802F182340")
+		assert_equal 31, solve("A0016C880162017C3686B18A3D4780")
+	end
+end
+
+Microtest.run(Tests.new)
+puts solve(DATA.read.chomp)
+
+__END__
+E20D7880532D4E551A5791BD7B8C964C1548CB3EC1FCA41CC00C6D50024400C202A65C00C20257C008AF70024C00810039C00C3002D400A300258040F200D6040093002CC0084003FA52DB8134DE620EC01DECC4C8A5B55E204B6610189F87BDD3B30052C01493E2DC9F1724B3C1F8DC801E249E8D66C564715589BCCF08B23CA1A00039D35FD6AC5727801500260B8801F253D467BFF99C40182004223B4458D2600E42C82D07CC01D83F0521C180273D5C8EE802B29F7C9DA1DCACD1D802469FF57558D6A65372113005E4DB25CF8C0209B329D0D996C92605009A637D299AEF06622CE4F1D7560141A52BC6D91C73CD732153BF862F39BA49E6BA8C438C010E009AA6B75EF7EE53BBAC244933A48600B025AD7C074FEB901599A49808008398142013426BD06FA00D540010C87F0CA29880370E21D42294A6E3BCF0A080324A006824E3FCBE4A782E7F356A5006A587A56D3699CF2F4FD6DF60862600BF802F25B4E96BDD26049802333EB7DDB401795FC36BD26A860094E176006A0200FC4B8790B4001098A50A61748D2DEDDF4C6200F4B6FE1F1665BED44015ACC055802B23BD87C8EF61E600B4D6BAD5800AA4E5C8672E4E401D0CC89F802D298F6A317894C7B518BE4772013C2803710004261EC318B800084C7288509E56FD6430052482340128FB37286F9194EE3D31FA43BACAF2802B12A7B83E4017E4E755E801A2942A9FCE757093005A6D1F803561007A17C3B8EE0008442085D1E8C0109E3BC00CDE4BFED737A90DC97FDAE6F521B97B4619BE17CC01D94489E1C9623000F924A7C8C77EA61E6679F7398159DE7D84C015A0040670765D5A52D060200C92801CA8A531194E98DA3CCF8C8C017C00416703665A2141008CF34EF8019A080390962841C1007217C5587E60164F81C9A5CE0E4AA549223002E32BDCEA36B2E100A160008747D8B705C001098DB13A388803F1AE304600
