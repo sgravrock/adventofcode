@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+def solve(input)
+	players = parse(input)
+	die = DeterministicDie::new
+	play(players, die)
+	# Assume 2 players
+	loser = players[0].score < players[1].score ? players[0] : players[1]
+	loser.score * die.num_rolls
+end
+
+class Player
+	attr_reader :pos, :score
+
+	def initialize(initial_pos)
+		@pos = initial_pos
+		@score = 0
+	end
+
+	def move(die)
+		distance = die.roll() + die.roll() + die.roll()
+		# Positions are 1-based, but computing the advance using 0-based
+		# positions makes handling the wrap-around easier.
+		prev = @pos
+		@pos = ((@pos + distance - 1)) % 10 + 1
+		@score += @pos
+	end
+
+	def ==(other)
+		return other.pos == @pos && other.score == @score
+	end
+
+	def inspect
+		"<Player pos=#{@pos} score=#{@score}>"
+	end
+end
+
+class DeterministicDie
+	def initialize
+		@lastval = 0
+	end
+
+	def roll
+		@lastval += 1
+		@lastval
+	end
+
+	def num_rolls
+		@lastval
+	end
+end
+
+def parse(input)
+	input.split("\n").map do |line|
+		match = /starting position: ([\d+])$/.match(line)
+		Player::new(match[1].to_i)
+	end
+end
+
+def play(players, die)
+	while true do
+		players.each do |player|
+			player.move(die)
+
+			if player.score >= 1000
+				return
+			end
+		end
+	end
+end
+
+class Tests < Microtest::Test
+	def test_parse
+		input = <<~END
+			Player 1 starting position: 8
+			Player 2 starting position: 9
+		END
+		expected = [Player::new(8), Player::new(9)]
+		assert_equal expected, parse(input)
+	end
+
+	def test_play
+		players = [Player::new(4), Player::new(8)]
+		die = DeterministicDie::new
+		play(players, die)
+		assert_equal 1000, players[0].score
+		assert_equal 745, players[1].score
+		assert_equal 993, die.num_rolls
+	end
+
+	def test_solve
+		input = <<~END
+			Player 1 starting position: 4
+			Player 2 starting position: 8
+		END
+		assert_equal 739785, solve(input)
+	end
+end
+
+Microtest.run(Tests.new)
+puts solve(DATA.read) # 512442
+
+__END__
+Player 1 starting position: 8
+Player 2 starting position: 9
