@@ -8,7 +8,8 @@ Fold = Struct::new(:axis, :offset)
 
 def solve(input)
 	paper, folds = parse(input)
-	fold_paper(paper, folds[0]).count
+	paper = folds.reduce(paper) { |p, f| fold_paper(p, f) }
+	visualize(paper)
 end
 
 def parse(input)
@@ -178,7 +179,7 @@ class Tests < Microtest::Test
 end
 
 Microtest.run(Tests.new)
-puts solve(DATA.read) # 942
+puts solve(DATA.read) # JZGUAPRB
 
 __END__
 1141,700
