@@ -3,17 +3,48 @@
 require './microtest'
 
 def solve(hexstr)
-	version_sum(extract_packet(Bitstream::new(hexstr)))
+	evaluate(extract_packet(Bitstream::new(hexstr)))
 end
 
-def version_sum(packet)
-	subversions = if packet.subpackets.nil?
-		[]
+def evaluate(packet)
+	subvals = if packet.subpackets.nil?
+		nil
 	else
-		packet.subpackets.map { |p| version_sum(p) }
+		packet.subpackets.map { |p| evaluate(p) }
 	end
 
-	packet.version + subversions.sum
+	case packet.type
+	when :literal
+		packet.value
+	when :sum
+		subvals.sum
+	when :product
+		subvals.reduce(1, :*)
+	when :min
+		subvals.min
+	when :max
+		subvals.max
+	when :greater
+		if subvals[0] > subvals[1]
+			1
+		else
+			0
+		end
+	when :less
+		if subvals[0] < subvals[1]
+			1
+		else
+			0
+		end
+	when :equal
+		if subvals[0] == subvals[1]
+			1
+		else
+			0
+		end
+	else
+		raise "Unsupported: #{packet.type}"
+	end
 end
 
 class Bitstream
@@ -60,29 +91,48 @@ class Bitstream
 	end
 end
 
-Packet = Struct::new(:version, :type, :length_type, :subpackets)
+Packet = Struct::new(:version, :type, :value, :length_type, :subpackets)
 
 def extract_packet(bitstream)
 	version = bitstream.next(3)
 
-	if bitstream.next(3) == 4
+	case bitstream.next(3)
+	when 4
 		extract_literal(version, bitstream)
+	when 0
+		extract_operator(version, :sum, bitstream)
+	when 1
+		extract_operator(version, :product, bitstream)
+	when 2
+		extract_operator(version, :min, bitstream)
+	when 3
+		extract_operator(version, :max, bitstream)
+	when 5
+		extract_operator(version, :greater, bitstream)
+	when 6
+		extract_operator(version, :less, bitstream)
+	when 7
+		extract_operator(version, :equal, bitstream)
 	else
-		extract_operator(version, bitstream)
+		raise "Unknown packet type"
 	end
 end
 
 def extract_literal(version, bitstream)
+	value = 0
+	end_mask = 1 << 4
+
 	while true do
 		chunk = bitstream.next(5)
+		value = (value << 4) | (chunk & ~end_mask)
 
-		if chunk & (1 << 4) == 0
-			return Packet::new(version, :literal)
+		if chunk & end_mask == 0
+			return Packet::new(version, :literal, value)
 		end
 	end
 end
 
-def extract_operator(version, bitstream)
+def extract_operator(version, type, bitstream)
 	subpackets = []
 
 	if bitstream.next(1) == 0
@@ -100,7 +150,7 @@ def extract_operator(version, bitstream)
 		end
 	end
 
-	Packet::new(version, :operator, length_type, subpackets)
+	Packet::new(version, type, nil, length_type, subpackets)
 end
 
 
@@ -132,6 +182,7 @@ class Tests < Microtest::Test
 		result = extract_packet(stream)
 		assert_equal 6, result.version
 		assert_equal :literal, result.type
+		assert_equal 2021, result.value
 		assert_equal 0, stream.next(3)
 	end
 
@@ -139,16 +190,19 @@ class Tests < Microtest::Test
 		stream = Bitstream::new("38006F45291200")
 		result = extract_packet(stream)
 		assert_equal 1, result.version
-		assert_equal :operator, result.type
+		assert_equal :less, result.type
 		assert_equal :total, result.length_type
 		assert_equal 2, result.subpackets.length
 	end
 
 	def test_solve
-		assert_equal 16, solve("8A004A801A8002F478")
-		assert_equal 12, solve("620080001611562C8802118E34")
-		assert_equal 23, solve("C0015000016115A2E0802F182340")
-		assert_equal 31, solve("A0016C880162017C3686B18A3D4780")
+		assert_equal 3, solve("C200B40A82")
+		assert_equal 54, solve("04005AC33890")
+		assert_equal 7, solve("880086C3E88112")
+		assert_equal 1, solve("D8005AC2A8F0")
+		assert_equal 0, solve("F600BC2D8F")
+		assert_equal 0, solve("9C005AC2F8F0")
+		assert_equal 1, solve("9C0141080250320F1802104A08")
 	end
 end
 
