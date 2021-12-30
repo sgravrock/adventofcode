@@ -1,0 +1,158 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+def solve(input)
+	target = parse(input)
+	vx = 0
+	vy = 0
+	highest = -Float::INFINITY
+
+	# There's probably a nice mathematical solution to this,
+	# but nested for loops go brrrrr
+	(0..500).each do |vx|
+		(-500..500).each do |vy|
+			highest = max(highest, attempt([vx, vy], target))
+		end
+	end
+
+	highest
+end
+
+def parse(input)
+	match = /x=([\d]+)\.\.([\d]+), y=(-?[\d]+)\.\.(-?[\d]+)/.match(input)
+	[
+		(match[1].to_i)..(match[2].to_i),
+		(match[3].to_i)..(match[4].to_i)
+	]
+end
+
+def attempt(initial_velocity, target)
+	probe = Probe::new(initial_velocity)
+	zenith = -Float::INFINITY
+	hit = false
+
+	until probe.overshot?(target)
+		zenith = max(zenith, probe.position[1])
+		if probe.in_target?(target)
+			hit = true
+		end
+
+		probe.move
+	end
+
+	if hit
+		zenith
+	else
+		-Float::INFINITY
+	end
+end
+
+def max(a, b)
+	if a > b
+		a
+	else
+		b
+	end
+end
+
+class Probe
+	attr_accessor :position, :velocity
+
+	def initialize(vel)
+		@position = [0, 0]
+		@velocity = vel
+	end
+	
+	def move
+		@position[0] += @velocity[0]
+		@position[1] += @velocity[1]
+
+		if @velocity[0] > 0
+			@velocity[0] -= 1
+		elsif @velocity[0] < 0
+			@velocity[0] += 1
+		end
+
+		@velocity[1] -= 1
+	end
+	
+	def in_target?(target)
+		target[0].include?(@position[0]) &&
+			target[1].include?(@position[1])
+	end
+	
+	def overshot?(target)
+		# Assume that all target X coords are positive
+		# and all target Y coords are negative
+		@position[0] > target[0].last || @position[1] < target[1].first
+	end
+end
+
+class Tests < Microtest::Test
+	def test_probe_move
+		subject = Probe::new([2, 0])
+		subject.move
+		assert_equal [2, 0], subject.position
+		assert_equal [1, -1], subject.velocity
+		subject.move
+		assert_equal [3, -1], subject.position
+		assert_equal [0, -2], subject.velocity
+		subject.move
+		assert_equal [3, -3], subject.position
+		assert_equal [0, -3], subject.velocity
+	end
+
+	def test_probe_move_negative_x
+		subject = Probe::new([-1, 0])
+		subject.move
+		assert_equal [-1, 0], subject.position
+		assert_equal [0, -1], subject.velocity
+	end
+	
+	def test_probe_in_target?
+		target = [20..30, -10..-5]
+		subject = Probe::new(arbitrary_velocity)
+		subject.position = [20, -10]
+		assert_equal true, subject.in_target?(target)
+		subject.position = [20, -5]
+		assert_equal true, subject.in_target?(target)
+		subject.position = [30, -10]
+		assert_equal true, subject.in_target?(target)
+		subject.position = [19, -10]
+		assert_equal false, subject.in_target?(target)
+		subject.position = [31, -10]
+		assert_equal false, subject.in_target?(target)
+		subject.position = [20, -11]
+		assert_equal false, subject.in_target?(target)
+		subject.position = [20, -4]
+		assert_equal false, subject.in_target?(target)
+	end
+	
+	def test_parse
+		input = "target area: x=269..292, y=-68..-44"
+		assert_equal [269..292, -68..-44], parse(input)
+	end
+
+	def test_attempt
+		target = [20..30, -10..-5]
+		assert_equal 3, attempt([7, 2], target)
+		assert_equal 6, attempt([6, 3], target)
+		assert_equal 0, attempt([9, 0], target)
+		assert_equal -Float::INFINITY, attempt([17, -4], target)
+	end
+	
+	def test_solve
+		assert_equal 45, solve("target area: x=20..30, y=-10..-5")
+	end
+	
+	def arbitrary_velocity
+		[0, 0]
+	end
+end
+
+Microtest.run(Tests.new)
+puts solve(DATA.read) # 2278
+
+__END__
+target area: x=269..292, y=-68..-44
