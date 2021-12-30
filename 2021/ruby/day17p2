@@ -6,17 +6,19 @@ def solve(input)
 	target = parse(input)
 	vx = 0
 	vy = 0
-	highest = -Float::INFINITY
+	n = 0
 
 	# There's probably a nice mathematical solution to this,
 	# but nested for loops go brrrrr
 	(0..500).each do |vx|
 		(-500..500).each do |vy|
-			highest = max(highest, attempt([vx, vy], target))
+			if attempt([vx, vy], target)
+				n += 1
+			end
 		end
 	end
 
-	highest
+	n
 end
 
 def parse(input)
@@ -29,23 +31,16 @@ end
 
 def attempt(initial_velocity, target)
 	probe = Probe::new(initial_velocity)
-	zenith = -Float::INFINITY
-	hit = false
 
 	until probe.overshot?(target)
-		zenith = max(zenith, probe.position[1])
 		if probe.in_target?(target)
-			hit = true
+			return true
 		end
 
 		probe.move
 	end
 
-	if hit
-		zenith
-	else
-		-Float::INFINITY
-	end
+	false
 end
 
 def max(a, b)
@@ -136,14 +131,14 @@ class Tests < Microtest::Test
 
 	def test_attempt
 		target = [20..30, -10..-5]
-		assert_equal 3, attempt([7, 2], target)
-		assert_equal 6, attempt([6, 3], target)
-		assert_equal 0, attempt([9, 0], target)
-		assert_equal -Float::INFINITY, attempt([17, -4], target)
+		assert_equal true, attempt([7, 2], target)
+		assert_equal true, attempt([6, 3], target)
+		assert_equal true, attempt([9, 0], target)
+		assert_equal false, attempt([17, -4], target)
 	end
 	
 	def test_solve
-		assert_equal 45, solve("target area: x=20..30, y=-10..-5")
+		assert_equal 112, solve("target area: x=20..30, y=-10..-5")
 	end
 	
 	def arbitrary_velocity
@@ -152,7 +147,7 @@ class Tests < Microtest::Test
 end
 
 Microtest.run(Tests.new)
-puts solve(DATA.read) # 2278
+puts solve(DATA.read) # 996
 
 __END__
 target area: x=269..292, y=-68..-44
