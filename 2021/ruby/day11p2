@@ -4,23 +4,23 @@ require 'set'
 require './microtest'
 
 def solve(input)
-	step_n(parse(input), 100)
+	grid = parse(input)
+	grid_size = grid.length * grid[0].length
+	num_steps = 0
+	last_num_flashes = -1
+
+	until last_num_flashes == grid_size
+		last_num_flashes = step(grid)
+		num_steps += 1
+	end
+
+	num_steps
 end
 
 def parse(input)
 	input.split("\n").map do |line|
 		line.chars.map(&:to_i)
 	end
-end
-
-def step_n(grid, n)
-	num_flashes = 0
-
-	n.times do ||
-		num_flashes += step(grid)
-	end
-	
-	num_flashes
 end
 
 def step(grid)
@@ -122,8 +122,8 @@ class Tests < Microtest::Test
 		assert_equal after_2, grid
 	end
 
-	def test_step_n
-		initial = <<~END
+	def test_solve
+		input = <<~END
 			5483143223
 			2745854711
 			5264556173
@@ -135,27 +135,13 @@ class Tests < Microtest::Test
 			4846848554
 			5283751526
 		END
-		after_10 = <<~END
-			0481112976
-			0031112009
-			0041112504
-			0081111406
-			0099111306
-			0093511233
-			0442361130
-			5532252350
-			0532250600
-			0032240000
-		END
-		grid = parse(initial)
 
-		assert_equal 204, step_n(grid, 10)
-		assert_equal parse(after_10), grid
+		assert_equal 195, solve(input)
 	end
 end
 
 Microtest.run(Tests.new)
-puts solve(DATA.read) # 1700
+puts solve(DATA.read) # 273
 
 __END__
 2478668324
