@@ -1,0 +1,171 @@
+#!/usr/bin/env ruby
+
+require 'set'
+require './microtest'
+
+def solve(input)
+	step_n(parse(input), 100)
+end
+
+def parse(input)
+	input.split("\n").map do |line|
+		line.chars.map(&:to_i)
+	end
+end
+
+def step_n(grid, n)
+	num_flashes = 0
+
+	n.times do ||
+		num_flashes += step(grid)
+	end
+	
+	num_flashes
+end
+
+def step(grid)
+	each_cell(grid) do |x, y|
+		grid[y][x] += 1
+	end
+
+	flashed = flash(grid)
+
+	flashed.each do |x, y|
+		grid[y][x] = 0
+	end
+
+	flashed.count
+end
+
+def flash(grid)
+	flashed = Set::new
+
+	each_cell(grid) do |x, y|
+		maybe_flash_one(grid, x, y, flashed)
+	end
+
+	flashed
+end
+
+def maybe_flash_one(grid, x, y, flashed)
+	if grid[y][x] > 9 && !flashed.include?([x, y])
+		flashed.add([x, y])
+		each_neighbor(grid, x, y) do |nx, ny|
+			grid[ny][nx] += 1
+			maybe_flash_one(grid, nx, ny, flashed)
+		end
+	end
+end
+
+def apply_neighboring_flash(grid, nx, ny, flashed)
+	
+end
+
+def each_cell(grid)
+	(0...grid.length).each do |y|
+		(0...grid[y].length).each do |x|
+			yield x, y
+		end
+	end
+end
+
+def each_neighbor(grid, x, y)
+	directions = [
+		[-1, -1], [0, -1], [1, -1],
+		[-1, 0],           [1, 0],
+		[-1, 1],  [0, 1],  [1, 1]
+	]
+
+	directions.each do |dx, dy|
+		nx = x + dx
+		ny = y + dy
+
+		if exists(grid, nx, ny)
+			yield nx, ny
+		end
+	end
+end
+
+def exists(grid, x, y)
+	y >= 0 && x >= 0 && !grid[y].nil? && !grid[y][x].nil?
+end
+
+class Tests < Microtest::Test
+	def test_step
+		initial = [
+			[1, 1, 1, 1, 1], 
+			[1, 9, 9, 9, 1], 
+			[1, 9, 1, 9, 1], 
+			[1, 9, 9, 9, 1], 
+			[1, 1, 1, 1, 1], 
+		]
+		after_1 = [
+			[3, 4, 5, 4, 3], 
+			[4, 0, 0, 0, 4], 
+			[5, 0, 0, 0, 5], 
+			[4, 0, 0, 0, 4], 
+			[3, 4, 5, 4, 3]
+		]
+		after_2 = [
+			[4, 5, 6, 5, 4],
+			[5, 1, 1, 1, 5],
+			[6, 1, 1, 1, 6],
+			[5, 1, 1, 1, 5],
+			[4, 5, 6, 5, 4],
+		]
+		grid = initial.clone()
+
+		assert_equal 9, step(grid)
+		assert_equal after_1, grid
+
+		assert_equal 0, step(grid)
+		assert_equal after_2, grid
+	end
+
+	def test_step_n
+		initial = <<~END
+			5483143223
+			2745854711
+			5264556173
+			6141336146
+			6357385478
+			4167524645
+			2176841721
+			6882881134
+			4846848554
+			5283751526
+		END
+		after_10 = <<~END
+			0481112976
+			0031112009
+			0041112504
+			0081111406
+			0099111306
+			0093511233
+			0442361130
+			5532252350
+			0532250600
+			0032240000
+		END
+		grid = parse(initial)
+
+		assert_equal 204, step_n(grid, 10)
+		assert_equal parse(after_10), grid
+	end
+end
+
+Microtest.run(Tests.new)
+puts solve(DATA.read) # 1700
+
+__END__
+2478668324
+4283474125
+1663463374
+1738271323
+4285744861
+3551311515
+8574335438
+7843525826
+1366237577
+3554687226
+
