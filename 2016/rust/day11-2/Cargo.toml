@@ -5,5 +5,5 @@ authors = ["steve <sdg@panix.com>"]
 
 [dependencies]
 time = "0.1.35"
-regex = "0.1"
+regex = "1.5"
 timebomb = "0.1.2"
