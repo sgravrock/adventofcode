@@ -2,10 +2,12 @@ const fs = require('fs');
 
 const input = fs.readFileSync(0, {encoding: 'utf8'});
 const monkeys = input.split('\n\n').map(parseMonkey);
+const maxWorry = monkeys.map(m => m.test)
+	.reduce((a, b) => a * b, 1);
 
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 10000; i++) {
 	for (const monkey of monkeys) {
-		takeTurn(monkeys, monkey);
+		takeTurn(monkeys, monkey, maxWorry);
 	}
 }
 
@@ -21,10 +23,11 @@ monkeys.sort(function(a, b) {
 
 console.log(monkeys[0].activity * monkeys[1].activity);
 
-function takeTurn(monkeys, monkey) {
+
+function takeTurn(monkeys, monkey, maxWorry) {
 	for (let worryLevel of monkey.items) {
 		eval(monkey.operation);
-		worryLevel = Math.floor(worryLevel / 3);
+		worryLevel %= maxWorry;
 		const dest = worryLevel % monkey.test === 0
 			? monkey.ifTrue
 			: monkey.ifFalse;
