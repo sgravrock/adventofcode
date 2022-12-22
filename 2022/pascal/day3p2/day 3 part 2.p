@@ -1,12 +1,9 @@
-program day3p1;
+program day3p2;
 
 	type
-		WholeLine = string[50];
+		Rucksack = string[50];
 		HalfLine = string[25];
-		Rucksack = record
-				binA: HalfLine;
-				binB: HalfLine;
-			end;
+		RucksackGroup = array[1..3] of Rucksack;
 
 { Prompts for a file and opens it using Pascal I/O, which is significantly more }
 { convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
@@ -24,33 +21,45 @@ program day3p1;
 			end;
 	end;
 
-	procedure ReadRucksack (var f: Text; var result: Rucksack);
+	procedure ReadRucksackGroup (var f: Text; var result: RucksackGroup);
 		var
-			line: WholeLine;
-			i, n, half: integer;
+			i: integer;
 	begin
-		readln(f, line);
-		n := length(line);
-		half := n div 2;
-		result.binA := copy(line, 1, half);
-		result.binB := copy(line, half + 1, half);
+		for i := 1 to 3 do
+			readln(f, result[i]);
 	end;
 
-	function FindDuplicate (a, b: HalfLine): char;
+{ Kernighan said I can't write a function that operates on strings of arbitrary length, }
+{ but it's 1991 now so I can. }
+	function Contains (haystack: string; needle: char): boolean;
 		var
-			i, j, lenA, lenB: integer;
+			i: integer;
 	begin
-		lenA := length(a);
-		lenB := length(b);
-		for i := 1 to lenA do
-			for j := 1 to lenB do
-				if a[i] = b[j] then
+		Contains := false;
+		for i := 1 to length(haystack) do
+			if haystack[i] = needle then
+				begin
+					Contains := true;
+					leave;  { and Wirth said I couldn't do this }
+				end;
+	end;
+
+	function FindBadge (var group: RucksackGroup): char;
+		var
+			i: integer;
+			c: char;
+	begin
+		for i := 1 to length(group[1]) do
+			begin
+				c := group[1][i];
+				if Contains(group[2], c) and Contains(group[3], c) then
 					begin
-						FindDuplicate := a[i];
-						Exit(FindDuplicate);
+						FindBadge := c;
+						exit(FindBadge);
 					end;
-		writeln('Fatal: did not find dupe between ', a, ' and ', b);
-		Halt;
+			end;
+		writeln('Fatal: Could not find badge');
+		halt;
 	end;
 
 	function PriorityForItem (item: char): integer;
@@ -66,16 +75,14 @@ program day3p1;
 
 	function TotalPriorities (var f: Text): integer;
 		var
-			r: Rucksack;
-			dupe: char;
+			g: RucksackGroup;
 			total: integer;
-			tmp: integer;
 	begin
 		total := 0;
 		while not eof(f) do
 			begin
-				ReadRucksack(f, r);
-				total := total + PriorityForItem(FindDuplicate(r.binA, r.binB));
+				ReadRucksackGroup(f, g);
+				total := total + PriorityForItem(FindBadge(g));
 			end;
 		TotalPriorities := total;
 	end;
