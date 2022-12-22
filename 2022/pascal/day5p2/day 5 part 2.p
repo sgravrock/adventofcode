@@ -1,4 +1,4 @@
-program day4p2;
+program day5p2;
 
 	type
 		CrateStack = record
@@ -11,7 +11,7 @@ program day4p2;
 			end;
 
 	const
-		enableDebugging = false; { enables interactive visual debugging }
+		enableDebugging = true; { enables interactive visual debugging }
 
 { Prompts for a file and opens it using Pascal I/O, which is significantly more }
 { convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
@@ -47,6 +47,15 @@ program day4p2;
 	begin
 		Pop := stack.crates[stack.sz];
 		stack.sz := stack.sz - 1;
+	end;
+
+	procedure CrateMover9001 (var dest, src: CrateStack; n: integer);
+		var
+			i: integer;
+	begin
+		for i := src.sz - n + 1 to src.sz do
+			Push(dest, src.crates[i]);
+		src.sz := src.sz - n;
 	end;
 
 	procedure Reverse (var stack: CrateStack);
@@ -147,7 +156,7 @@ program day4p2;
 
 	procedure NextMove (var f: Text; var stacks: StackList);
 		var
-			numCrates, srcIx, destIx, i: integer;
+			numCrates, srcIx, destIx: integer;
 	begin
 		consumeChars(f, length('move '));
 		read(f, numCrates);
@@ -160,8 +169,7 @@ program day4p2;
 		if enableDebugging then
 			writeln('Moving ', numCrates, ' crates from stack ', srcIx, ' to ', destIx);
 
-		for i := 1 to numCrates do
-			Push(stacks.stacks[destIx], Pop(stacks.stacks[srcIx]));
+		CrateMover9001(stacks.stacks[destIx], stacks.stacks[srcIx], numCrates);
 
 		if enableDebugging then
 			begin
