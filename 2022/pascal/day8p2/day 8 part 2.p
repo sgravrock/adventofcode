@@ -10,9 +10,15 @@ program day8p2;
 				h: array[1..maxGridSz, 1..maxGridSz] of byte;
 				sz: integer;
 			end;
+		FlexibleRange = record
+				first: integer;
+				last: integer;
+				step: integer;
+			end;
 
 
-	procedure ReadGrid (var f: Text; var grid: HeightGrid);
+	procedure ReadGrid (var f: Text;
+									var grid: HeightGrid);
 		var
 			j, i: integer;
 			line: string;
@@ -32,95 +38,113 @@ program day8p2;
 	end;
 
 
-	function ScenicScoreUp (var grid: HeightGrid; houseI, houseJ: integer): LongInt;
+	procedure ForEachInRange (var range: FlexibleRange;
+									function callback (i: integer): boolean);
 		var
-			score: LongInt;
 			i: integer;
-			blocked: boolean;
 	begin
-		score := 0;
-		blocked := false;
-		i := houseI - 1;
+		i := range.first;
 
-		while (i >= 1) and not blocked do
+		while ((range.step < 0) and (i >= range.last)) or ((range.step > 0) and (i <= range.last)) do
 			begin
-				score := score + 1;
-				if grid.h[i][houseJ] >= grid.h[houseI][houseJ] then
-					blocked := true;
-				i := i - 1;
+				if not callback(i) then
+					exit(ForEachInRange);
+				i := i + range.step;
 			end;
-
-		ScenicScoreUp := score;
 	end;
 
-
-	function ScenicScoreDown (var grid: HeightGrid; houseI, houseJ: integer): LongInt;
+	function NumUntilMismatchInclusive (var range: FlexibleRange;
+									function predicate (i: integer): boolean): integer;
 		var
-			score: LongInt;
-			i: integer;
-			blocked: boolean;
+			n: integer;
+
+		function CountingPredicate (i: integer): boolean;
+		begin
+			n := n + 1;
+			CountingPredicate := predicate(i);
+		end;
+
 	begin
-		score := 0;
-		blocked := false;
-		i := houseI + 1;
-
-		while (i <= grid.sz) and not blocked do
-			begin
-				score := score + 1;
-				if grid.h[i][houseJ] >= grid.h[houseI][houseJ] then
-					blocked := true;
-				i := i + 1;
-			end;
-
-		ScenicScoreDown := score;
+		n := 0;
+		ForEachInRange(range, CountingPredicate);
+		NumUntilMismatchInclusive := n;
 	end;
 
 
-	function ScenicScoreLeft (var grid: HeightGrid; houseI, houseJ: integer): LongInt;
+	function ScenicScoreUp (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
 		var
-			score: LongInt;
-			j: integer;
-			blocked: boolean;
+			range: FlexibleRange;
+
+		function IsNotBlocking (i: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[i][houseJ] < grid.h[houseI][houseJ];
+		end;
+
 	begin
-		score := 0;
-		blocked := false;
-		j := houseJ - 1;
-
-		while (j >= 1) and not blocked do
-			begin
-				score := score + 1;
-				if grid.h[houseI][j] >= grid.h[houseI][houseJ] then
-					blocked := true;
-				j := j - 1;
-			end;
-
-		ScenicScoreLeft := score;
+		range.first := houseI - 1;
+		range.last := 1;
+		range.step := -1;
+		ScenicScoreUp := NumUntilMismatchInclusive(range, IsNotBlocking);
 	end;
 
 
-	function ScenicScoreRight (var grid: HeightGrid; houseI, houseJ: integer): LongInt;
+	function ScenicScoreDown (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
 		var
-			score: LongInt;
-			j: integer;
-			blocked: boolean;
+			range: FlexibleRange;
+
+		function IsNotBlocking (i: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[i][houseJ] < grid.h[houseI][houseJ];
+		end;
+
 	begin
-		score := 0;
-		blocked := false;
-		j := houseJ + 1;
-
-		while (j <= grid.sz) and not blocked do
-			begin
-				score := score + 1;
-				if grid.h[houseI][j] >= grid.h[houseI][houseJ] then
-					blocked := true;
-				j := j + 1;
-			end;
-
-		ScenicScoreRight := score;
+		range.first := houseI + 1;
+		range.last := grid.sz;
+		range.step := 1;
+		ScenicScoreDown := NumUntilMismatchInclusive(range, IsNotBlocking);
 	end;
 
 
-	function ScenicScore (var grid: HeightGrid; i, j: integer): LongInt;
+	function ScenicScoreLeft (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (j: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[houseI][j] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseJ - 1;
+		range.last := 1;
+		range.step := -1;
+		ScenicScoreLeft := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScoreRight (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (j: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[houseI][j] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseJ + 1;
+		range.last := grid.sz;
+		range.step := 1;
+		ScenicScoreRight := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScore (var grid: HeightGrid;
+									i, j: integer): LongInt;
 		var
 			score: LongInt;
 	begin
