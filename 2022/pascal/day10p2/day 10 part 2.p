@@ -1,4 +1,4 @@
-program day10p1;
+program day10p2;
 
 	uses
 		FileUtils;
@@ -7,21 +7,21 @@ program day10p1;
 		CPU = record
 				clock: integer;
 				x: integer;
-				tss: LongInt;
 			end;
 
 	procedure Tick (var machine: CPU);
 		var
-			ss: LongInt;
+			pos: integer;
 	begin
+		pos := (machine.clock - 1) mod 40;
 		machine.clock := machine.clock + 1;
-		if (machine.clock <> 0) and ((machine.clock - 20) mod 40 = 0) then
-			begin
-				ss := machine.x * machine.clock;
-				write('at cycle ', machine.clock : 1, ': x=', machine.x : 1, ' ss= ', ss : 1, ', tss ', machine.tss : 1, ' -> ');
-				machine.tss := machine.tss + machine.x * machine.clock;
-				writeln(machine.tss);
-			end;
+
+		if pos = 0 then
+			writeln;
+		if (pos <= machine.x + 1) and (pos >= machine.x - 1) then
+			write('#')
+		else
+			write('.');
 	end;
 
 	procedure noop (var machine: CPU);
@@ -42,9 +42,8 @@ program day10p1;
 			operand: integer;
 			machine: CPU;
 	begin
-		machine.clock := 0;
+		machine.clock := 1;
 		machine.x := 1;
-		machine.tss := 0;
 
 		while not eof(f) do
 			begin
@@ -57,8 +56,6 @@ program day10p1;
 						addx(machine, operand);
 					end;
 			end;
-
-		writeln(machine.tss);
 	end;
 
 	var
