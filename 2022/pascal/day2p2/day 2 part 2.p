@@ -1,4 +1,15 @@
-program day2p1;
+program day2p2;
+
+	const
+		rockScore = 1;
+		paperScore = 2;
+		scissorsScore = 3;
+		rock = 'A';
+		paper = 'B';
+		scissors = 'C';
+		lose = 'X';
+		draw = 'Y';
+		win = 'Z';
 
 
 { Prompts for a file and opens it using Pascal I/O, which is significantly more }
@@ -17,56 +28,55 @@ program day2p1;
 			end;
 	end;
 
-	function ScoreForMove (opponentMove, ourMove: char): integer;
+	function ScoreForMove (opponentMove, desiredOutcome: char): integer;
 		var
 			outcomeScore: integer;
 			shapeScore: integer;
 	begin
-		case (ourMove) of
-			'X': { rock }
+		case (desiredOutcome) of
+			lose: 
 				begin
-					shapeScore := 1;
+					outcomeScore := 0;
 					case opponentMove of
-						'A': { rock }
-							outcomeScore := 3;
-						'B': { paper }
-							outcomeScore := 0;
-						'C': { scissors }
-							outcomeScore := 6;
+						rock: 
+							shapeScore := scissorsScore;
+						paper: 
+							shapeScore := rockScore;
+						scissors: 
+							shapeScore := paperScore;
 					end;
 				end;
-			'Y': { paper }
+			draw: 
 				begin
-					shapeScore := 2;
+					outcomeScore := 3;
 					case opponentMove of
-						'A': { rock }
-							outcomeScore := 6;
-						'B': { paper }
-							outcomeScore := 3;
-						'C': { scissors }
-							outcomeScore := 0;
+						rock: 
+							shapeScore := rockScore;
+						paper: 
+							shapeScore := paperScore;
+						scissors: 
+							shapeScore := scissorsScore;
 					end;
 				end;
-			'Z': { scissors }
+			win: 
 				begin
-					shapeScore := 3;
+					outcomeScore := 6;
 					case opponentMove of
-						'A': { rock }
-							outcomeScore := 0;
-						'B': { paper }
-							outcomeScore := 6;
-						'C': { scissors }
-							outcomeScore := 3;
+						rock: 
+							shapeScore := paperScore;
+						paper: 
+							shapeScore := scissorsScore;
+						scissors: 
+							shapeScore := rockScore;
 					end;
 				end;
 		end;
-{writeln(opponentMove, ', ', ourMove, ' -> ', shapeScore + outcomeScore);}
 		ScoreForMove := shapeScore + outcomeScore;
 	end;
 
 	function TotalScore (var f: Text): integer;
 		var
-			opponentMove, ourMove, space: char;
+			opponentMove, desiredOutcome, space: char;
 			score: integer;
 	begin
 		score := 0;
@@ -74,9 +84,9 @@ program day2p1;
 			begin
 				read(f, opponentMove);
 				read(f, space);
-				read(f, ourMove);
+				read(f, desiredOutcome);
 				readln(f);
-				score := score + ScoreForMove(opponentMove, ourMove);
+				score := score + ScoreForMove(opponentMove, desiredOutcome);
 			end;
 		TotalScore := score;
 	end;
