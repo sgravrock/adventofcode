@@ -1,4 +1,4 @@
-program day4p1;
+program day4p2;
 
 	type
 		Range = record
@@ -34,7 +34,7 @@ program day4p1;
 	function Overlaps (a, b: Range): boolean;
 	begin
 { There's the right way to do operator precedence in a language, and then there's this. }
-		Overlaps := ((a.first <= b.first) and (a.last >= b.last)) or ((b.first <= a.first) and (b.last >= a.last));
+		Overlaps := not ((a.last < b.first) or (a.first > b.last));
 	end;
 
 	function NextLineOverlaps (var f: Text): boolean;
