@@ -1,4 +1,7 @@
-program day1p1;
+program day1p2;
+
+	type
+		ThreeLongs = array[1..3] of LongInt;
 
 { Prompts for a file and opens it using Pascal I/O, which is significantly more }
 { convenient for line- or number-at-a-time reading than Mac Toolbox I/O }
@@ -51,20 +54,37 @@ program day1p1;
 		ReadElf := totalCalories;
 	end;
 
-	function FindElfWithMostCalories (var f: Text): LongInt;
+{ Replaces the smallest value in arr with newVal, if newVal is larger. }
+{ Pre- and post-condition: arr is sorted in descending order. }
+	procedure MaybeReplaceSmallest (var arr: ThreeLongs; newVal: LongInt);
+		var
+			i, j: Integer;
+	begin
+		for i := 1 to 3 do
+			if newVal > arr[i] then
+				begin
+					for j := 2 downto i do
+						arr[j + 1] := arr[j];
+					arr[i] := newVal;
+					leave;
+				end;
+	end;
+
+	function FindElvesWithMostCalories (var f: Text): LongInt;
 		var
 			latest: LongInt;
-			most: LongInt;
+			acc: ThreeLongs;
 	begin
-		most := 0;
+		acc[1] := 0;
+		acc[2] := 0;
+		acc[3] := 0;
 		while not eof(f) do
 			begin
 				latest := ReadElf(f);
-				if latest > most then
-					most := latest;
-				writeln('latest: ', latest, '     running max: ', most);
+				MaybeReplaceSmallest(acc, latest);
 			end;
-		FindElfWithMostCalories := most;
+		writeln('Top 3:', acc[1], ' ', acc[2], ' ', acc[3]);
+		FindElvesWithMostCalories := acc[1] + acc[2] + acc[3];
 	end;
 
 	var
@@ -74,7 +94,7 @@ program day1p1;
 begin
 	if OpenInputFile(inputFile) then
 		begin
-			result := FindElfWithMostCalories(inputFile);
+			result := FindElvesWithMostCalories(inputFile);
 			writeln('Result: ', result);
 		end
 	else
