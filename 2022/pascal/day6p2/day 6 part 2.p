@@ -1,8 +1,8 @@
-program day5p2;
+program day6p2;
 
 	type
 		Buffer = record
-				chars: array[1..4] of char;
+				chars: array[1..14] of char;
 				n: integer;
 			end;
 
@@ -26,8 +26,8 @@ program day5p2;
 		var
 			i: integer;
 	begin
-		if buf.n = 4 then
-			for i := 2 to 4 do
+		if buf.n = 14 then
+			for i := 2 to 14 do
 				buf.chars[i - 1] := buf.chars[i]
 		else
 			buf.n := buf.n + 1;
@@ -37,13 +37,24 @@ program day5p2;
 
 	function IsMarker (var buf: Buffer): boolean;
 		var
-			a, b, c, d: char;
+			seen: array[1..26] of boolean;
+			i, n: integer;
 	begin
-		a := buf.chars[1];
-		b := buf.chars[2];
-		c := buf.chars[3];
-		d := buf.chars[4];
-		IsMarker := (a <> b) and (a <> c) and (a <> d) and (b <> c) and (b <> d) and (c <> d);
+		for i := 1 to 26 do
+			seen[i] := false;
+
+		for i := 1 to 14 do
+			begin
+				n := ord(buf.chars[i]) - 96;
+				if seen[n] then
+					begin
+						IsMarker := false;
+						exit(IsMarker);
+					end;
+				seen[n] := true;
+			end;
+
+		IsMarker := true;
 	end;
 
 	procedure Solve (var f: Text);
@@ -53,9 +64,6 @@ program day5p2;
 			i: integer;
 	begin
 		buf.n := 0;
-		buf.chars[1] := '-';
-		buf.chars[2] := '-';
-		buf.chars[3] := '-';
 		i := 0;
 
 		while not eoln(f) do
