@@ -1,13 +1,18 @@
-program day7p1;
+program day7p2;
 
 	type
 		DirStack = record
 				dirs: array[1..10] of LongInt;
 				n: integer;
 			end;
+		DirSizes = record
+				sizes: array[1..255] of Longint;
+				n: integer;
+			end;
 
 	const
-		maxSmallDirSize = 100000;
+		capacity = 70000000;
+		spaceNeeded = 30000000;
 
 { Prompts for a file and opens it using Pascal I/O, which is significantly more }
 { convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
@@ -36,38 +41,59 @@ program day7p1;
 		stack.n := stack.n - 1;
 	end;
 
-	function CountSmallDirs (var f: Text): LongInt;
+	procedure PushSz (var sizes: DirSizes; newVal: LongInt);
+	begin
+		sizes.n := sizes.n + 1;
+		sizes.sizes[sizes.n] := newVal;
+	end;
+
+	function SmallestAtLeast (var sizes: DirSizes; min: LongInt): LongInt;
 		var
+			i: integer;
+			candidate: LongInt;
+	begin
+		candidate := maxLongInt;
+		for i := 1 to sizes.n do
+			if (sizes.sizes[i] < candidate) and (sizes.sizes[i] >= min) then
+				candidate := sizes.sizes[i];
+		SmallestAtLeast := candidate;
+	end;
+
+	function Sum (var sizes: DirSizes): LongInt;
+		var
+			i: integer;
+			result: LongInt;
+	begin
+		result := 0;
+		for i := 1 to sizes.n do
+			result := sizes.sizes[i];
+		Sum := result;
+	end;
+
+	procedure FindDirSizes (var f: Text; var sizes: DirSizes);
+		var
+{ TODO maybe a pointer to the top dir in the stack would help? }
 			stack: DirStack;
 			line: string;
-			nSmall: integer;
-			fileSz, result: LongInt;
+			fileSz, curDirSz: LongInt;
 
-		procedure PopAndCheck;
-			var
-				curSz: LongInt;
+		procedure RecordAndPop;
 		begin
-			curSz := stack.dirs[stack.n];
-			if curSz <= maxSmallDirSize then
-				begin
-					nSmall := nSmall + 1;
-					result := result + curSz;
-				end;
-			stack.dirs[stack.n - 1] := stack.dirs[stack.n - 1] + curSz;
+			PushSz(sizes, stack.dirs[stack.n]);
+			stack.dirs[stack.n - 1] := stack.dirs[stack.n - 1] + stack.dirs[stack.n];
 			Popd(stack);
 		end;
 
 	begin
 		stack.n := 0;
-		nSmall := 0;
-		result := 0;
+		sizes.n := 0;
 		Pushd(stack);
 		readln(f, line); { discard leading '$ cd /' }
 		while not eof(f) do
 			begin
 				readln(f, line);
 				if line = '$ cd ..' then
-					PopAndCheck
+					RecordAndPop
 				else if Pos('$ cd ', line) = 1 then
 					begin
 						Pushd(stack);
@@ -79,10 +105,21 @@ program day7p1;
 					end;
 			end;
 
-		while stack.n > 1 do
-			PopAndCheck;
+		while stack.n > 0 do
+			RecordAndPop;
+	end;
 
-		CountSmallDirs := result;
+	function SizeOfDirToRemove (var f: Text): LongInt;
+		var
+			sizes: DirSizes;
+			totalUsed, needed: LongInt;
+	begin
+		FindDirSizes(f, sizes);
+		totalUsed := Sum(sizes);
+		writeln('total used: ', totalUsed);
+		needed := spaceNeeded - (capacity - totalUsed);
+		writeln('needed: ', needed);
+		SizeOfDirToRemove := SmallestAtLeast(sizes, needed);
 	end;
 
 	var
@@ -93,7 +130,7 @@ begin
 	ShowText;
 	if OpenInputFile(inputFile) then
 		begin
-			result := CountSmallDirs(inputFile);
+			result := SizeOfDirToRemove(inputFile);
 			writeln('Result: ', result : 1);
 		end
 	else
