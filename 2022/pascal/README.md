@@ -32,6 +32,10 @@ modern implementations like FreePascal support that dialect. But it's hard to
 know for sure what I'm depending on without actually trying these out on a 
 variety of compilers.
 
+A few days use Object Pascal. That extension was and is widespread, but I
+would expect modern dialects to have departed somewhat from the 1980s/90s
+flavor.
+
 I/O is at least a little unportable in every case. Some days use `OldFileName`,
 which is a built-in function that shows the standard file open dialog. As far
 as I know it's unique to THINK Pascal. Others use Macintosh system I/O. In

@@ -1,10 +1,18 @@
 program day7p2;
 
 	type
-		DirStack = record
-				dirs: array[1..10] of LongInt;
-				n: integer;
+		LongPtr = ^LongInt;
+		DirStack = object
+				vals: array[1..10] of LongInt;
+				n: LongInt;
+
+				procedure Init;
+				procedure Push;
+				procedure Pop;
+				function Top: LongPtr;
+				function Parent: LongPtr;
 			end;
+
 		DirSizes = record
 				sizes: array[1..255] of LongInt;
 				n: integer;
@@ -29,6 +37,36 @@ program day7p2;
 				reset(f, path);
 			end;
 	end;
+
+	procedure DirStack.Init;
+	begin
+		self.n := 0;
+	end;
+
+	procedure DirStack.Push;
+	begin
+		self.n := self.n + 1;
+		self.vals[self.n] := 0;
+	end;
+
+	procedure DirStack.Pop;
+	begin
+		self.n := self.n - 1;
+	end;
+
+	function DirStack.Top: LongPtr;
+	begin
+		Top := @self.vals[self.n];
+	end;
+
+	function DirStack.Parent: LongPtr;
+	begin
+		if self.n > 1 then
+			Parent := @self.vals[self.n - 1]
+		else
+			Parent := nil;
+	end;
+
 
 	procedure PushSz (var sizes: DirSizes; newVal: LongInt);
 	begin
@@ -62,40 +100,24 @@ program day7p2;
 	procedure FindDirSizes (var f: Text; var sizes: DirSizes);
 		var
 			stack: DirStack;
-			top: ^LongInt;
-			parent: ^LongInt;
 			line: string;
 			fileSz, curDirSz: LongInt;
 
-		procedure SetPtrs;
-		begin
-			top := @stack.dirs[stack.n];
-			if stack.n > 1 then
-				parent := @stack.dirs[stack.n - 1]
-			else
-				parent := nil;
-		end;
-
 		procedure Pushd;
 		begin
-			stack.n := stack.n + 1;
-			SetPtrs;
-			top^ := 0;
+			stack.Push;
 		end;
 
 		procedure Popd;
 		begin
-			PushSz(sizes, top^);
-			parent^ := parent^ + top^;
-			stack.n := stack.n - 1;
-			SetPtrs;
+			PushSz(sizes, stack.Top^);
+			stack.Parent^ := stack.Parent^ + stack.Top^;
+			stack.Pop;
 		end;
 
 	begin
-		stack.n := 0;
+		new(DirStack(stack));
 		sizes.n := 0;
-		top := nil;
-		parent := nil;
 		Pushd;
 		readln(f, line); { discard leading '$ cd /' }
 		while not eof(f) do
@@ -110,7 +132,7 @@ program day7p2;
 				else if (Pos('dir ', line) <> 1) and (line <> '$ ls') then
 					begin
 						ReadString(line, fileSz);
-						top^ := top^ + fileSz;
+						stack.Top^ := stack.Top^ + fileSz;
 					end;
 			end;
 
