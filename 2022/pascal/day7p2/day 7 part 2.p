@@ -6,7 +6,7 @@ program day7p2;
 				n: integer;
 			end;
 		DirSizes = record
-				sizes: array[1..255] of Longint;
+				sizes: array[1..255] of LongInt;
 				n: integer;
 			end;
 
@@ -28,17 +28,6 @@ program day7p2;
 			begin
 				reset(f, path);
 			end;
-	end;
-
-	procedure Pushd (var stack: DirStack);
-	begin
-		stack.n := stack.n + 1;
-		stack.dirs[stack.n] := 0;
-	end;
-
-	procedure Popd (var stack: DirStack);
-	begin
-		stack.n := stack.n - 1;
 	end;
 
 	procedure PushSz (var sizes: DirSizes; newVal: LongInt);
@@ -72,41 +61,61 @@ program day7p2;
 
 	procedure FindDirSizes (var f: Text; var sizes: DirSizes);
 		var
-{ TODO maybe a pointer to the top dir in the stack would help? }
 			stack: DirStack;
+			top: ^LongInt;
+			parent: ^LongInt;
 			line: string;
 			fileSz, curDirSz: LongInt;
 
-		procedure RecordAndPop;
+		procedure SetPtrs;
 		begin
-			PushSz(sizes, stack.dirs[stack.n]);
-			stack.dirs[stack.n - 1] := stack.dirs[stack.n - 1] + stack.dirs[stack.n];
-			Popd(stack);
+			top := @stack.dirs[stack.n];
+			if stack.n > 1 then
+				parent := @stack.dirs[stack.n - 1]
+			else
+				parent := nil;
+		end;
+
+		procedure Pushd;
+		begin
+			stack.n := stack.n + 1;
+			SetPtrs;
+			top^ := 0;
+		end;
+
+		procedure Popd;
+		begin
+			PushSz(sizes, top^);
+			parent^ := parent^ + top^;
+			stack.n := stack.n - 1;
+			SetPtrs;
 		end;
 
 	begin
 		stack.n := 0;
 		sizes.n := 0;
-		Pushd(stack);
+		top := nil;
+		parent := nil;
+		Pushd;
 		readln(f, line); { discard leading '$ cd /' }
 		while not eof(f) do
 			begin
 				readln(f, line);
 				if line = '$ cd ..' then
-					RecordAndPop
+					Popd
 				else if Pos('$ cd ', line) = 1 then
 					begin
-						Pushd(stack);
+						Pushd;
 					end
 				else if (Pos('dir ', line) <> 1) and (line <> '$ ls') then
 					begin
 						ReadString(line, fileSz);
-						stack.dirs[stack.n] := stack.dirs[stack.n] + fileSz;
+						top^ := top^ + fileSz;
 					end;
 			end;
 
 		while stack.n > 0 do
-			RecordAndPop;
+			Popd;
 	end;
 
 	function SizeOfDirToRemove (var f: Text): LongInt;
