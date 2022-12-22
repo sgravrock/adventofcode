@@ -1,4 +1,4 @@
-program day8p1;
+program day8p2;
 	uses
 		FileUtils;
 
@@ -10,9 +10,12 @@ program day8p1;
 				h: array[1..maxGridSz, 1..maxGridSz] of byte;
 				sz: integer;
 			end;
-		VisibilityGrid = array[1..maxGridSz, 1..maxGridSz] of boolean;
-		BoolPtr = ^boolean;
-		IterationDirection = (ascending, descending);
+		FlexibleRange = record
+				first: integer;
+				last: integer;
+				step: integer;
+			end;
+
 
 	procedure ReadGrid (var f: Text;
 									var grid: HeightGrid);
@@ -35,121 +38,159 @@ program day8p1;
 	end;
 
 
-	procedure PopulateVisibility (var heights: HeightGrid;
-									var visibility: VisibilityGrid);
-
-		procedure PopulateVisibilityAlongLine (direction: iterationDirection;
-										otherAxisIx: integer;
-										function IndexToHeight (i, otherAxisIx: integer): byte;
-										function IndexToVisPtr (i, otherAxisIx: integer): BoolPtr);
-			var
-				i, endIx, step: integer;
-				h, max: byte;
-				p: BoolPtr;
-		begin
-			max := -1;
-			if direction = ascending then
-				begin
-					i := 1;
-					endIx := heights.sz;
-					step := 1;
-				end
-			else
-				begin
-					i := heights.sz;
-					endIx := 1;
-					step := -1;
-				end;
-
-			while i <> endIx do
-				begin
-					h := IndexToHeight(i, otherAxisIx);
-					if max < h then
-						begin
-							p := IndexToVisPtr(i, otherAxisIx);
-							p^ := true;
-							max := h;
-						end;
-					i := i + step;
-				end;
-		end;
-
-		function IndexToHeightH (i, j: integer): byte;
-		begin
-			IndexToHeightH := heights.h[i][j];
-		end;
-		function IndexToHeightV (i, j: integer): byte;
-		begin
-			IndexToHeightV := heights.h[j][i];
-		end;
-		function IndexToVisPtrH (i, j: integer): BoolPtr;
-		begin
-			IndexToVisPtrH := @visibility[i][j];
-		end;
-		function IndexToVisPtrV (i, j: integer): BoolPtr;
-		begin
-			IndexToVisPtrV := @visibility[j][i];
-		end;
-
+	procedure ForEachInRange (var range: FlexibleRange;
+									function callback (i: integer): boolean);
 		var
 			i: integer;
-
 	begin
-		for i := 1 to heights.sz do
+		i := range.first;
+
+		while ((range.step < 0) and (i >= range.last)) or ((range.step > 0) and (i <= range.last)) do
 			begin
-				PopulateVisibilityAlongLine(ascending, i, IndexToHeightH, IndexToVisPtrV);
-				PopulateVisibilityAlongLine(ascending, i, IndexToHeightV, IndexToVisPtrH);
-				PopulateVisibilityAlongLine(descending, i, IndexToHeightH, IndexToVisPtrV);
-				PopulateVisibilityAlongLine(descending, i, IndexToHeightV, IndexToVisPtrH);
+				if not callback(i) then
+					exit(ForEachInRange);
+				i := i + range.step;
 			end;
 	end;
 
-	procedure PrintVisibility (var visibility: VisibilityGrid;
-									sz: integer);
+	function NumUntilMismatchInclusive (var range: FlexibleRange;
+									function predicate (i: integer): boolean): integer;
+		var
+			n: integer;
+
+		function CountingPredicate (i: integer): boolean;
+		begin
+			n := n + 1;
+			CountingPredicate := predicate(i);
+		end;
+
+	begin
+		n := 0;
+		ForEachInRange(range, CountingPredicate);
+		NumUntilMismatchInclusive := n;
+	end;
+
+
+	function ScenicScoreUp (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (i: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[i][houseJ] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseI - 1;
+		range.last := 1;
+		range.step := -1;
+		ScenicScoreUp := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScoreDown (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (i: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[i][houseJ] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseI + 1;
+		range.last := grid.sz;
+		range.step := 1;
+		ScenicScoreDown := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScoreLeft (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (j: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[houseI][j] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseJ - 1;
+		range.last := 1;
+		range.step := -1;
+		ScenicScoreLeft := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScoreRight (var grid: HeightGrid;
+									houseI, houseJ: integer): LongInt;
+		var
+			range: FlexibleRange;
+
+		function IsNotBlocking (j: integer): boolean;
+		begin
+			IsNotBlocking := grid.h[houseI][j] < grid.h[houseI][houseJ];
+		end;
+
+	begin
+		range.first := houseJ + 1;
+		range.last := grid.sz;
+		range.step := 1;
+		ScenicScoreRight := NumUntilMismatchInclusive(range, IsNotBlocking);
+	end;
+
+
+	function ScenicScore (var grid: HeightGrid;
+									i, j: integer): LongInt;
+		var
+			score: LongInt;
+	begin
+{ This whole thing could be just one expression, }
+{ but THINK Pascal won't let us have line breaks within statements }
+		score := 1;
+		score := score * ScenicScoreUp(grid, i, j);
+		score := score * ScenicScoreDown(grid, i, j);
+		score := score * ScenicScoreLeft(grid, i, j);
+		score := score * ScenicScoreRight(grid, i, j);
+		ScenicScore := score;
+	end;
+
+	function HighestScenicScore (var grid: HeightGrid): LongInt;
 		var
 			i, j: integer;
+			max, cur: LongInt;
 	begin
-		for j := 1 to sz do
-			begin
-				for i := 1 to sz do
-					if visibility[i][j] then
-						write('V')
-					else
-						write('X');
-				writeln;
-			end;
+		max := -1;
+		for i := 1 to grid.sz do
+			for j := 1 to grid.sz do
+				begin
+					cur := ScenicScore(grid, i, j);
+					if cur > max then
+						max := cur;
+				end;
+
+		HighestScenicScore := max;
 	end;
 
-	function NumVisible (var visibility: VisibilityGrid;
-									sz: integer): integer;
-		var
-			i, j, result: integer;
-	begin
-		result := 0;
-		for i := 1 to sz do
-			for j := 1 to sz do
-				if visibility[i][j] then
-					result := result + 1;
-		NumVisible := result;
-	end;
 
 	var
 		inputFile: Text;
 		grid: HeightGrid;
-		visibility: VisibilityGrid;
-		result: integer;
+		result: LongInt;
 
 begin
-
 	ShowText;
 
 	if OpenInputFile(inputFile) then
 		begin
 			ReadGrid(inputFile, grid);
-			PopulateVisibility(grid, visibility);
-{PrintVisibility(visibility, grid.sz);}
-			result := NumVisible(visibility, grid.sz);
-			writeln(result : 1, ' visible trees');
+			writeln('grid size: ', grid.sz);
+			result := HighestScenicScore(grid);
+{ 31754 is too low }
+			writeln('Highest score: ', result);
 		end
 	else
 		writeln('Did not open input file');
