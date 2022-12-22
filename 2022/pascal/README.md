@@ -14,8 +14,11 @@ These programs are written for THINK Pascal 4 on Motorola 68k Macintoshes.
 
 1. Copy the source files and your puzzle input file onto the old Mac.
 2. Use Textify to convert the files.
-3. Create a new THINK Pascal project and add the source file to it.
+3. Create a new THINK Pascal project and add the source files to it.
 4. Hit CMD-g.
+
+Days 8 and later need `fileutils.p` as well as the source file(s) in their
+directories. 
 
 Most of the programs are not well-behaved Mac applications. If you build them
 and run them from the Finder, you won't have a chance to see the result. Run
