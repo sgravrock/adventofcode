@@ -1,0 +1,12 @@
+{
+  "name": "day14p1",
+  "type": "module",
+  "scripts": {
+  	"start": "serve",
+  	"test": "jasmine-browser-runner"
+  },
+  "devDependencies": {
+    "jasmine-browser-runner": "^1.2.0",
+    "serve": "^14.1.2"
+  }
+}
