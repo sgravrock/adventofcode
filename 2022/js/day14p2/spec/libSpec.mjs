@@ -11,7 +11,7 @@ describe('lib', function() {
 				minX: 498,
 				maxX: 506,
 				minY: 0,
-				maxY: 6,
+				maxY: 8,
 				cells: {
 					'498,4': 'rock',
 					'498,4': 'rock',

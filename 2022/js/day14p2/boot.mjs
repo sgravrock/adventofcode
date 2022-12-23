@@ -12,7 +12,6 @@ document.querySelector('button').addEventListener('click', async function(e) {
 	const n = await run(cave, async (changed) => {
 		if (showAnimations) {
 			showChanged(cave, table, changed);
-			// 870s RAF
 			await new Promise(res => setTimeout(res));
 		}
 	});
