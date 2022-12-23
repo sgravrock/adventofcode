@@ -1,11 +1,33 @@
 <!DOCTYPE HTML>
 <html>
 <body>
-	<label>Input: <textarea name="input"></textarea></label>
-	<br>
-	<label><input type="checkbox" checked> Animate progress (slower)</label>
-	<br>
-	<button>Go</button>
+	<form>
+		<label>Input: <textarea name="input"></textarea></label>
+		<fieldset>
+			<legend>Animations</legend>
+			<label>
+				<input type="radio" name="animations" value="all" checked>
+				All (very slow)
+			</label>
+			<label>
+				<input type="radio" name="animations" value="100">
+				Every 100 frames
+			</label>
+			<label>
+				<input type="radio" name="animations" value="200">
+				Every 200 frames
+			</label>
+			<label>
+				<input type="radio" name="animations" value="1000">
+				Every 1000 frames
+			</label>
+			<label>
+				<input type="radio" name="animations" value="none">
+				None
+			</label>
+		</fieldset>
+		<button>Go</button>
+	</form>
 	<table></table>
 	<script type="module" src="lib.mjs"></script>
 	<script type="module" src="boot.mjs"></script>
