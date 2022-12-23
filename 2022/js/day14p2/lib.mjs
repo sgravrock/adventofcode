@@ -18,6 +18,10 @@ export function parseInput(input) {
 		}
 	}
 
+	result.maxY += 2; // room for the floor
+	// Allow 1 cell margin left and right
+	result.minX--;
+	result.maxX++;
 	return result;
 }
 
@@ -63,6 +67,8 @@ function addRock(cave, x, y) {
 
 export function showCave(cave, table) {
 	table.innerHTML = '';
+	table.dataset.minX = cave.minX;
+	table.dataset.maxX = cave.maxX;
 
 	const header = document.createElement('thead');
 	table.appendChild(header);
@@ -93,6 +99,8 @@ export function showCave(cave, table) {
 }
 
 export function showChanged(cave, table, changed) {
+	expand(cave, table);
+
 	for (const {x, y} of changed) {
 		const row = table.rows[y + 1 - cave.minY]
 		const cell = row.cells[x + 1 - cave.minX]
@@ -100,8 +108,42 @@ export function showChanged(cave, table, changed) {
 	}
 }
 
+function expand(cave, table) {
+	const oldMinX = parseInt(table.dataset.minX, 10);
+	const oldMaxX = parseInt(table.dataset.maxX, 10);
+
+	for (let x = cave.minX; x < oldMinX; x++) {
+		const headerCell = document.createElement('th');
+		headerCell.textContent = x;
+		table.rows[0].insertBefore(headerCell, table.rows[0].cells[1]);
+
+		for (let j = 1; j < table.rows.length; j++) {
+			const y = j - 1;
+			const cell = document.createElement('td');
+			cell.textContent = textFor(cave, x, y);
+			table.rows[j].insertBefore(cell, table.rows[j].cells[1]);
+		}
+	}
+
+	for (let x = oldMaxX + 1; x <= cave.maxX; x++) {
+		const headerCell = document.createElement('th');
+		headerCell.textContent = x;
+		table.rows[0].appendChild(headerCell);
+
+		for (let j = 1; j < table.rows.length; j++) {
+			const y = j - 1;
+			const cell = document.createElement('td');
+			cell.textContent = textFor(cave, x, y);
+			table.rows[j].appendChild(cell);
+		}
+	}
+
+	table.dataset.minX = cave.minX;
+	table.dataset.maxX = cave.maxX;
+}
+
 function textFor(cave, x, y) {
-	switch (cave.cells[keyof(x, y)]) {
+	switch(cellAt(cave, x, y)) {
 		case 'rock': return '#';
 		case 'sand': return 'o';
 		default: return '.';
@@ -110,20 +152,16 @@ function textFor(cave, x, y) {
 
 export async function run(cave, displayCallback) {
 	let n = 0;
+	const origin = keyof(500, 0);
 
-	while (true) {
+	while (cave.cells[origin] !== 'sand') {
 		let sandX = 500;
 		let sandY = cave.minY;
 		let atRest = false;
 		let prevSand = null;
 
 		while (!atRest) {
-			if (sandY > cave.maxY) {
-				return n;
-			}
-
-
-			cave.cells[keyof(sandX, sandY)] = 'sand';
+			setCellAt(cave, sandX, sandY, 'sand');
 			const changed = [{x: sandX, y: sandY}];
 			
 			if (prevSand) {
@@ -134,14 +172,14 @@ export async function run(cave, displayCallback) {
 			await displayCallback(changed);
 	
 			if (!occupied(cave, sandX, sandY + 1)) {
-				cave.cells[keyof(sandX, sandY)] = 'air';
+				setCellAt(cave, sandX, sandY, 'air');
 				sandY += 1;
 			} else if (!occupied(cave, sandX - 1, sandY + 1)) {	
-				cave.cells[keyof(sandX, sandY)] = 'air';
+				setCellAt(cave, sandX, sandY, 'air');
 				sandX -= 1;
 				sandY += 1;
 			} else if (!occupied(cave, sandX + 1, sandY + 1)) {	
-				cave.cells[keyof(sandX, sandY)] = 'air';
+				setCellAt(cave, sandX, sandY, 'air');
 				sandX += 1;
 				sandY += 1;
 			} else {
@@ -150,13 +188,29 @@ export async function run(cave, displayCallback) {
 			}
 		}
 	}
+
+	return n;
 }
 
 function keyof(x, y) {
 	return x + ',' + y;
 }
 
+function cellAt(cave, x, y) {
+	if (y === cave.maxY) {
+		return 'rock';
+	} else {
+		return cave.cells[keyof(x, y)];
+	}
+}
+
+function setCellAt(cave, x, y, v) {
+	cave.cells[keyof(x, y)] = v;
+	cave.minX = Math.min(cave.minX, x);
+	cave.maxX = Math.max(cave.maxX, x);
+}
+
 function occupied(cave, x, y) {
-	const v = cave.cells[keyof(x, y)];
+	const v = cellAt(cave, x, y);
 	return v === 'rock' || v === 'sand';
 }
