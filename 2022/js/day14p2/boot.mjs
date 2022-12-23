@@ -1,16 +1,26 @@
 import {parseInput, showCave, showChanged, run} from './lib.mjs';
 
+let animations = document.querySelector('form').animations.value;
+
+document.querySelector('form').addEventListener('change', function(e) {
+	if (e.target.name === 'animations') {
+		animations = e.target.value;
+	}
+});
+
 document.querySelector('button').addEventListener('click', async function(e) {
 	e.preventDefault();
 	const cave = parseInput(document.querySelector('textarea').value);
 	const table = document.querySelector('table');
-	const animations = document.querySelector('form').animations.value;
+
 	showCave(cave, table);
 	const startTime = new Date().getTime();
 	let frameCount = 0;
 	let changedSinceLastFrame = [];
 
 	const n = await run(cave, async (changed) => {
+		frameCount++;
+
 		if (animations === 'none') {
 			return;
 		}
@@ -32,8 +42,6 @@ document.querySelector('button').addEventListener('click', async function(e) {
 			// Tick anyway so the browser doesn't kill us
 			await new Promise(res => requestAnimationFrame(res));
 		}
-
-		frameCount++;
 	});
 
 	showCave(cave, table);
