@@ -1,0 +1,8 @@
+{
+  "name": "aoc",
+  "devDependencies": {
+    "jasmine": "^4.5.0",
+    "jasmine-browser-runner": "^1.2.0",
+    "serve": "^14.1.2"
+  }
+}
