@@ -8,7 +8,7 @@ function parseInput(input) {
 				throw new Error('Parse error: ' + line);
 			}
 
-			return {
+			const result = {
 				x: parseInt(match[1], 10),
 				y: parseInt(match[2], 10),
 				closestBeacon: {
@@ -16,6 +16,8 @@ function parseInput(input) {
 					y: parseInt(match[4], 10),
 				}
 			};
+			result.dist = manhattanDist(result, result.closestBeacon);
+			return result;
 		});
 }
 
@@ -40,14 +42,7 @@ function couldHaveBeacon(x, y, sensors) {
 	}
 
 	for (const s of sensors) {
-		if (x === s.x && y === s.y) {
-			return false;
-		}
-
-		const exclusionDist = manhattanDist(s, s.closestBeacon);
-
-
-		if (manhattanDist(s, {x, y}) <= exclusionDist) {
+		if (x === s.x && y === s.y || manhattanDist(s, {x, y}) <= s.dist) {
 			return false;
 		}
 	}
@@ -60,10 +55,8 @@ function findXBounds(sensors) {
 	let max = Number.MIN_SAFE_INTEGER;
 
 	for (const s of sensors) {
-		// TODO cache d
-		const d = manhattanDist(s, s.closestBeacon);
-		min = Math.min(min, s.x - d);
-		max = Math.max(max, s.x + d);
+		min = Math.min(min, s.x - s.dist);
+		max = Math.max(max, s.x + s.dist);
 	}
 
 	return {min, max};

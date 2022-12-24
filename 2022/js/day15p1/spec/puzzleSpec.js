@@ -8,9 +8,9 @@ describe('puzzle', function() {
 				'Sensor at x=9, y=16: closest beacon is at x=10, y=16\n' +
 				'Sensor at x=13, y=2: closest beacon is at x=15, y=-3\n';
 			expect(parseInput(input)).toEqual([
-				{x: 2, y: 18, closestBeacon: {x: -2, y: 15}},
-				{x: 9, y: 16, closestBeacon: {x: 10, y: 16}},
-				{x: 13, y: 2, closestBeacon: {x: 15, y: -3}},
+				{x: 2, y: 18, closestBeacon: {x: -2, y: 15}, dist: 7},
+				{x: 9, y: 16, closestBeacon: {x: 10, y: 16}, dist: 1},
+				{x: 13, y: 2, closestBeacon: {x: 15, y: -3}, dist: 7},
 			]);
 		});
 	});
