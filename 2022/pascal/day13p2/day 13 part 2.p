@@ -1,5 +1,7 @@
 program day13p2;
 
+{ Note: This needs 256KB zone (heap) size. (Run -> Run Options in THINK Pascal.}
+
 { Note: Set enableDebugOutput in config.p to true for debugging, }
 { or false to make this run "fast". }
 
@@ -7,7 +9,7 @@ program day13p2;
 		Config, IO, Packets, Sorting, Tests;
 
 	type
-		RangeArr = array[1..maxNumPackets] of Range;
+		PacketArr = array[1..maxNumPackets] of ListPtr;
 
 	function FindNext (var haystack: InputBuffer; needle: char; startIx, endIx: integer): integer;
 		var
@@ -28,26 +30,21 @@ program day13p2;
 	end;
 
 
-	procedure FindRanges (var inputBuf: InputBuffer; var ranges: RangeArr; var nRanges: integer);
+	procedure ParsePackets (var inputBuf: InputBuffer; var packets: PacketArr; var nPackets: integer);
 		var
-			pos: integer;
-			leftRange, rightRange: Range;
+			i, e: integer;
 	begin
-		pos := 1;
-		nRanges := 0;
+		i := 1;
+		nPackets := 0;
 
-		while (pos < inputBuf.sz) and (pos > 0) do
+		while i < inputBuf.sz do
 			begin
-		{ Read and consume a pair of packets }
-				leftRange.firstIx := pos;
-				leftRange.lastIx := FindNext(inputBuf, chr($d), leftRange.firstIx, -1) - 1;
-				rightRange.firstIx := leftRange.lastIx + 2;
-				rightRange.lastIx := FindNext(inputBuf, chr($d), rightRange.firstIx, -1) - 1;
-				pos := rightRange.lastIx + 3; { consume the line separating each pair }
+				nPackets := nPackets + 1;
+				packets[nPackets] := ParseList(inputBuf, i, e);
+				i := e + 1;
 
-				ranges[nRanges + 1] := leftRange;
-				ranges[nRanges + 2] := rightRange;
-				nRanges := nRanges + 2;
+				while inputBuf.data[i] = chr($d) do
+					i := i + 1;
 			end;
 	end;
 
@@ -81,36 +78,14 @@ program day13p2;
 		halt;
 	end;
 
-
-	procedure DumpSortedPackets (var inputBuf: InputBuffer; var ranges: RangeArr; nRanges: integer; indexOrder: Sortable);
-		var
-			i, j: integer;
-			r: Range;
-	begin
-		for i := 1 to nRanges do
-			begin
-				if debugLogLevel = debugPainfullyVerbose then
-					begin
-						r := ranges[indexOrder[i]];
-						write(i : 3, '(', r.firstIx : 1, '-', r.lastIx : 1, '): ');
-						for j := r.firstIx to r.lastIx do
-							write(inputBuf.data[j]);
-						writeln;
-					end
-				else
-					writeln(i : 3, ': ', indexOrder[i] : 3);
-			end;
-	end;
-
-
-	procedure Solve (var inputBuf: InputBuffer; var ranges: RangeArr; nRanges: integer);
+	procedure Solve (var packets: PacketArr; nPackets: integer);
 		var
 			i, div1, div2: integer;
 			sorted: Sortable;
 
 		function Cmp (a, b: integer): integer;
 		begin
-			case Order(inputBuf, ranges[a], ranges[b]) of
+			case Order(packets[a], packets[b]) of
 				inOrder: 
 					Cmp := -1;
 				TBD: 
@@ -121,16 +96,15 @@ program day13p2;
 		end;
 
 	begin
-		for i := 1 to nRanges do
+		for i := 1 to nPackets do
 			sorted[i] := i;
 
-		Sort(sorted, nRanges, Cmp);
-		div1 := IndexOf(sorted, nRanges, nRanges - 1);
-		div2 := IndexOf(sorted, nRanges, nRanges);
+		Sort(sorted, nPackets, Cmp);
+		div1 := IndexOf(sorted, nPackets, nPackets - 1);
+		div2 := IndexOf(sorted, nPackets, nPackets);
 
 		if debugLogLevel <> debugNone then
 			begin
-				DumpSortedPackets(inputBuf, ranges, nRanges, sorted);
 				writeln('Dividers are at ', div1 : 1, ' and ', div2 : 1);
 			end;
 
@@ -142,8 +116,8 @@ program day13p2;
 		inputPath: integer;
 		bufp: ^InputBuffer;
 		err: OSErr;
-		ranges: RangeArr;
-		nRanges: integer;
+		packets: PacketArr;
+		nPackets: integer;
 
 begin
 	ShowText;
@@ -160,10 +134,11 @@ begin
 					AppendLine(bufp^, '[[2]]');
 					AppendLine(bufp^, '[[6]]');
 					AppendLine(bufp^, '');
-					writeln('about to find pairs');
-					FindRanges(bufp^, ranges, nRanges);
+					writeln('about to parse');
+					InitListPool;
+					ParsePackets(bufp^, packets, nPackets);
 					writeln('about to solve');
-					Solve(bufp^, ranges, nRanges);
+					Solve(packets, nPackets);
 					writeln('done');
 				end
 			else

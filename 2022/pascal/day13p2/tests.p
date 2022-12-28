@@ -3,7 +3,7 @@ unit Tests;
 interface
 
 	uses
-		Config, Packets, Sorting;
+		Packets;
 
 	procedure RunTests;
 
@@ -11,121 +11,117 @@ implementation
 
 	procedure RunTests;
 		var
+			buf: ^InputBuffer;
 			numTests, numFailed: integer;
 
-
-		procedure RunPacketTests;
+		procedure CopyToBuf (s: string);
 			var
-				buf: ^InputBuffer;
-
-			procedure CopyToBuf (s: string);
-				var
-					i: integer;
-			begin
-				for i := 1 to length(s) do
-					buf^.data[i + buf^.sz] := s[i];
-
-				buf^.sz := buf^.sz + length(s) + 1;
-				buf^.data[buf^.sz] := chr($d);
-			end;
-
-			procedure Test (left, right, desc: string; expected: OrderType);
-				var
-					leftRange, rightRange: range;
-					actual: OrderType;
-			begin
-				buf^.sz := 0;
-				CopyToBuf(left);
-				CopyToBuf(right);
-				leftRange.firstIx := 1;
-				leftRange.lastIx := length(left);
-				rightRange.firstIx := length(left) + 2;
-				rightRange.lastIx := buf^.sz - 1;
-				actual := Order(buf^, leftRange, rightRange);
-
-				if actual = expected then
-					writeln('OK: ', desc)
-				else
-					begin
-						writeln('FAIL: ', desc, ': expected ', expected, ' but got ', actual);
-						numFailed := numFailed + 1;
-					end;
-
-				numTests := numTests + 1;
-			end;
-
+				i: integer;
 		begin
-			new(buf);
+			for i := 1 to length(s) do
+				buf^.data[i + buf^.sz] := s[i];
 
-			Test('[5]', '[6]', 'Greater number on right', inOrder);
-			Test('[6]', '[5]', 'Greater number on left', outOfOrder);
-			Test('[1,2]', '[1,2,4] ', 'Shorter list on left ', inOrder);
-			Test('[1,2,4]', '[1,2]', 'Shorter list on right', outOfOrder);
-			Test('[[1],5]', '[[1,2],4] ', 'Shorter nested list on left ', inOrder);
-			Test('[[1,2],4]', '[[1],5]', 'Shorter nested list on right', outOfOrder);
-			Test('[1,2]', '[[2],1]', 'Mismatch in promoted list on left', inOrder);
-			Test('[[1],2]', '[2,1]', 'Mismatch in promoted list on right', inOrder);
-			Test('[1,2]', '[[1],1]', 'Match in promoted list on left', outOfOrder);
-			Test('[[1],1]', '[1,2]', 'Match in promoted list on right', inOrder);
-			Test('[[[2]]]', '[[2]]', 'Deeper nesting on left', TBD);
-			Test('[[2]]', '[[[2]]]', 'Deeper nesting on right', TBD);
-			Test('[[],5]', '[[[]],4]', 'Empty lists one deeper on right ', inOrder);
-			Test('[[[]],4]', '[[],5]', 'Empty lists one deeper on left', outOfOrder);
-			Test('[[2,[7,4]]]', '[2,[9]]', 'Pair 137 reduction', outOfOrder);
-			Test('[[[6,10],[4,3,[4]]]]', '[[6,[[3,10],[],[],2,10],[[6,8,4,2]]],[]]', 'Part 2 failure case', outOfOrder);
-
-			dispose(buf);
+			buf^.sz := buf^.sz + length(s) + 1;
+			buf^.data[buf^.sz] := chr($d);
 		end;
 
-
-		procedure RunSortingTest;
+		procedure TestOrder (left, right, desc: string; expected: OrderType);
 			var
-				arr: Sortable;
-				i: integer;
+				actual: OrderType;
+				leftList, rightList: ListPtr;
+				ignored: integer;
+		begin
+			InitListPool;
+			buf^.sz := 0;
+			CopyToBuf(left);
+			CopyToBuf(right);
+			leftList := ParseList(buf^, 1, ignored);
+			rightList := ParseList(buf^, length(left) + 2, ignored);
+			actual := Order(leftList, rightList);
+			DisposeListPool;
 
-			function cmp (a, b: integer): integer;
+			if actual = expected then
+				writeln('OK: ', desc)
+			else
+				begin
+					writeln('FAIL: ', desc, ': expected ', expected, ' but got ', actual);
+					numFailed := numFailed + 1;
+				end;
+
+			numTests := numTests + 1;
+		end;
+
+		procedure TestParseList;
+			var
+				root: ListPtr;
+				lastI: integer;
+
+			procedure Fail;
 			begin
-				if a < b then
-					cmp := 1
-				else if a = b then
-					cmp := 0
-				else
-					cmp := -1;
+				numFailed := numFailed + 1;
+				writeln('FAIL: parse list');
+				exit(TestParseList);
+			end;
+
+			procedure ExpectNumber (desc: string; actual: ListElement; expected: integer);
+			begin
+				if actual.t <> listElNum then
+					begin
+						writeln('Expected ', desc, ' to be ', expected : 1, ' but it was a list');
+						Fail;
+					end;
+
+				if actual.n <> expected then
+					begin
+						writeln('Expected ', desc, ' to be ', expected : 1, ' but it was ', actual.n : 1);
+						Fail;
+					end;
 			end;
 
 		begin
 			numTests := numTests + 1;
-			arr[1] := 5;
-			arr[2] := 10;
-			arr[3] := 4;
-			arr[4] := 6;
-			arr[5] := 7;
-			arr[6] := 2;
-			arr[7] := 3;
-			arr[8] := 1;
-			arr[9] := 9;
-			arr[10] := 8;
+			CopyToBuf('[1,[2,3,[4]],56]');
+			lastI := buf^.sz - 1;
+			InitListPool;
+			root := ParseList(buf^, 1, lastI);
 
-			Sort(arr, 10, cmp);
+			if root^.sz <> 3 then
+				begin
+					writeln('Expected root to have sz 3 but it had ', root^.sz);
+				end;
 
-			for i := 1 to 10 do
-				if arr[i] <> 10 - i + 1 then
-					begin
-						writeln('FAIL: sorting');
-						numFailed := numFailed + 1;
-						exit(RunSortingTest);
-					end;
-
-			writeln('OK: sorting');
+			ExpectNumber('[1]', root^.els[1], 1);
+			ExpectNumber('[3]', root^.els[3], 56);
+			DisposeListPool;
+			writeln('OK: parse list');
 		end;
 
 	begin
 		writeln('Running self-tests');
+		new(buf);
 		numTests := 0;
 		numFailed := 0;
-		RunPacketTests;
-		RunSortingTest;
 
+		TestParseList;
+
+		TestOrder('[5]', '[6]', 'Greater number on right', inOrder);
+		TestOrder('[6]', '[5]', 'Greater number on left', outOfOrder);
+		TestOrder('[1,2]', '[1,2,4] ', 'Shorter list on left ', inOrder);
+		TestOrder('[1,2,4]', '[1,2]', 'Shorter list on right', outOfOrder);
+		TestOrder('[[1],5]', '[[1,2],4] ', 'Shorter nested list on left ', inOrder);
+		TestOrder('[[1,2],4]', '[[1],5]', 'Shorter nested list on right', outOfOrder);
+		TestOrder('[1,2]', '[[2],1]', 'Mismatch in promoted list on left', inOrder);
+		TestOrder('[[1],2]', '[2,1]', 'Mismatch in promoted list on right', inOrder);
+		TestOrder('[1,2]', '[[1],1]', 'Match in promoted list on left', outOfOrder);
+		TestOrder('[[1],1]', '[1,2]', 'Match in promoted list on right', inOrder);
+		TestOrder('[[[2]]]', '[[2]]', 'Deeper nesting on left', TBD);
+		TestOrder('[[2]]', '[[[2]]]', 'Deeper nesting on right', TBD);
+		TestOrder('[[],5]', '[[[]],4]', 'Empty lists one deeper on right ', inOrder);
+		TestOrder('[[[]],4]', '[[],5]', 'Empty lists one deeper on left', outOfOrder);
+		TestOrder('[[2,[7,4]]]', '[2,[9]]', 'Pair 137 reduction', outOfOrder);
+		TestOrder('[[[6,10],[4,3,[4]]]]', '[[6,[[3,10],[],[],2,10],[[6,8,4,2]]],[]]', 'Part 2 failure case', outOfOrder);
+
+		dispose(buf);
 		if numFailed = 0 then
 			writeln('All ', numTests : 1, ' tests passed')
 		else
@@ -133,6 +129,6 @@ implementation
 				writeln(numFailed : 1, ' of ', numTests : 1, ' tests failed');
 				halt;
 			end;
-
 	end;
+
 end.
