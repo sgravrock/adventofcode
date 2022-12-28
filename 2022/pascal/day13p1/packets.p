@@ -5,175 +5,191 @@ interface
 	uses
 		Config;
 
+	const
+		maxListLen = 5;
+
 	type
 		InputBuffer = record
 				data: packed array[1..22000] of char;
 				sz: LongInt;
 			end;
 		OrderType = (inOrder, outOfOrder, TBD);
+		ListElType = (listElList, listElNum);
+		ListPtr = ^ListType;
+		ListElement = record
+				case t : ListElType of
+					listElList: (
+							list: ListPtr
+					);
+					listElNum: (
+							n: integer
+					);
+			end;
+		ListType = record
+				els: array[1..maxListLen] of ListElement;
+				sz: integer;
+			end;
 
-	function Order (var inputBuf: InputBuffer; leftStart, leftEnd, rightStart, rightEnd: integer): OrderType;
+  { Simple pool allocator saves ~15s (~50% run time) vs new()ing each list }
+	procedure InitListPool;
+	procedure DisposeListPool;
+	function ParseList (var inputBuf: InputBuffer; firstI: integer; var lastI: integer): ListPtr;
+	function Order (left, right: ListPtr): OrderType;
 
 implementation
 
+	const
+		listPoolSize = 100;
+
 	type
-		PacketParsingState = record
-				last, i: integer;
-				promotedListDepth: integer;
+		ListPool = record
+				lists: array[1..listPoolSize] of ListType;
+				sz: integer;
 			end;
 
-	procedure DumpAround (var inputBuf: InputBuffer; i: integer);
-		var
-			j, s, e: integer;
+	var
+		pool: ListPool;
+
+	procedure InitListPool;
 	begin
-		s := i - 10;
-		if s < 1 then
-			s := 1;
-		e := i + 10;
-		if e > inputBuf.sz then
-			e := inputBuf.sz;
-
-		for j := s to e do
-			if inputBuf.data[j] = chr($d) then
-				write('_')
-			else
-				write(inputBuf.data[j]);
-		writeln;
-
-		for j := s to e do
-			if j = i then
-				write('^')
-			else
-				write(' ');
-		writeln;
+		pool.sz := 0;
 	end;
 
 
-	procedure Require (var inputBuf: InputBuffer; i: integer; expected: char);
+	procedure DisposeListPool;
 	begin
-		if inputBuf.data[i] <> expected then
-			begin
-				writeln('expected ', expected, ' at position ', i : 1, ' but found ', inputBuf.data[i]);
-				DumpAround(inputBuf, i);
-				halt;
-			end;
+		pool.sz := 0;
 	end;
 
 
-	function ConsumeNumber (var buf: inputBuffer; var i: integer): integer;
+	function ParseNumber (var buf: InputBuffer; var i: integer): ListElement;
 		var
-			n: integer;
+			result: ListElement;
 	begin
-		n := 0;
-		while (buf.data[i] <> ',') and (buf.data[i] <> ']') do
+		result.t := listElNum;
+		result.n := 0;
+
+		while (ord(buf.data[i]) >= ord('0')) and (ord(buf.data[i]) <= ord('9')) do
 			begin
-				n := n * 10 + ord(buf.data[i]) - ord('0');
+				result.n := result.n * 10 + ord(buf.data[i]) - ord('0');
 				i := i + 1;
 			end;
 
-		if buf.data[i] = ',' then
-			i := i + 1;
-
-		ConsumeNumber := n;
+		ParseNumber := result;
 	end;
 
 
-	procedure InitParsingState (var pps: PacketParsingState; first, last: integer);
+	function ParseList (var inputBuf: InputBuffer; firstI: integer; var lastI: integer): ListPtr;
+		var
+			result: ListPtr;
+			i, s: integer;
 	begin
-		pps.last := last;
-		pps.i := first;
-		pps.promotedListDepth := 0;
-	end;
+		pool.sz := pool.sz + 1;
+		result := @pool.lists[pool.sz];
+		result^.sz := 0;
 
-
-	procedure EnterPromotedList (var sideToPromote, otherSide: PacketParsingState);
-	begin
-{ Sanity check }
-		if otherSide.promotedListDepth > 0 then
+		if inputBuf.data[firstI] <> '[' then
 			begin
-				writeln('Can''t enter a promoted list when the other side is in one');
+				writeln('List did not start with [');
 				halt;
 			end;
 
-		sideToPromote.promotedListDepth := sideToPromote.promotedListDepth + 1;
-		otherSide.i := otherSide.i + 1; { consume [ }
-	end;
+		i := firstI + 1;
 
-	function Order (var inputBuf: InputBuffer; leftStart, leftEnd, rightStart, rightEnd: integer): OrderType;
-		var
-			leftN, rightN: integer;
-			leftC, rightC: char;
-			leftState, rightState: PacketParsingState;
-			result: OrderType;
-	begin
-		Require(inputBuf, leftStart, '[');
-		Require(inputBuf, rightStart, '[');
-		InitParsingState(leftState, leftStart + 1, leftEnd);
-		InitParsingState(rightState, rightStart + 1, rightEnd);
-		result := TBD;
-
-{ Invariants, for both leftI and rightI: }
-{ 1. Index is >= start and <= end. }
-{ 2. The character at [index] has not been processed yet. }
-{ 3. The character at [index] is not a comma. }
-{ It follows that the character at [index] is one of the following: }
-{ * The first digit of the next number in the current list }
-{ * The ] at the end of the current list }
-{ * The [ at the start of a list }
-{ If in a number promoted to a list, all of the above belong to the parent list. }
-		while (result = TBD) and (leftState.i <= leftState.last) and (rightState.i <= rightState.last) do
+		while (i <= inputBuf.sz) and (inputBuf.data[i] <> ']') do
 			begin
-				leftC := inputBuf.data[leftState.i];
-				rightC := inputBuf.data[rightState.i];
-
-				if (leftC = ']') and (rightC = ']') then
+				if inputBuf.data[i] = chr($d) then
 					begin
-						leftState.i := leftState.i + 1;
-						rightState.i := rightState.i + 1;
-					end
-				else if (leftC = '[') and (rightC = '[') then
-					begin
-						if leftState.promotedListDepth > 0 then
-							result := inOrder
-						else if rightState.promotedListDepth > 0 then
-							result := outOfOrder
-						else
-							begin
-								leftState.i := leftState.i + 1;
-								rightState.i := rightState.i + 1;
-							end;
-					end
-				else if leftC = ']' then
-					if rightState.promotedListDepth > 0 then
-						rightState.promotedListDepth := rightState.promotedListDepth - 1
-					else
-						result := inOrder
-				else if rightC = ']' then
-					if leftState.promotedListDepth > 0 then
-						leftState.promotedListDepth := leftState.promotedListDepth - 1
-					else
-						result := outOfOrder
-				else if leftC = '[' then
-					EnterPromotedList(rightState, leftState)
-				else if rightC = '[' then
-					EnterPromotedList(leftState, rightState)
-				else if (inputBuf.data[leftState.i] = ']') or (inputBuf.data[rightState.i] = ']') then
-					begin
-						writeln('don''t know how to exit lists yet');
+						writeln('Found carraige return in list');
 						halt;
-					end
-				else { both are numbers }
-					begin
-						leftN := ConsumeNumber(inputBuf, leftState.i);
-						rightN := ConsumeNumber(inputBuf, rightState.i);
+					end;
 
-						if leftN < rightN then
-							result := inOrder
-						else if leftN > rightN then
-							result := outOfOrder;
-	       { else keep going }
+				if inputBuf.data[i] = ',' then
+					i := i + 1;
+
+				if (ord(inputBuf.data[i]) >= ord('0')) and (ord(inputBuf.data[i]) <= ord('9')) then
+					begin
+			{ Advances i }
+						result^.els[result^.sz + 1] := ParseNumber(inputBuf, i);
+						result^.sz := result^.sz + 1;
+					end
+				else if inputBuf.data[i] = '[' then
+					begin
+						s := i;
+						result^.sz := result^.sz + 1;
+						result^.els[result^.sz].t := listElList;
+			{ Advances i }
+						result^.els[result^.sz].list := ParseList(inputBuf, s, i);
+					end
+				else
+					begin
+						writeln('Unexpected character: ', inputBuf.data[i]);
+						halt;
 					end;
 			end;
+
+		if inputBuf.data[i] = ']' then
+			i := i + 1
+		else
+			begin
+				writeln('Missing trailing ]');
+				halt;
+			end;
+
+		lastI := i;
+		ParseList := result;
+	end;
+
+
+	function Order2 (left, right: ListElement): OrderType;
+		var
+			promoted: ListType;
+	begin
+		if (left.t = listElList) and (right.t = listElList) then
+			Order2 := Order(left.list, right.list)
+		else if (left.t = listElNum) and (right.t = listElNum) then
+			if left.n < right.n then
+				Order2 := inOrder
+			else if left.n = right.n then
+				Order2 := TBD
+			else
+				Order2 := outOfOrder
+		else if left.t = listElList then
+			begin
+				promoted.sz := 1;
+				promoted.els[1].t := listElNum;
+				promoted.els[1].n := right.n;
+				Order2 := Order(left.list, @promoted);
+			end
+		else
+			begin
+				promoted.sz := 1;
+				promoted.els[1].t := listElNum;
+				promoted.els[1].n := left.n;
+				Order2 := Order(@promoted, right.list);
+			end;
+	end;
+
+
+	function Order (left, right: ListPtr): OrderType;
+		var
+			i: integer;
+			result, subResult: OrderType;
+	begin
+		result := TBD;
+		i := 1;
+
+		while (result = TBD) and (i <= left^.sz) and (i <= right^.sz) do
+			begin
+				result := Order2(left^.els[i], right^.els[i]);
+				i := i + 1;
+			end;
+
+		if result = TBD then
+			if left^.sz < right^.sz then
+				result := inOrder
+			else if left^.sz > right^.sz then
+				result := outOfOrder;
 
 		Order := result;
 	end;

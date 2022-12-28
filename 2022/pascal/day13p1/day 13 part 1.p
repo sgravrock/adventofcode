@@ -27,22 +27,22 @@ program day13p1;
 
 	procedure Solve (var inputBuf: InputBuffer);
 		var
-			pos, i, result, aStart, aEnd, bEnd: integer;
+			pos, i, result, e: integer;
+			left, right: ListPtr;
 	begin
 		pos := 1;
 		i := 0;
 		result := 0;
+		InitListPool;
 
 		while (pos < inputBuf.sz) and (pos > 0) do
 			begin
 				i := i + 1;
-		{ Read and consume a pair of packets }
-				aStart := pos;
-				aEnd := FindNext(inputBuf, chr($d), aStart, -1);
-				bEnd := FindNext(inputBuf, chr($d), aEnd + 1, -1);
-				pos := bEnd + 2; { consume the line separating each pair }
+				left := ParseList(inputBuf, pos, e);
+				right := ParseList(inputBuf, e + 1, e);
+				pos := e + 2; { consume the line separating each pair }
 
-				case Order(inputBuf, aStart, aEnd - 1, aEnd + 1, bEnd - 1) of
+				case Order(left, right) of
 					inOrder: 
 						begin
 							if enableDebugOutput then
@@ -55,6 +55,8 @@ program day13p1;
 					TBD: 
 						writeln('Could not determine order for', i : 1);
 				end;
+
+				DisposeListPool;
 			end;
 
 		writeln('Result: ', result); { 5630 is too high, 4163 is too low }
