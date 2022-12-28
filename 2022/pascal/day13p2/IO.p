@@ -91,4 +91,4 @@ implementation
 		ReadEntireFile := err = eofErr;
 	end;
 
-epro
+end.

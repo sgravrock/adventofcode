@@ -7,12 +7,15 @@ interface
 
 	type
 		InputBuffer = record
-				data: packed array[1..22000] of char;
+				data: packed array[1..maxBufSize] of char;
 				sz: LongInt;
+			end;
+		Range = record
+				firstIx, lastIx: integer;
 			end;
 		OrderType = (inOrder, outOfOrder, TBD);
 
-	function Order (var inputBuf: InputBuffer; leftStart, leftEnd, rightStart, rightEnd: integer): OrderType;
+	function Order (var inputBuf: InputBuffer; leftRange, rightRange: Range): OrderType;
 
 implementation
 
@@ -99,17 +102,18 @@ implementation
 		otherSide.i := otherSide.i + 1; { consume [ }
 	end;
 
-	function Order (var inputBuf: InputBuffer; leftStart, leftEnd, rightStart, rightEnd: integer): OrderType;
+
+	function Order (var inputBuf: InputBuffer; leftRange, rightRange: Range): OrderType;
 		var
 			leftN, rightN: integer;
 			leftC, rightC: char;
 			leftState, rightState: PacketParsingState;
 			result: OrderType;
 	begin
-		Require(inputBuf, leftStart, '[');
-		Require(inputBuf, rightStart, '[');
-		InitParsingState(leftState, leftStart + 1, leftEnd);
-		InitParsingState(rightState, rightStart + 1, rightEnd);
+		Require(inputBuf, leftRange.firstIx, '[');
+		Require(inputBuf, rightRange.firstIx, '[');
+		InitParsingState(leftState, leftRange.firstIx + 1, leftRange.lastIx);
+		InitParsingState(rightState, rightRange.firstIx + 1, rightRange.lastIx);
 		result := TBD;
 
 { Invariants, for both leftI and rightI: }
@@ -154,9 +158,19 @@ implementation
 					else
 						result := outOfOrder
 				else if leftC = '[' then
-					EnterPromotedList(rightState, leftState)
+					begin
+						if leftState.promotedListDepth > 0 then
+							result := inOrder
+						else
+							EnterPromotedList(rightState, leftState)
+					end
 				else if rightC = '[' then
-					EnterPromotedList(leftState, rightState)
+					begin
+						if rightState.promotedListDepth > 0 then
+							result := outOfOrder
+						else
+							EnterPromotedList(leftState, rightState)
+					end
 				else if (inputBuf.data[leftState.i] = ']') or (inputBuf.data[rightState.i] = ']') then
 					begin
 						writeln('don''t know how to exit lists yet');

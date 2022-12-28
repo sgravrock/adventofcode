@@ -4,7 +4,7 @@ program day13p2;
 { or false to make this run "fast". }
 
 	uses
-		Config, IO, Packets, Tests;
+		Config, IO, Packets, Sorting, Tests;
 
 	type
 		RangeArr = array[1..maxNumPackets] of Range;
@@ -51,41 +51,99 @@ program day13p2;
 			end;
 	end;
 
-	procedure Solve (var inputBuf: InputBuffer);
-		var
-			i, result, nRanges: integer;
-			leftRange, rightRange: Range;
-			ranges: RangeArr;
-	begin
-		FindRanges(inputBuf, ranges, nRanges);
-		result := 0;
 
-		for i := 1 to nRanges div 2 do
-			begin
-				leftRange := ranges[i * 2 - 1];
-				rightRange := ranges[i * 2];
-				case Order(inputBuf, leftRange, rightRange) of
-					inOrder: 
-						begin
-							if enableDebugOutput then
-								writeln(i : 1, ' is in order');
-							result := result + i;
-						end;
-					outOfOrder: 
-						if enableDebugOutput then
-							writeln(i : 1, ' is out of order');
-					TBD: 
-						writeln('Could not determine order for', i : 1);
+	procedure AppendLine (var inputBuf: InputBuffer; toAppend: string);
+		var
+			i, len: integer;
+	begin
+		len := length(toAppend);
+
+		for i := 1 to len do
+			inputBuf.data[inputBuf.sz + i] := toAppend[i];
+
+		inputBuf.data[inputBuf.sz + len + 1] := chr($d);
+		inputBuf.sz := inputBuf.sz + len + 1;
+	end;
+
+
+	function IndexOf (var haystack: Sortable; len, needle: integer): integer;
+		var
+			i: integer;
+	begin
+		for i := 1 to len do
+			if haystack[i] = needle then
+				begin
+					IndexOf := i;
+					exit(IndexOf);
 				end;
+
+		writeln('could not find ', needle);
+		halt;
+	end;
+
+
+	procedure DumpSortedPackets (var inputBuf: InputBuffer; var ranges: RangeArr; nRanges: integer; indexOrder: Sortable);
+		var
+			i, j: integer;
+			r: Range;
+	begin
+		for i := 1 to nRanges do
+			begin
+				if debugLogLevel = debugPainfullyVerbose then
+					begin
+						r := ranges[indexOrder[i]];
+						write(i : 3, '(', r.firstIx : 1, '-', r.lastIx : 1, '): ');
+						for j := r.firstIx to r.lastIx do
+							write(inputBuf.data[j]);
+						writeln;
+					end
+				else
+					writeln(i : 3, ': ', indexOrder[i] : 3);
+			end;
+	end;
+
+
+	procedure Solve (var inputBuf: InputBuffer; var ranges: RangeArr; nRanges: integer);
+		var
+			i, div1, div2: integer;
+			sorted: Sortable;
+
+		function Cmp (a, b: integer): integer;
+		begin
+			case Order(inputBuf, ranges[a], ranges[b]) of
+				inOrder: 
+					Cmp := -1;
+				TBD: 
+					Cmp := 0;
+				outOfOrder: 
+					Cmp := 1;
+			end;
+		end;
+
+	begin
+		for i := 1 to nRanges do
+			sorted[i] := i;
+
+		Sort(sorted, nRanges, Cmp);
+		div1 := IndexOf(sorted, nRanges, nRanges - 1);
+		div2 := IndexOf(sorted, nRanges, nRanges);
+
+		if debugLogLevel <> debugNone then
+			begin
+				DumpSortedPackets(inputBuf, ranges, nRanges, sorted);
+				writeln('Dividers are at ', div1 : 1, ' and ', div2 : 1);
 			end;
 
-		writeln('Result: ', result);
+		writeln('Result: ', div1 * div2);
 	end;
+
 
 	var
 		inputPath: integer;
 		bufp: ^InputBuffer;
 		err: OSErr;
+		ranges: RangeArr;
+		nRanges: integer;
 
 begin
 	ShowText;
@@ -99,8 +157,13 @@ begin
 
 			if ReadEntireFile(inputPath, @bufp^.data[1], bufp^.sz) then
 				begin
+					AppendLine(bufp^, '[[2]]');
+					AppendLine(bufp^, '[[6]]');
+					AppendLine(bufp^, '');
 					writeln('about to find pairs');
-					Solve(bufp^);
+					FindRanges(bufp^, ranges, nRanges);
+					writeln('about to solve');
+					Solve(bufp^, ranges, nRanges);
 					writeln('done');
 				end
 			else
