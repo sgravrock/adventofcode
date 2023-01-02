@@ -16,7 +16,7 @@ implementation
 		var
 			i: integer;
 	begin
-		for i := 1 to 8 do
+		for i := 1 to bigIntNumBytes do
 			if a[i] <> b[i] then
 				begin
 					BigEqual := false;
@@ -30,7 +30,7 @@ implementation
 		var
 			i: integer;
 	begin
-		for i := 1 to 8 do
+		for i := 1 to bigIntNumBytes do
 			write(bi[i] : 1, ', ');
 	end;
 
@@ -106,7 +106,6 @@ implementation
 		var
 			a, b, expected, actual: BigInt;
 	begin
-{ 1223372036854170803 + 138156045840400 = 1223510192900011203 }
 		BigZero(a);
 		BigZero(b);
 		BigZero(expected);
@@ -116,8 +115,6 @@ implementation
 		a[4] := 196;
 		a[5] := 98;
 		a[6] := 74;
-		a[7] := 250;
-		a[8] := 16;
 		b[1] := 16;
 		b[2] := 48;
 		b[3] := 9;
@@ -130,8 +127,6 @@ implementation
 		expected[4] := 186;
 		expected[5] := 9;
 		expected[6] := 200;
-		expected[7] := 250;
-		expected[8] := 16;
 
 		Bigadd(a, b, actual);
 
@@ -163,16 +158,12 @@ implementation
 		a[4] := 246;
 		a[5] := 166;
 		a[6] := 125;
-		a[7] := 0;
-		a[8] := 0;
 		expectedQ[1] := 5;
 		expectedQ[2] := 16;
 		expectedQ[3] := 3;
 		expectedQ[4] := 82;
 		expectedQ[5] := 226;
 		expectedQ[6] := 41;
-		expectedQ[7] := 0;
-		expectedQ[8] := 0;
 		Bigdiv(a, 3, actual);
 
 		if BigEqual(expectedQ, actual.quotient) and (actual.remainder = 1) then

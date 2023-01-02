@@ -2,8 +2,11 @@ unit BigArithmetic;
 
 interface
 
+	const
+		bigIntNumBytes = 6;
+
 	type
-{ Represents a 64 bit unsigned number. }
+{ Represents a 48 bit unsigned number. }
 { Although the numbers we're working with are all non-negative, }
 { Pascal doesn't have any unsigned types. So rather than reimplement }
 { the entirety of arithmetic from scratch, we use larger types }
@@ -12,7 +15,7 @@ interface
 { or might not be more efficient -- it's hard to know without timing it. }
 { There would be half as many operations, but they'd be 32 bit  operations }
 {which are slower on the 68000. }
-		BigInt = array[1..8] of integer;
+		BigInt = array[1..bigIntNumBytes] of integer;
 
 		BigDivResult = record
 				quotient: BigInt;
@@ -33,7 +36,7 @@ implementation
 		var
 			i: integer;
 	begin
-		for i := 1 to 8 do
+		for i := 1 to bigIntNumBytes do
 			bi[i] := 0;
 	end;
 
@@ -49,7 +52,7 @@ implementation
 	begin
 		carry := 0;
 
-		for i := 1 to 8 do
+		for i := 1 to bigIntNumBytes do
 			begin
 				tmp := a[i] + b[i] + carry;
 				result[i] := BAnd(tmp, $ff);
@@ -65,15 +68,15 @@ implementation
 	begin
 		BigZero(result);
 
-		for i := 1 to 8 do
-			for j := 1 to 8 - i + 1 do
+		for i := 1 to bigIntNumBytes do
+			for j := 1 to bigIntNumBytes - i + 1 do
 				begin
 					tmp := LongInt(a[i]) * LongInt(b[j]) + LongInt(result[i + j - 1]);
 					result[i + j - 1] := BAnd(tmp, $ff);
 					tmp := BSR(tmp, 8);
 
 		{ Carry }
-					for k := i + j to 8 do
+					for k := i + j to bigIntNumBytes do
 						if tmp <> 0 then
 							begin
 								result[k] := BAnd(tmp, $ff);
@@ -89,7 +92,7 @@ implementation
 		BigZero(result.quotient);
 		tmp := 0;
 
-		for i := 8 downto 1 do
+		for i := bigIntNumBytes downto 1 do
 			begin
 				tmp := BOR(BSL(tmp, 8), a[i]);
 				result.quotient[i] := tmp div b;
