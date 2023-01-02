@@ -1,7 +1,7 @@
 program day11p1;
 
 	uses
-		FileUtils;
+		FileUtils, BigArithmetic, Tests;
 
 	const
 		enableDebugLogging = false;
@@ -9,10 +9,10 @@ program day11p1;
 	type
 		Operation = (mul, add);
 		Monkey = record
-				items: array[1..50] of LongInt;
+				items: array[1..50] of BigInt;
 				numItems: integer;
 				op: Operation;
-				operand: LongInt;
+				operand: byte;
 				operandIsOldValue: boolean;
 				test: LongInt;
 				ifFalse: LongInt;
@@ -47,7 +47,8 @@ program day11p1;
 		while not eoln(f) do
 			begin
 				m.numItems := m.numItems + 1;
-				read(f, m.items[m.numItems]);
+				read(f, n);
+				BigFromByte(n, m.items[m.numItems]);
 				if not eoln(f) then
 					Skip(f, ', ');
 			end;
@@ -96,20 +97,25 @@ program day11p1;
 
 	procedure Inspect (var m: Monkey; itemIx: integer);
 		var
-			operand: LongInt;
+			operand: BigInt;
+			r: BigInt;
 	begin
 		if m.operandIsOldValue then
 			operand := m.items[itemIx]
 		else
-			operand := m.operand;
+			begin
+				BigZero(operand);
+				operand[1] := m.operand;
+			end;
 
 		case m.op of
 			mul: 
-				m.items[itemIx] := m.items[itemIx] * operand;
+				BigMul(m.items[itemIx], operand, r);
 			add: 
-				m.items[itemIx] := m.items[itemIx] + operand;
+				BigAdd(m.items[itemIx], operand, r);
 		end;
 
+		m.items[itemIx] := r;
 		m.activity := m.activity + 1;
 	end;
 
@@ -119,7 +125,7 @@ program day11p1;
 	begin
 		src := @monkeys.monkeys[monkeyIx];
 
-		if src^.items[itemIx] mod src^.test = 0 then
+		if BigMod(src^.items[itemIx], src^.test) = 0 then
 			dest := @monkeys.monkeys[src^.ifTrue]
 		else
 			dest := @monkeys.monkeys[src^.ifFalse];
@@ -129,25 +135,26 @@ program day11p1;
 	end;
 
 
-	procedure DumpRound (round: integer; var monkeys: MonkeyArr);
-		var
-			i, j: integer;
-	begin
-		writeln('After round ', round : 1, ', the monkeys are holding items with these worry levels:');
-		for i := 0 to monkeys.n - 1 do
-			begin
-				write('Monkey ', i : 1, ' : ');
-				for j := 1 to monkeys.monkeys[i].numItems do
-					write(monkeys.monkeys[i].items[j] : 1, ', ');
-				writeln;
-			end;
-	end;
+{    procedure DumpRound (round: integer; var monkeys: MonkeyArr); }
+{    var}
+{    i, j: integer; }
+{    begin}
+{    writeln('After round ', round : 1, ', the monkeys are holding items with these worry levels:');}
+{    for i := 0 to monkeys.n - 1 do }
+{    begin }
+{    write('Monkey ', i : 1, ' : ');  }
+{    for j := 1 to monkeys.monkeys[i].numItems do }
+{    write(monkeys.monkeys[i].items[j] : 1, ', '); }
+{    writeln; }
+{    end; }
+{    end; }
 
 
 	function MonkeyBusiness (var monkeys: MonkeyArr): LongInt;
 		var
 			round, i, j: integer;
 			mostActive, nextMostActive, maxWorry: LongInt;
+			divResult: BigDivResult;
 	begin
 		maxWorry := 1;
 		for i := 0 to monkeys.n - 1 do
@@ -161,15 +168,15 @@ program day11p1;
 						for j := 1 to monkeys.monkeys[i].numItems do
 							begin
 								Inspect(monkeys.monkeys[i], j);
-								monkeys.monkeys[i].items[j] := (monkeys.monkeys[i].items[j] div 3);
-{monkeys.monkeys[i].items[j] := monkeys.monkeys[i].items[j] mod maxWorry;}
+								BigDiv(monkeys.monkeys[i].items[j], 3, divResult);
+								monkeys.monkeys[i].items[j] := divResult.quotient;
 								Throw(monkeys, i, j);
 							end;
 						monkeys.monkeys[i].numItems := 0;
 					end;
 
-				if enableDebugLogging then
-					DumpRound(round, monkeys);
+{    if enableDebugLogging then}
+{    DumpRound(round, monkeys);}
 			end;
 
 		mostActive := 0;
@@ -198,8 +205,8 @@ program day11p1;
 
 begin
 	ShowText;
+	RunTests;
 
-{ Wrong answer in ~6s }
 	if OpenInputFile(inputFile) then
 		begin
 			ReadMonkeys(inputFile, monkeys);
