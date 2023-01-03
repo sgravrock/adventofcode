@@ -1,15 +1,16 @@
-program day14p1;
+program day14p2;
 
-{ x: 449..505, y: 13..173 }
+{ Completes in about 1 hour and 9 minutes. }
+{ x: 326..675, y: 0..175 }
 
 	uses
 		FileUtils;
 
 	const
-		MIN_X = 448;
-		MAX_X = 505;
+		MIN_X = 326;
+		MAX_X = 674;
 		MIN_Y = 0;
-		MAX_Y = 173; { 173 for puzzle input, 9 for sample }
+		MAX_Y = 175; { 175 for puzzle input, 11 for sample }
  { TODO don't hardcode this }
 
 	type
@@ -80,13 +81,22 @@ program day14p1;
 	end;
 
 
+	function GetCellType (var cave: CaveType; x, y: integer): Cell;
+	begin
+		if y = MAX_Y then
+			GetCellType := rock
+		else
+			GetCellType := cave[y][x];
+	end;
+
+
 	function Solve (var cave: CaveType): integer;
 		var
 			numAtRest, sandX, sandY: integer;
 			atRest: boolean;
 	begin
 		numAtRest := 0;
-		while true do
+		while cave[0][500] <> sand do
 			begin
 				sandX := 500;
 				sandY := MIN_Y;
@@ -94,20 +104,14 @@ program day14p1;
 
 				while not atRest do
 					begin
-						if sandY >= MAX_Y then
-							begin
-								Solve := numAtRest;
-								exit(Solve);
-							end;
-
-						if cave[sandY + 1][sandX] = air then
+						if GetCellType(cave, sandX, sandY + 1) = air then
 							sandY := sandY + 1
-						else if cave[sandY + 1][sandX - 1] = air then
+						else if GetCellType(cave, sandX - 1, sandY + 1) = air then
 							begin
 								sandX := sandX - 1;
 								sandY := sandY + 1;
 							end
-						else if cave[sandY + 1][sandX + 1] = air then
+						else if GetCellType(cave, sandX + 1, sandY + 1) = air then
 							begin
 								sandX := sandX + 1;
 								sandY := sandY + 1;
@@ -118,11 +122,13 @@ program day14p1;
 								atRest := true;
 								numAtRest := numAtRest + 1;
 
-								if (numAtRest mod 50) = 0 then
+								if ((numAtRest <= 500) and (numAtRest mod 50 = 0)) or (numAtRest mod 1000 = 0) then
 									writeln(numAtRest : 1, ' so far');
 							end;
 					end;
 			end;
+
+		Solve := numAtRest;
 	end;
 
 
