@@ -105,6 +105,7 @@ program day14p2;
 								cave[sandY][sandX] := true;
 								atRest := true;
 								numAtRest := numAtRest + 1;
+								DrawSand(sandX, sandY);
 
 								if ((numAtRest <= 500) and (numAtRest mod 50 = 0)) or (numAtRest mod 1000 = 0) then
 									writeln(numAtRest : 1, ' so far');
@@ -134,9 +135,9 @@ begin
 			DrawCave(cave^);
 			ShowText;
 			result := Solve(cave^);
-			DrawCave(cave^);
 			ShowText;
 			writeln(result);
+			SysBeep(10);
 			writeln('Press return to exit');
 			readln;
 {PrintCave(cave^);}

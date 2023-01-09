@@ -7,6 +7,7 @@ interface
 
 	procedure SetUpDrawingWindow;
 	procedure DrawCave (cave: CaveType);
+	procedure DrawSand (cx, cy: integer);
 
 implementation
 
@@ -71,6 +72,17 @@ implementation
 		SetRect(pxRect, 0, caveMaxY, winRight - winLeft, drawingWinHeight);
 		PaintRect(pxRect);
 		writeln('done drawing'); { 12s }
+	end;
+
+	procedure DrawSand (cx, cy: integer);
+		var
+			x0: integer;
+			pxRect: Rect;
+	begin
+		ShowDrawing;
+		x0 := winWidth div 2; { Center horizontally }
+		SetRect(pxRect, cx - x0, cy, cx - x0 + 1, cy + 1);
+		PaintRect(pxRect);
 	end;
 
 end.
