@@ -14,8 +14,7 @@ program day14p2;
  { TODO don't hardcode this }
 
 	type
-		Cell = (air, rock, sand);
-		CaveType = array[MIN_Y..MAX_Y, MIN_X..MAX_X] of Cell;
+		CaveType = packed array[MIN_Y..MAX_Y, MIN_X..MAX_X] of boolean;
 
 	procedure ReadCave (var cave: CaveType; var f: text);
 		var
@@ -25,7 +24,7 @@ program day14p2;
 	begin
 		for x := MIN_X to MAX_X do
 			for y := MIN_Y to MAX_Y do
-				cave[y][x] := air;
+				cave[y][x] := false;
 
 		while not eof(f) do
 			begin
@@ -42,19 +41,19 @@ program day14p2;
 								begin
 									if y2 < y1 then
 										for y := y1 downto y2 do
-											cave[y][x1] := rock
+											cave[y][x1] := true
 									else
 										for y := y1 to y2 do
-											cave[y][x1] := rock;
+											cave[y][x1] := true;
 								end
 							else if y1 = y2 then
 								begin
 									if x2 < x1 then
 										for x := x1 downto x2 do
-											cave[y1][x] := rock
+											cave[y1][x] := true
 									else
 										for x := x1 to x2 do
-											cave[y1][x] := rock;
+											cave[y1][x] := true;
 								end
 							else
 								begin
@@ -81,10 +80,10 @@ program day14p2;
 	end;
 
 
-	function GetCellType (var cave: CaveType; x, y: integer): Cell;
+	function GetCellType (var cave: CaveType; x, y: integer): boolean;
 	begin
 		if y = MAX_Y then
-			GetCellType := rock
+			GetCellType := true
 		else
 			GetCellType := cave[y][x];
 	end;
@@ -96,7 +95,7 @@ program day14p2;
 			atRest: boolean;
 	begin
 		numAtRest := 0;
-		while cave[0][500] <> sand do
+		while not cave[0][500] do
 			begin
 				sandX := 500;
 				sandY := MIN_Y;
@@ -104,21 +103,21 @@ program day14p2;
 
 				while not atRest do
 					begin
-						if GetCellType(cave, sandX, sandY + 1) = air then
+						if not GetCellType(cave, sandX, sandY + 1) then
 							sandY := sandY + 1
-						else if GetCellType(cave, sandX - 1, sandY + 1) = air then
+						else if not GetCellType(cave, sandX - 1, sandY + 1) then
 							begin
 								sandX := sandX - 1;
 								sandY := sandY + 1;
 							end
-						else if GetCellType(cave, sandX + 1, sandY + 1) = air then
+						else if not GetCellType(cave, sandX + 1, sandY + 1) then
 							begin
 								sandX := sandX + 1;
 								sandY := sandY + 1;
 							end
 						else
 							begin
-								cave[sandY][sandX] := sand;
+								cave[sandY][sandX] := true;
 								atRest := true;
 								numAtRest := numAtRest + 1;
 
