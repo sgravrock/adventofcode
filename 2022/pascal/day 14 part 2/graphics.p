@@ -48,37 +48,29 @@ implementation
 
 	procedure DrawCave (cave: CaveType);
 		var
-			x0, y0, minX, maxX, cx, cy: integer;
+			x0, y0, cx, cy: integer;
 			pxRect: Rect;
 	begin
-		x0 := winWidth div 2;
-		y0 := 20; { TODO }
+		x0 := winWidth div 2; { Center horizontally }
+		y0 := 12; { Some padding }
 
-{ Cave may be wider than the window. Ignore everything out of bounds. }
-{ (QuickDraw would clip the image for us, but we can save time by not }
-{ drawing out of bounds in the first place.) }
-{ TODO: draw the whole cave and support scrolling }
-		minX := 0 - x0;
-		if minX < caveMinX then
-			minX := caveMinX;
-		maxX := minX + winWidth;
-		if maxX > caveMaxX then
-			maxX := caveMaxX;
-
+		writeln('starting to draw');
 		ShowDrawing;
 		EraseEverything;
 
-		for cx := minX to maxX do
-			for cy := caveMinY to caveMaxY do
+		for cx := caveMinX to caveMaxX do
+			for cy := caveMinY to caveMaxY - 1 do
 				begin
-{ TODO: if we don't draw sand until it comes to rest, we won't have to clear cells }
-{ TODO: Draw to an off screen buffer, and manipulate it directly rather than via FrameRect }
-					if IsCellOccupied(cave, cx, cy) then
+					if cave[cy][cx] then
 						begin
 							SetRect(pxRect, cx - x0, cy, cx - x0 + 1, cy + 1);
-							FrameRect(pxRect);
+							PaintRect(pxRect);
 						end;
 				end;
+
+		SetRect(pxRect, 0, caveMaxY, winRight - winLeft, drawingWinHeight);
+		PaintRect(pxRect);
+		writeln('done drawing'); { 12s }
 	end;
 
 end.

@@ -83,19 +83,24 @@ program day14p2;
 
 				while not atRest do
 					begin
-						if not IsCellOccupied(cave, sandX, sandY + 1) then
+						if sandY + 1 = caveMaxY then
+							atRest := true
+						else if not cave[sandY + 1][sandX] then
 							sandY := sandY + 1
-						else if not IsCellOccupied(cave, sandX - 1, sandY + 1) then
+						else if not cave[sandY + 1][sandX - 1] then
 							begin
 								sandX := sandX - 1;
 								sandY := sandY + 1;
 							end
-						else if not IsCellOccupied(cave, sandX + 1, sandY + 1) then
+						else if not cave[sandY + 1][sandX + 1] then
 							begin
 								sandX := sandX + 1;
 								sandY := sandY + 1;
 							end
 						else
+							atRest := true;
+
+						if atRest then
 							begin
 								cave[sandY][sandX] := true;
 								atRest := true;
@@ -132,6 +137,7 @@ begin
 			DrawCave(cave^);
 			ShowText;
 			writeln(result);
+			writeln('Press return to exit');
 			readln;
 {PrintCave(cave^);}
 		end

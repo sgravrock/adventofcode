@@ -13,16 +13,6 @@ interface
 	type
 		CaveType = packed array[caveMinY..caveMaxY, caveMinX..caveMaxX] of boolean;
 
-	function IsCellOccupied (var cave: CaveType; x, y: integer): boolean;
-
 implementation
-
-	function IsCellOccupied (var cave: CaveType; x, y: integer): boolean;
-	begin
-		if y = caveMaxY then
-			IsCellOccupied := true
-		else
-			IsCellOccupied := cave[y][x];
-	end;
 
 end.
