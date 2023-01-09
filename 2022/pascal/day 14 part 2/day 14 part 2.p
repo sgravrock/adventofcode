@@ -4,17 +4,7 @@ program day14p2;
 { x: 326..675, y: 0..175 }
 
 	uses
-		FileUtils;
-
-	const
-		MIN_X = 326;
-		MAX_X = 674;
-		MIN_Y = 0;
-		MAX_Y = 175; { 175 for puzzle input, 11 for sample }
- { TODO don't hardcode this }
-
-	type
-		CaveType = packed array[MIN_Y..MAX_Y, MIN_X..MAX_X] of boolean;
+		FileUtils, CaveInterface, Graphics;
 
 	procedure ReadCave (var cave: CaveType; var f: text);
 		var
@@ -22,8 +12,8 @@ program day14p2;
 			hasPrevPoint: boolean;
 			c: char;
 	begin
-		for x := MIN_X to MAX_X do
-			for y := MIN_Y to MAX_Y do
+		for x := caveMinX to caveMaxX do
+			for y := caveMinY to caveMaxY do
 				cave[y][x] := false;
 
 		while not eof(f) do
@@ -79,16 +69,6 @@ program day14p2;
 			end;
 	end;
 
-
-	function GetCellType (var cave: CaveType; x, y: integer): boolean;
-	begin
-		if y = MAX_Y then
-			GetCellType := true
-		else
-			GetCellType := cave[y][x];
-	end;
-
-
 	function Solve (var cave: CaveType): integer;
 		var
 			numAtRest, sandX, sandY: integer;
@@ -98,19 +78,19 @@ program day14p2;
 		while not cave[0][500] do
 			begin
 				sandX := 500;
-				sandY := MIN_Y;
+				sandY := caveMinY;
 				atRest := false;
 
 				while not atRest do
 					begin
-						if not GetCellType(cave, sandX, sandY + 1) then
+						if not IsCellOccupied(cave, sandX, sandY + 1) then
 							sandY := sandY + 1
-						else if not GetCellType(cave, sandX - 1, sandY + 1) then
+						else if not IsCellOccupied(cave, sandX - 1, sandY + 1) then
 							begin
 								sandX := sandX - 1;
 								sandY := sandY + 1;
 							end
-						else if not GetCellType(cave, sandX + 1, sandY + 1) then
+						else if not IsCellOccupied(cave, sandX + 1, sandY + 1) then
 							begin
 								sandX := sandX + 1;
 								sandY := sandY + 1;
@@ -137,6 +117,7 @@ program day14p2;
 		result: integer;
 
 begin
+	SetUpDrawingWindow;
 	ShowText;
 
 	if OpenInputFile(inputFile) then
@@ -145,8 +126,13 @@ begin
 			writeln('reading input');
 			ReadCave(cave^, inputFile);
 			writeln('solving');
+			DrawCave(cave^);
+			ShowText;
 			result := Solve(cave^);
+			DrawCave(cave^);
+			ShowText;
 			writeln(result);
+			readln;
 {PrintCave(cave^);}
 		end
 	else
