@@ -1,6 +1,5 @@
 program day14p2;
 
-{ Completes in about 1 hour and 9 minutes. }
 { x: 326..675, y: 0..175 }
 
 	uses
@@ -12,9 +11,7 @@ program day14p2;
 			hasPrevPoint: boolean;
 			c: char;
 	begin
-		for x := caveMinX to caveMaxX do
-			for y := caveMinY to caveMaxY do
-				cave[y][x] := false;
+		ShowDrawing; { since we draw walls and ledges as we read }
 
 		while not eof(f) do
 			begin
@@ -35,6 +32,7 @@ program day14p2;
 									else
 										for y := y1 to y2 do
 											cave[y][x1] := true;
+									DrawWall(x1, y1, y2);
 								end
 							else if y1 = y2 then
 								begin
@@ -44,6 +42,7 @@ program day14p2;
 									else
 										for x := x1 to x2 do
 											cave[y1][x] := true;
+									DrawLedge(x1, x2, y1);
 								end
 							else
 								begin
@@ -124,23 +123,19 @@ program day14p2;
 
 begin
 	SetUpDrawingWindow;
-	ShowText;
 
 	if OpenInputFile(inputFile) then
 		begin
+			DrawCaveFloor;
 			new(cave);
 			writeln('reading input');
 			ReadCave(cave^, inputFile);
 			writeln('solving');
-			DrawCave(cave^);
-			ShowText;
 			result := Solve(cave^);
-			ShowText;
 			writeln(result);
 			SysBeep(10);
 			writeln('Press return to exit');
 			readln;
-{PrintCave(cave^);}
 		end
 	else
 		writeln('Did not open input file');

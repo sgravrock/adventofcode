@@ -6,7 +6,9 @@ interface
 		CaveInterface;
 
 	procedure SetUpDrawingWindow;
-	procedure DrawCave (cave: CaveType);
+	procedure DrawCaveFloor;
+	procedure DrawLedge (startX, endX, y: integer);
+	procedure DrawWall (x, startY, endY: integer);
 	procedure DrawSand (cx, cy: integer);
 
 implementation
@@ -38,41 +40,30 @@ implementation
 		ShowDrawing;
 	end;
 
-
-	procedure EraseEverything;
+	procedure DrawCaveFloor;
 		var
 			r: Rect;
 	begin
-		SetRectToDrawingRect(r);
-		EraseRect(r);
+		SetRect(r, 0, caveMaxY, winRight - winLeft, drawingWinHeight);
+		PaintRect(r);
 	end;
 
-	procedure DrawCave (cave: CaveType);
+	procedure DrawLedge (startX, endX, y: integer);
 		var
-			x0, y0, cx, cy: integer;
-			pxRect: Rect;
+			x0: integer;
 	begin
 		x0 := winWidth div 2; { Center horizontally }
-		y0 := 12; { Some padding }
-
-		writeln('starting to draw');
-		ShowDrawing;
-		EraseEverything;
-
-		for cx := caveMinX to caveMaxX do
-			for cy := caveMinY to caveMaxY - 1 do
-				begin
-					if cave[cy][cx] then
-						begin
-							SetRect(pxRect, cx - x0, cy, cx - x0 + 1, cy + 1);
-							PaintRect(pxRect);
-						end;
-				end;
-
-		SetRect(pxRect, 0, caveMaxY, winRight - winLeft, drawingWinHeight);
-		PaintRect(pxRect);
-		writeln('done drawing'); { 12s }
+		MoveTo(startX - x0, y);
+		LineTo(endX - x0, y);
 	end;
+
+	procedure DrawWall (x, startY, endY: integer);
+	begin
+		x := x - winWidth div 2; { Center horizontally }
+		MoveTo(x, startY);
+		LineTo(x, endY);
+	end;
+
 
 	procedure DrawSand (cx, cy: integer);
 		var
