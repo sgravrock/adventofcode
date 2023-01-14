@@ -3,25 +3,60 @@ program day14p2;
 { x: 326..675, y: 0..175 }
 
 	uses
-		FileUtils, CaveInterface, Graphics;
+		SysFileUtils, CaveInterface, Graphics;
 
-	procedure ReadCave (var cave: CaveType; var f: text);
+	const
+		bufsize = 11264;
+
+	type
+		EntireFile = packed array[1..bufsize] of char;
+
+	function ReadInt (var buf: EntireFile; var i: LongInt): integer;
+		var
+			result, c: integer;
+	begin
+		result := 0;
+		c := ord(buf[i]);
+
+		while (c >= 48) and (c <= 57) do
+			begin
+				result := result * 10 + c - 48;
+				i := i + 1;
+				c := ord(buf[i]);
+			end;
+
+		ReadInt := result;
+	end;
+
+	procedure ReadCave (var cave: CaveType; path: integer);
 		var
 			x, y, x1, y1, x2, y2, n: integer;
 			hasPrevPoint: boolean;
 			c: char;
+			bufp: ^EntireFile;
+			fileSz, i: LongInt;
 	begin
 		ShowDrawing; { since we draw walls and ledges as we read }
 
-		while not eof(f) do
+		new(bufp);
+		fileSz := bufsize;
+		if not ReadEntireFile(path, Ptr(bufp), fileSz) then
+			begin
+				writeln('read failed');
+				halt;
+			end;
+
+		i := 1;
+
+		while i <= fileSz do
 			begin
 				hasPrevPoint := false;
 
-				while not eoln(f) do
+				while bufp^[i] <> chr($d) do
 					begin
-						read(f, x2);
-						read(f, c); { consume ', ' }
-						read(f, y2);
+						x2 := ReadInt(bufp^, i);
+						i := i + 1; { consume ',' }
+						y2 := ReadInt(bufp^, i);
 
 						if hasPrevPoint then
 							if x1 = x2 then
@@ -54,19 +89,16 @@ program day14p2;
 						y1 := y2;
 						hasPrevPoint := true;
 
-						if not eoln(f) then
-							begin
-				{ Consume ' -> ' }
-								read(f, c);
-								read(f, c);
-								read(f, c);
-								read(f, c);
-							end;
+						if bufp^[i] <> chr($d) then
+							i := i + 4; { Consume ' -> ' }
 					end;
 
-				readln(f);
+				i := i + 1; { Consume newline }
 			end;
+
+		dispose(bufp);
 	end;
+
 
 	function Solve (var cave: CaveType): integer;
 		var
@@ -118,18 +150,20 @@ program day14p2;
 
 	var
 		cave: ^CaveType;
-		inputFile: Text;
 		result: integer;
+		path: integer;
 
 begin
 	SetUpDrawingWindow;
 
-	if OpenInputFile(inputFile) then
+	if OpenInputFile(path) then
 		begin
 			DrawCaveFloor;
 			new(cave);
-			writeln('reading input');
-			ReadCave(cave^, inputFile);
+
+			writeln('Reading input file');
+			ReadCave(cave^, path);
+
 			writeln('solving');
 			result := Solve(cave^);
 			writeln(result);
