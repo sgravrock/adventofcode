@@ -5,6 +5,9 @@ interface
 	uses
 		CaveInterface;
 
+	var
+		gShouldQuit: boolean;
+
 	procedure SetUpDrawingWindow;
 	procedure DrawCaveFloor (caveFloorY: integer);
 	procedure DrawLedge (startX, endX, y: integer);
@@ -12,6 +15,7 @@ interface
 	procedure DrawSand (cx, cy: integer);
 	procedure ShowStatus (status: string);
 	procedure ShowError (msg: string);
+	procedure HandleOneEvent (maxSleepTicks: integer);
 	procedure PostSimulationEventLoop;
 
 implementation
@@ -96,33 +100,49 @@ implementation
 		ignored := StopAlert(alertId, nil);
 	end;
 
-
-	procedure PostSimulationEventLoop;
+	procedure HandleOneEvent (maxSleepTicks: integer);
 		var
-			done: boolean;
 			myEvent: EventRecord;
 			keyChar: char;
 	begin
-		done := false;
+		SystemTask;
 
-		while not done do
-			begin
-				SystemTask;
-
-				if GetNextEvent(everyEvent, myEvent) then
-					case myEvent.what of
-						keyDown: 
-							begin
-								keyChar := CHR(BitAnd(myEvent.message, charCodeMask));
-								if (keyChar = 'q') and (BitAnd(myEvent.modifiers, cmdKey) <> 0) then
-									done := true;
-							end;
-						otherwise
-							begin
+{ WaitNextEvent is documented in Macintosh Toolbox Essentials (Apple). }
+{ It does not seem to be mentioned in any volume of the original Inside }
+{ Macintosh series. It appears to have been introduced with MultiFinder, }
+{ so using it probably means this won't run on anything before System }
+{ Software 5 (System 4.2,  Finder 4.2, MultiFinder 1.0). But that's just }
+{ an educated guess. Macintosh Toolbox Essentials says that to run in }
+{ System 6 with MultiFinder disabled we need to check whether }
+{ WaitNextEvent is available and fall back to SystemTask+EventAvail+ }
+{ GetNextEvent, but WaitNextEvent actually works even when MultiFinder }
+{ is disabled. }
+{ Code to detect WaitNextEvent and fall back to older APIs can be found }
+{ in both Macintosh Toolbox Essentials and Macintosh Pascal Programming }
+{ Primer Vol. 1, with the latter taking a simpler approach. }
+		if WaitNextEvent(everyEvent, myEvent, maxSleepTicks, nil) then
+			case myEvent.what of
+				keyDown: 
+					begin
+						keyChar := CHR(BitAnd(myEvent.message, charCodeMask));
+						if (keyChar = 'q') and (BitAnd(myEvent.modifiers, cmdKey) <> 0) then
+							gShouldQuit := true;
+					end;
+				otherwise
+					begin
 { TODO: window drag, window resize, window close box click, update, maybe more }
-							end;
 					end;
 			end;
+	end;
+
+	procedure PostSimulationEventLoop;
+		var
+			myEvent: EventRecord;
+			keyChar: char;
+	begin
+		while not gShouldQuit do
+{ We've nothing else to do so be maximally nice to background processes }
+			HandleOneEvent(maxInt);
 	end;
 
 end.

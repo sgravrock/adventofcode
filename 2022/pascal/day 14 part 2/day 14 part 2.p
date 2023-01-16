@@ -106,11 +106,26 @@ program day14p2;
 
 
 	function Solve (var cave: CaveType): integer;
+		const
+{ Inside Macintosh says we should handle events (or otherwise call SystemTask) }
+{ at least once per tick (a tick is 1/60 seconds). But doing that more than doubles }
+{ our run time. Every 12 ticks strikes a reasonable balance between speed and UI }
+{ responsiveness, although it's still pretty hostile to any background processes. }
+{ If we were trying to handle more complex user interactions than just quitting, }
+{ 12 ticks might be too much. }
+			ticksBetweenEventHandling = 12;
+{ Allow *some* background processing without sacrificing too much speed }
+			maxSleepTicks = 1;
 		var
 			numAtRest, sandX, sandY: integer;
 			atRest: boolean;
+			i, itersBetwenEventHandling: integer;
+			startTicks, ticks: LongInt;
 	begin
 		numAtRest := 0;
+		itersBetwenEventHandling := -1;
+		i := maxint;
+		startTicks := TickCount;
 		while not cave.cells[0][500] do
 			begin
 				sandX := 500;
@@ -119,6 +134,39 @@ program day14p2;
 
 				while not atRest do
 					begin
+						i := i - 1;
+
+{ Give the user a chance to quit. }
+{ We can't afford to call TickCount every time through the loop }
+{ (doing so adds 3 minutes run time, or about 67%), so figure out }
+{ how many iterations correspond to the desired number of ticks }
+{ and then use a counter instead. "Micro-optimizations" to the }
+{ counter itself also matter a great deal: decrementing and comparing }
+{ to 0 is appreciably faster than incrementing and comparing to a }
+{ limit. Doing modulus instead of an equality comparison more than }
+{ doubles the total run time of the program. }
+{ The result of all this is that UI event handling carries about a 9% }
+{ overhead, vs more than 100% with a "by the book" approach. }
+
+						if itersBetwenEventHandling = -1 then
+							begin { Still determining timing }
+								ticks := TickCount;
+								if ticks >= startTicks + ticksBetweenEventHandling then
+									begin
+										itersBetwenEventHandling := maxint - i;
+										i := itersBetwenEventHandling;
+										HandleOneEvent(maxSleepTicks);
+									end;
+							end
+						else if i = 0 then
+							begin
+								i := itersBetwenEventHandling;
+								HandleOneEvent(1);
+							end;
+
+						if gShouldQuit then
+							exit(Solve);
+
 						if sandY + 1 = cave.floorY then
 							atRest := true
 						else if not cave.cells[sandY + 1][sandX] then
@@ -161,6 +209,7 @@ program day14p2;
 		openResult: FileError;
 
 begin
+	gShouldQuit := false;
 	SetUpDrawingWindow;
 	openResult := OpenInputFile(path);
 
@@ -174,9 +223,13 @@ begin
 
 			ShowStatus('solving');
 			result := Solve(cave^);
-			ShowStatus(StringOf('Result: ', result : 1, ' grains of sand at rest. Cmd-q to exit.'));
-			SysBeep(10);
-			PostSimulationEventLoop;
+
+			if not gShouldQuit then
+				begin
+					ShowStatus(StringOf('Result: ', result : 1, ' grains of sand at rest. Cmd-q to exit.'));
+					SysBeep(10);
+					PostSimulationEventLoop;
+				end;
 		end
 	else if openResult <> FileErrorCanceled then
 		ShowError('Error opening input file');
