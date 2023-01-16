@@ -6,7 +6,7 @@ interface
 		CaveInterface;
 
 	procedure SetUpDrawingWindow;
-	procedure DrawCaveFloor;
+	procedure DrawCaveFloor (caveFloorY: integer);
 	procedure DrawLedge (startX, endX, y: integer);
 	procedure DrawWall (x, startY, endY: integer);
 	procedure DrawSand (cx, cy: integer);
@@ -43,11 +43,11 @@ implementation
 		ShowDrawing;
 	end;
 
-	procedure DrawCaveFloor;
+	procedure DrawCaveFloor (caveFloorY: integer);
 		var
 			r: Rect;
 	begin
-		SetRect(r, 0, caveMaxY + caveTopOffset, winRight - winLeft, winHeight);
+		SetRect(r, 0, caveFloorY + caveTopOffset, winRight - winLeft, winHeight);
 		PaintRect(r);
 	end;
 

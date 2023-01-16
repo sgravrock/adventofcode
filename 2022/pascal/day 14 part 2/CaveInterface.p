@@ -7,11 +7,13 @@ interface
 		caveMinX = 326;
 		caveMaxX = 674;
 		caveMinY = 0;
-		caveMaxY = 175; { 175 for puzzle input, 11 for sample }
- { TODO don't hardcode this }
+		caveMaxY = 175;
 
 	type
-		CaveType = packed array[caveMinY..caveMaxY, caveMinX..caveMaxX] of boolean;
+		CaveType = record
+				cells: packed array[caveMinY..caveMaxY, caveMinX..caveMaxX] of boolean;
+				floorY: integer;
+			end;
 
 implementation
 

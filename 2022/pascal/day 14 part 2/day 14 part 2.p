@@ -46,37 +46,41 @@ program day14p2;
 				halt;
 			end;
 
+		cave.floorY := 0;
 		i := 1;
 
 		while i <= fileSz do
 			begin
 				hasPrevPoint := false;
 
-				while bufp^[i] <> chr($d) do
+				while (i <= fileSz) and (bufp^[i] <> chr($d)) do
 					begin
 						x2 := ReadInt(bufp^, i);
 						i := i + 1; { consume ',' }
 						y2 := ReadInt(bufp^, i);
+
+						if y2 > cave.floorY then
+							cave.floorY := y2;
 
 						if hasPrevPoint then
 							if x1 = x2 then
 								begin
 									if y2 < y1 then
 										for y := y1 downto y2 do
-											cave[y][x1] := true
+											cave.cells[y][x1] := true
 									else
 										for y := y1 to y2 do
-											cave[y][x1] := true;
+											cave.cells[y][x1] := true;
 									DrawWall(x1, y1, y2);
 								end
 							else if y1 = y2 then
 								begin
 									if x2 < x1 then
 										for x := x1 downto x2 do
-											cave[y1][x] := true
+											cave.cells[y1][x] := true
 									else
 										for x := x1 to x2 do
-											cave[y1][x] := true;
+											cave.cells[y1][x] := true;
 									DrawLedge(x1, x2, y1);
 								end
 							else
@@ -96,6 +100,7 @@ program day14p2;
 				i := i + 1; { Consume newline }
 			end;
 
+		cave.floorY := cave.floorY + 2;
 		dispose(bufp);
 	end;
 
@@ -106,7 +111,7 @@ program day14p2;
 			atRest: boolean;
 	begin
 		numAtRest := 0;
-		while not cave[0][500] do
+		while not cave.cells[0][500] do
 			begin
 				sandX := 500;
 				sandY := caveMinY;
@@ -114,16 +119,16 @@ program day14p2;
 
 				while not atRest do
 					begin
-						if sandY + 1 = caveMaxY then
+						if sandY + 1 = cave.floorY then
 							atRest := true
-						else if not cave[sandY + 1][sandX] then
+						else if not cave.cells[sandY + 1][sandX] then
 							sandY := sandY + 1
-						else if not cave[sandY + 1][sandX - 1] then
+						else if not cave.cells[sandY + 1][sandX - 1] then
 							begin
 								sandX := sandX - 1;
 								sandY := sandY + 1;
 							end
-						else if not cave[sandY + 1][sandX + 1] then
+						else if not cave.cells[sandY + 1][sandX + 1] then
 							begin
 								sandX := sandX + 1;
 								sandY := sandY + 1;
@@ -133,7 +138,7 @@ program day14p2;
 
 						if atRest then
 							begin
-								cave[sandY][sandX] := true;
+								cave.cells[sandY][sandX] := true;
 								atRest := true;
 								numAtRest := numAtRest + 1;
 								DrawSand(sandX, sandY);
@@ -161,11 +166,11 @@ begin
 
 	if openResult = FileErrorOk then
 		begin
-			DrawCaveFloor;
 			new(cave);
 
 			ShowStatus('Reading input file...');
 			ReadCave(cave^, path);
+			DrawCaveFloor(cave^.floorY);
 
 			ShowStatus('solving');
 			result := Solve(cave^);
