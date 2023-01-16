@@ -3,7 +3,7 @@ program day14p2;
 { x: 326..675, y: 0..175 }
 
 	uses
-		SysFileUtils, CaveInterface, Graphics;
+		MicroSysFileUtils, CaveInterface, UI;
 
 	const
 		bufsize = 11264;
@@ -40,9 +40,9 @@ program day14p2;
 
 		new(bufp);
 		fileSz := bufsize;
-		if not ReadEntireFile(path, Ptr(bufp), fileSz) then
+		if ReadEntireFile(path, Ptr(bufp), fileSz) <> FileErrorOk then
 			begin
-				writeln('read failed');
+				ShowError('read failed');
 				halt;
 			end;
 
@@ -81,7 +81,7 @@ program day14p2;
 								end
 							else
 								begin
-									writeln('Can''t have diagonal rocks');
+									ShowError('Can''t have diagonal rocks');
 									halt;
 								end;
 
@@ -139,7 +139,7 @@ program day14p2;
 								DrawSand(sandX, sandY);
 
 								if ((numAtRest <= 500) and (numAtRest mod 50 = 0)) or (numAtRest mod 1000 = 0) then
-									writeln(numAtRest : 1, ' so far');
+									ShowStatus(StringOf(numAtRest : 1, ' grains of sand at rest so far'));
 							end;
 					end;
 			end;
@@ -150,27 +150,29 @@ program day14p2;
 
 	var
 		cave: ^CaveType;
+		inputFile: Text;
 		result: integer;
 		path: integer;
+		openResult: FileError;
 
 begin
 	SetUpDrawingWindow;
+	openResult := OpenInputFile(path);
 
-	if OpenInputFile(path) then
+	if openResult = FileErrorOk then
 		begin
 			DrawCaveFloor;
 			new(cave);
 
-			writeln('Reading input file');
+			ShowStatus('Reading input file...');
 			ReadCave(cave^, path);
 
-			writeln('solving');
+			ShowStatus('solving');
 			result := Solve(cave^);
-			writeln(result);
+			ShowStatus(StringOf('Result: ', result : 1, ' grains of sand at rest. Cmd-q to exit.'));
 			SysBeep(10);
-			writeln('Press return to exit');
-			readln;
+			PostSimulationEventLoop;
 		end
-	else
-		writeln('Did not open input file');
+	else if openResult <> FileErrorCanceled then
+		ShowError('Error opening input file');
 end.
