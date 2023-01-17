@@ -100,6 +100,27 @@ implementation
 		ignored := StopAlert(alertId, nil);
 	end;
 
+
+	procedure DoMouseDown (event: EventRecord);
+		var
+			part: integer;
+			thisWindow: WindowPtr;
+	begin
+		part := FindWindow(event.where, thisWindow);
+		case part of
+{ Handle close box click. }
+{ Note: only works in a built application. When run within THINK Pascal, }
+{ part is always inDesk rather than inGoAway. }
+			inGoAway: { handle mouse down in close box }
+				if TrackGoAway(thisWindow, event.where) then
+					gShouldQuit := true;
+			otherwise
+				begin
+{ do nothing }
+				end;
+		end;
+	end;
+
 	procedure HandleOneEvent (maxSleepTicks: integer);
 		var
 			myEvent: EventRecord;
@@ -128,9 +149,11 @@ implementation
 						if (keyChar = 'q') and (BitAnd(myEvent.modifiers, cmdKey) <> 0) then
 							gShouldQuit := true;
 					end;
+				mouseDown: 
+					DoMouseDown(myEvent);
 				otherwise
 					begin
-{ TODO: window drag, window resize, window close box click, update, maybe more }
+{ TODO: window drag, window resize, update, maybe more }
 					end;
 			end;
 	end;
