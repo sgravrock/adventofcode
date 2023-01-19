@@ -9,6 +9,7 @@ interface
 		gShouldQuit: boolean;
 
 	procedure CreateWindow;
+	procedure DrawCaveCeiling;
 	procedure DrawCaveFloor (caveFloorY: integer);
 	procedure DrawLedge (startX, endX, y: integer);
 	procedure DrawWall (x, startY, endY: integer);
@@ -20,19 +21,19 @@ interface
 
 implementation
 
-	var
-		winWidth, winHeight: integer;
-
 	const
 		topPadding = 12;
 		statusLineLeftPadding = 12;
 		statusLineHeight = 20;
-		caveTopOffset = 32; { topPadding + statusLineHeight }
+		ceilingHeight = 20;
+		caveTopOffset = 52; { topPadding + statusLineHeight + ceilingHeight }
 		alertResId = 128;
 		windowResId = 400;
 
 	var
+		winWidth, winHeight, hCenter: integer;
 		window: WindowPtr;
+
 
 	procedure CreateWindow;
 	begin
@@ -41,6 +42,19 @@ implementation
 		SetPort(window);
 		winWidth := window^.portRect.right - window^.portRect.left;
 		winHeight := window^.portRect.bottom - window^.portRect.top;
+		hCenter := winWidth div 2;
+	end;
+
+	procedure DrawCaveCeiling;
+		var
+			r: Rect;
+			origin: integer;
+	begin
+		origin := 500 - hCenter;
+		SetRect(r, 0, caveTopOffset - ceilingHeight, origin, caveTopOffset);
+		PaintRect(r);
+		SetRect(r, origin + 1, caveTopOffset - ceilingHeight, winWidth, caveTopOffset);
+		PaintRect(r);
 	end;
 
 	procedure DrawCaveFloor (caveFloorY: integer);
@@ -52,29 +66,23 @@ implementation
 	end;
 
 	procedure DrawLedge (startX, endX, y: integer);
-		var
-			x0: integer;
 	begin
-		x0 := winWidth div 2; { Center horizontally }
-		MoveTo(startX - x0, y + caveTopOffset);
-		LineTo(endX - x0, y + caveTopOffset);
+		MoveTo(startX - hCenter, y + caveTopOffset);
+		LineTo(endX - hCenter, y + caveTopOffset);
 	end;
 
 	procedure DrawWall (x, startY, endY: integer);
 	begin
-		x := x - winWidth div 2; { Center horizontally }
-		MoveTo(x, startY + caveTopOffset);
-		LineTo(x, endY + caveTopOffset);
+		MoveTo(x - hCenter, startY + caveTopOffset);
+		LineTo(x - hCenter, endY + caveTopOffset);
 	end;
 
 
 	procedure DrawSand (cx, cy: integer);
 		var
-			x0: integer;
 			pxRect: Rect;
 	begin
-		x0 := winWidth div 2; { Center horizontally }
-		SetRect(pxRect, cx - x0, cy + caveTopOffset, cx - x0 + 1, cy + 1 + caveTopOffset);
+		SetRect(pxRect, cx - hCenter, cy + caveTopOffset, cx - hCenter + 1, cy + 1 + caveTopOffset);
 		PaintRect(pxRect);
 	end;
 

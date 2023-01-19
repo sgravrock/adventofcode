@@ -216,6 +216,7 @@ begin
 			CreateWindow;
 			ShowStatus('Reading input file...');
 			ReadCave(cave^, path);
+			DrawCaveCeiling;
 			DrawCaveFloor(cave^.floorY);
 
 			ShowStatus('solving');
