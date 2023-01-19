@@ -8,12 +8,14 @@ interface
 	var
 		gShouldQuit: boolean;
 
-	procedure CreateWindow;
+	procedure InitUI;
+	procedure ShowWaitCursor; { Call InitCursor to undo this }
 	procedure DrawCaveCeiling;
 	procedure DrawCaveFloor (caveFloorY: integer);
 	procedure DrawLedge (startX, endX, y: integer);
 	procedure DrawWall (x, startY, endY: integer);
 	procedure DrawSand (cx, cy: integer);
+	procedure ShowSandCount (n: integer);
 	procedure ShowStatus (status: string);
 	procedure ShowError (msg: string);
 	procedure HandleOneEvent (maxSleepTicks: integer);
@@ -22,9 +24,9 @@ interface
 implementation
 
 	const
-		topPadding = 12;
+		topPadding = 18;
 		statusLineLeftPadding = 12;
-		statusLineHeight = 20;
+		statusLineHeight = 14;
 		ceilingHeight = 20;
 		caveTopOffset = 52; { topPadding + statusLineHeight + ceilingHeight }
 		alertResId = 128;
@@ -33,9 +35,11 @@ implementation
 	var
 		winWidth, winHeight, hCenter: integer;
 		window: WindowPtr;
+		sandCountStart: Point;
+		showingSandCount: boolean;
 
 
-	procedure CreateWindow;
+	procedure InitUI;
 	begin
 		window := GetNewWindow(windowResId, nil, WindowPtr(-1));
 		ShowWindow(window);
@@ -43,6 +47,7 @@ implementation
 		winWidth := window^.portRect.right - window^.portRect.left;
 		winHeight := window^.portRect.bottom - window^.portRect.top;
 		hCenter := winWidth div 2;
+		showingSandCount := false;
 	end;
 
 	procedure DrawCaveCeiling;
@@ -55,6 +60,14 @@ implementation
 		PaintRect(r);
 		SetRect(r, origin + 1, caveTopOffset - ceilingHeight, winWidth, caveTopOffset);
 		PaintRect(r);
+	end;
+
+	procedure ShowWaitCursor;
+		var
+			theCursor: CursHandle;
+	begin
+		theCursor := GetCursor(4);
+		SetCursor(theCursor^^);
 	end;
 
 	procedure DrawCaveFloor (caveFloorY: integer);
@@ -86,14 +99,41 @@ implementation
 		PaintRect(pxRect);
 	end;
 
-	procedure ShowStatus (status: string);
+	procedure EraseStatusLine;
 		var
 			r: Rect;
 	begin
 		SetRect(r, 0, 0, winWidth, topPadding + statusLineHeight);
 		EraseRect(r);
+	end;
+
+	procedure ShowSandCount (n: integer);
+		var
+			r: Rect;
+	begin
+		if showingSandCount then
+			begin
+{ erase previous number, but leave the rest to minize fickering }
+				SetRect(r, sandCountStart.h, 0, winWidth, topPadding + statusLineHeight);
+				EraseRect(r);
+				MoveTo(sandCountStart.h, sandCountStart.v);
+			end
+		else
+			begin
+				ShowStatus('Grains of sand at rest so far: ');
+				GetPen(sandCountStart);
+				showingSandCount := true;
+			end;
+
+		DrawString(StringOf(n : 1));
+	end;
+
+	procedure ShowStatus (status: string);
+	begin
+		EraseStatusLine;
 		MoveTo(statusLineLeftPadding, topPadding);
 		DrawString(status);
+		showingSandCount := false;
 	end;
 
 	procedure ShowError (msg: string);

@@ -189,8 +189,8 @@ program day14p2;
 								numAtRest := numAtRest + 1;
 								DrawSand(sandX, sandY);
 
-								if ((numAtRest <= 500) and (numAtRest mod 50 = 0)) or (numAtRest mod 1000 = 0) then
-									ShowStatus(StringOf(numAtRest : 1, ' grains of sand at rest so far'));
+								if numAtRest mod 50 = 0 then
+									ShowSandCount(numAtRest);
 							end;
 					end;
 			end;
@@ -212,14 +212,14 @@ begin
 
 	if openResult = FileErrorOk then
 		begin
+			ShowWaitCursor;
 			new(cave);
-			CreateWindow;
-			ShowStatus('Reading input file...');
+			InitUI;
 			ReadCave(cave^, path);
 			DrawCaveCeiling;
 			DrawCaveFloor(cave^.floorY);
+			InitCursor;
 
-			ShowStatus('solving');
 			result := Solve(cave^);
 
 			if not gShouldQuit then
