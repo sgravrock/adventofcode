@@ -8,7 +8,7 @@ interface
 	var
 		gShouldQuit: boolean;
 
-	procedure SetUpDrawingWindow;
+	procedure CreateWindow;
 	procedure DrawCaveFloor (caveFloorY: integer);
 	procedure DrawLedge (startX, endX, y: integer);
 	procedure DrawWall (x, startY, endY: integer);
@@ -20,38 +20,34 @@ interface
 
 implementation
 
+	var
+		winWidth, winHeight: integer;
+
 	const
-{ Just fits on a compact Mac screen, will work on any machine }
-		winWidth = 506;
-		winHeight = 298;
-		winLeft = 3;
-		winRight = 509;
-		winTop = 41;
 		topPadding = 12;
 		statusLineLeftPadding = 12;
 		statusLineHeight = 20;
 		caveTopOffset = 32; { topPadding + statusLineHeight }
-		alertId = 128;
+		alertResId = 128;
+		windowResId = 400;
 
-	procedure SetRectToDrawingRect (var dest: Rect);
-	begin
-		SetRect(dest, winLeft, winTop, winWidth + winLeft, winHeight + winTop);
-	end;
+	var
+		window: WindowPtr;
 
-	procedure SetUpDrawingWindow;
-		var
-			r: Rect;
+	procedure CreateWindow;
 	begin
-		SetRectToDrawingRect(r);
-		SetDrawingRect(r);
-		ShowDrawing;
+		window := GetNewWindow(windowResId, nil, WindowPtr(-1));
+		ShowWindow(window);
+		SetPort(window);
+		winWidth := window^.portRect.right - window^.portRect.left;
+		winHeight := window^.portRect.bottom - window^.portRect.top;
 	end;
 
 	procedure DrawCaveFloor (caveFloorY: integer);
 		var
 			r: Rect;
 	begin
-		SetRect(r, 0, caveFloorY + caveTopOffset, winRight - winLeft, winHeight);
+		SetRect(r, 0, caveFloorY + caveTopOffset, winWidth, winHeight);
 		PaintRect(r);
 	end;
 
@@ -97,7 +93,7 @@ implementation
 			ignored: integer;
 	begin
 		ParamText(msg, '', '', '');
-		ignored := StopAlert(alertId, nil);
+		ignored := StopAlert(alertResId, nil);
 	end;
 
 
@@ -108,9 +104,6 @@ implementation
 	begin
 		part := FindWindow(event.where, thisWindow);
 		case part of
-{ Handle close box click. }
-{ Note: only works in a built application. When run within THINK Pascal, }
-{ part is always inDesk rather than inGoAway. }
 			inGoAway: { handle mouse down in close box }
 				if TrackGoAway(thisWindow, event.where) then
 					gShouldQuit := true;

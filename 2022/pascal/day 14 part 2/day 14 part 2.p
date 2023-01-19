@@ -36,8 +36,6 @@ program day14p2;
 			bufp: ^EntireFile;
 			fileSz, i: LongInt;
 	begin
-		ShowDrawing; { since we draw walls and ledges as we read }
-
 		new(bufp);
 		fileSz := bufsize;
 		if ReadEntireFile(path, Ptr(bufp), fileSz) <> FileErrorOk then
@@ -161,7 +159,7 @@ program day14p2;
 						else if i = 0 then
 							begin
 								i := itersBetwenEventHandling;
-								HandleOneEvent(1);
+								HandleOneEvent(maxSleepTicks);
 							end;
 
 						if gShouldQuit then
@@ -210,13 +208,12 @@ program day14p2;
 
 begin
 	gShouldQuit := false;
-	SetUpDrawingWindow;
 	openResult := OpenInputFile(path);
 
 	if openResult = FileErrorOk then
 		begin
 			new(cave);
-
+			CreateWindow;
 			ShowStatus('Reading input file...');
 			ReadCave(cave^, path);
 			DrawCaveFloor(cave^.floorY);
