@@ -11,7 +11,7 @@ These programs are written for THINK Pascal 4 on Motorola 68k Macintoshes.
 * [THINK Pascal 4.0](https://www.macintoshrepository.org/1758-symantec-think-pascal-4-0).
 * A working copy of the Textify program (in this repo) or some other way to
    fix both line endings and file types when copying text files to the old Mac.
-* A way to get files onto the old Mac.
+* [A way to get files onto the old Mac](FILE-TRANSFER.md).
 
 ## General process for building and running things
 
