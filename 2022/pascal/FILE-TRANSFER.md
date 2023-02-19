@@ -4,8 +4,8 @@ Getting files onto and off of old Macs can be difficult
 for a number of reasons:
 
 * All Mac files have type metadata that is lost when they're stored on a non-Mac
-  filesystem. Without that metdata, the files can't be opened.
-* Many Mac files, particularly applications, have resource forks that are lost
+  filesystem. Without that metadata, the files can't be opened.
+* Many Mac files, particularly all applications, have resource forks that are lost
   when they're stored on a non-Mac filesystem.
 * The archive format that's commonly used to work around the above problems is
   proprietary and can only be read by software that can itself be difficult to
@@ -31,9 +31,9 @@ read disks but not write them. I had a modern Mac running OS X Monterey, an
 older Intel Mac running OS X Snow Leopard, a Windows 10 machine with no
 provision for a floppy drive, and a USB floppy drive.
 
-## The easy problem: Copying an HFS floppy image to floppy disk
+## The easy problem: Copying a floppy image to floppy disk
 
-Some Macintosh software has been archived in the form of HFS floppy disk images.
+Some Macintosh software has been archived in the form of HFS or MFS floppy disk images.
 Notably, [THINK Pascal 4](https://www.macintoshrepository.org/1758-symantec-think-pascal-4-0)
 is available in this format. This makes things easyish because there's no 
 problem with file attributes or resource forks, and nothing needs to be
@@ -58,8 +58,8 @@ a more complex Disk Copy format. More on that below. You can tell the difference
 using the `file` command on OS X. If it says something like 
 `Macintosh HFS data block size: 512...` and the file is no larger than a floppy
 disk, you can write it directly with `dd`. It doesn't matter if the image is
-1.4MB or 800K. You can write either kind to a 1.4MB floppy the same way, and the
-disk will be readable in a 1.4MB drive.
+1.4MB, 800k, or even 400k. You can write any of those to a 1.4MB floppy the same
+way, and the disk will be readable in a 1.4MB drive.
 
 ## Harder: Dealing with missing Desktop files when your floppy drive can't write
 
@@ -145,12 +145,31 @@ but reliably chokes on resource scripts. I solved that with
 An easier method is to open the file in BBEdit, change the encoding and line 
 ending, and save it.
 
-## Unsolved: Dealing with StuffIt archives and the other Disk Copy image format
+## ~~Unsolved~~ Even harder: Dealing with StuffIt archives and the other Disk Copy image format
 
-Early Mac software tends to be archived as HFS images. Later software,
+https://www.macintoshrepository.org/52-stuffit-expander-and-dropstuff-with-ee-4-5
+
+Early Mac software tends to be archived as HFS or MFS floppy images. Later software,
 particularly anything that was distributed on CD rather than floppies, tends to
 be archived in StuffIt files or a newer Disk Copy image format that isn't just
-a raw copy of the disk.
+a raw copy of the disk. You can distinguish those images from raw floppy images
+by using the `file` command, checking for a resource fork, or checking for the
+`dImg` file type:
+
+```
+% file Stuffit45.image
+Stuffit45.image: Apple DiskCopy 4.2 image Expander & DropStuff w/EE?, 1474560 bytes, MFM CAV dshd (1440k), 0x2 format
+% ls Stuffit45.image/..namedfork/rsrc
+Stuffit45.image/..namedfork/rsrc
+% GetFileInfo Stuffit45.image
+[...]
+type: "dImg"
+creator: "dCpy"
+[...]
+```
+
+(Note: the GetFileInfo command is part of the Apple developer tools, and is
+deprecated. It's likely to disappear in a later release.)
 
 StuffIt was the most popular archiving and compression software on classic Macs.
 StuffIt archives come in two forms: an older format that can't survive on
@@ -160,26 +179,76 @@ versions of StuffIt are available on HFS floppy images, but the versions that
 can deal with the newer format are only available on the newer Disk Copy image
 format. I haven't found a way to write those images to physical media on modern
 computers. The raw image is wrapped in some sort of container format, so writing
-the file directly to a floppy results in an unreadable disk. The obvious
-solution is to open the image with Disk Copy on the old Mac, but there's a
-chicken-and-egg problem: I don't have Disk Copy, and it's only distributed as a
-StuffIt archive. So I need Disk Copy to get StuffIt, and I need StuffIt to get
-Disk Copy.
+the file directly to a floppy results in an unreadable disk.
 
-Supposedly Disk Copy came with System 6 and later, although it's not on my
-computer or on any of the System 7 boot images I've found. It could be that most
-people removed Disk Copy to save space, and reinstalling System 6 would solve
-the problem. It's also possible that these archives need a newer version of Disk
-Copy.
+All of this is easy enough to deal with on later systems like OS 9 which can
+mount Disk Copy images as volumes. If you've got something in the range of OS 9
+to Leopard which can speak TCP, work with Disk Copy images natively, and write
+to HFS filesystems, it's particularly easy. But I've got everything *but* that.
 
-I'm not aware of any off-the-shelf software that solves this chicken-and-egg
-problem. It's possible that I could program my way out of it. I've found that
-[The Unarchiver](https://theunarchiver.com/), unlike modern versions of StuffIt,
-can extract files from StuffIt archives. If the files are extracted to the
-standard OS X filesystem, they don't lose their attributes or resource forks.
-I could probably make something that splits the file up into a set of
-plain-old-stream-of-bytes files on the new Mac and then reassembles them on the
-old one. I just haven't gotten around to it yet.
+The obvious solution is to open the image with Disk Copy on the old Mac, but
+there's a chicken-and-egg problem: I didn't have Disk Copy, and it's only
+distributed as a StuffIt archive. So I needed Disk Copy to get StuffIt, and I 
+needed StuffIt to get Disk Copy.
+
+I was able to get around that problem by using the MacBinary format, which
+encodes the forks and metadata of a single Macintosh file as a byte stream. It
+was popular with Usenet and BBS users but hasn't seen much use on the Mac archive
+sites. The incredible thing about MacBinary is its interoperability. You can get
+a decoder for every OS version back to the original Macintosh system software,
+**and OS X still includes an encoder**. The format is also adequately documented
+and simple enough that if Apple ever stops shipping an encoder with OS X, you 
+could just write a new one. This makes it an incredibly useful tool to have 
+around.
+
+To get Disk Copy onto the old Mac:
+
+1. Get [BinHex 5.0](https://www.macintoshrepository.org/886-binhex-5-0).
+   It's available in two formats: A MacBinary archive and an MFS floppy image.
+   The former is of no use whatsoever in this situation but the latter can be
+   read by anything older than Mac OS 8. Download the MFS image, write it to 
+   floppy, and copy BinHex onto the old Mac.
+2. Download [Disk Copy](https://www.macintoshrepository.org/2416-diskcopy-4-2-5-0-5-5-6-0-6-2-6-3-3-6-4-6-5b13-7-0-8-0).
+3. On a modern Mac, use [The Unarchiver](https://duckduckgo.com/?t=ffab&q=the+unarchiver&ia=web)
+   to extract the contents of the StuffIt archive. (You need to save to a Mac
+   filesystem. APFS is fine but FAT, etc won't work.)
+4. Encode the self-extracting archive: `macbinary encode Disk Copy 4.2.sea`
+5. Copy `Disk Copy 4.2.sea.bin` onto the Mac.
+6. Use BinHex to extract it.
+7. Double-click the extracted `Disk Copy 4.2.sea` to install Disk Copy.
+8. Download [Stuffit 4.5](https://www.macintoshrepository.org/52-stuffit-expander-and-dropstuff-with-ee-4-5)
+   or later and get it onto the old Mac.
+9. Use Disk Copy to to open the Stuffit image.
+
+At this point, you're home free if all of your hardware is fully working. But
+mine isn't. My floppy drive can't write. And that's a problem, because the only
+thing Disk Copy can do with an image on old systems like System 6 is write it to
+a physical floppy. There's no way to mount the image and copy files off of it
+like you can on earlier systems. However, it turns out that my old Snow Leopard
+system has built-in support for Disk Copy images. I was able to to use it to get
+the Stuffit installer onto the old Mac, as follows:
+
+1. Open the Stuffit 4.5 Disk Copy image on the Snow Leopard machine.
+2. Copy the Stuffit installer from the Snow Leopard machine to the modern Mac.
+   (I might have been able to skip this step.)
+3. Encode the installer with `macbinary encode`.
+4. Copy the encoded installer onto the old Mac.
+5. Use BinHex to extract it.
+6. Run the installer.
+
+There are just a couple of more minor hurdles. Stuffit 4.5, the oldest version
+that can deal with pure-data `.sit` archives, requires at least System 7.1.
+System 7 can run on the Mac Classic but I don't really recommend it. It's
+appreciably slower than System 6, and that's a high price to pay on a machine
+that's so slow to begin with. It's much better to dual-boot, using System 7 only
+when necessary. That might seem like a big deal, but if you've already got a
+BlueSCSI it's easier than almost anything else in this guide. Just
+[grab a pre-made image](https://github.com/erichelgeson/BlueSCSI/wiki/Getting-Started#premade-image)
+and drop it on the SD card.
+
+The other hurdle is that Stuffit Expander reliably crashes when you try to open
+an archive from within it, at least on my computer. The workaround is to drag
+the archive onto the Stuffit Expander icon in the finder.
 
 ## Things that would have been easier (Or: Do as I say, not as I do)
 
@@ -237,8 +306,13 @@ Go far enough back and you're going to have to deal with the older MFS
 filesystem. (The Mac 512k and 512ke don't support HFS out of the box, and the
 original Mac 128k can't use it at all.) Tools that deal with MFS are largely
 extinct. Apple dropped support for it long enough ago that a lot of 
-otherwise-reasonable bridge machines can't handle it.
+otherwise-reasonable bridge machines can't handle it. On the other hand, MFS is
+simple and fairly well-documented. I doubt it would be very hard to write a
+program to copy files to and from MFS images. HFS, while also do-able, would be
+a much bigger project.
 
 The big lesson to take away from all of this is: Unless you like solving these
 kinds of puzzles you should get the newest machine, in the best condition, that
-will still scratch your particular retrocomputing itch.
+will still scratch your particular retrocomputing itch. Quicksilver G4s running
+Mac OS 9 are rare as dirt, cost next to nothing, and sidestep most of the 
+problems I've described above.
