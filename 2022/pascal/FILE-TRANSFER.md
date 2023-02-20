@@ -292,8 +292,8 @@ I'll probably look into that option.
 
 The 400k and 800k floppy disks used by *really* old Macs are physically
 incompatible with modern drives. They need a variable-speed motor and a stronger
-magnetic field. Disk written in a modern floppy drive aren't readable in an 800k
-or 400k drive, and vice versa. The 1.4MB floppy drives in vintage Macs like my
+magnetic field. Disks written in a modern floppy drive aren't readable in an 800k
+or 400k drive, and vice versa. The 1.4MB Apple/Sony SuperDrives in vintage Macs like my
 Classic are the newest drives that can read and write 400k and 800k floppies.
 So if I was trying to use a machine with those drives I'd need something like my
 Classic to serve as a bridge machine, and everything I described above would
