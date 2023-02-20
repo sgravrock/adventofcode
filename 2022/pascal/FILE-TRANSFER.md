@@ -284,6 +284,12 @@ not clear whether any of them still work on Monterey, and I didn't want to risk
 it on my daily driver. Running one of those on a slightly older version of OS X
 might have been a really nice solution.
 
+I might have also tried getting Kermit (or similar) running on both machines and
+transferring files over a serial connection. For the small file transfers that
+characterize Advent of Code, that might have been a more convenient solution
+than using a BlueSCSI and CiderPress. If I do any more programming on the old Mac
+I'll probably look into that option.
+
 ## Things that would have been harder (Or: Computers to avoid if you're new at this)
 
 The 400k and 800k floppy disks used by *really* old Macs are physically
