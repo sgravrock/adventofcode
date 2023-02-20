@@ -147,8 +147,6 @@ ending, and save it.
 
 ## ~~Unsolved~~ Even harder: Dealing with StuffIt archives and the other Disk Copy image format
 
-https://www.macintoshrepository.org/52-stuffit-expander-and-dropstuff-with-ee-4-5
-
 Early Mac software tends to be archived as HFS or MFS floppy images. Later software,
 particularly anything that was distributed on CD rather than floppies, tends to
 be archived in StuffIt files or a newer Disk Copy image format that isn't just
@@ -224,7 +222,7 @@ At this point, you're home free if all of your hardware is fully working. But
 mine isn't. My floppy drive can't write. And that's a problem, because the only
 thing Disk Copy can do with an image on old systems like System 6 is write it to
 a physical floppy. There's no way to mount the image and copy files off of it
-like you can on earlier systems. However, it turns out that my old Snow Leopard
+like you can on later systems. However, it turns out that my old Snow Leopard
 system has built-in support for Disk Copy images. I was able to to use it to get
 the Stuffit installer onto the old Mac, as follows:
 
@@ -303,14 +301,14 @@ just have been Step 1. And that's assuming that all of the floppy drives
 involved work. The older the drive, the less likely that is.
 
 Anything older than a Mac Plus doesn't have a SCSI port. That rules out use of
-a BlueSCSI, which I found to be the by far best tool for physical file transfer.
+a BlueSCSI, which I found to be by far the best tool for physical file transfer.
 External hard drives were available for those computers, but they used either
 the floppy drive port or the serial port. Good luck getting *that* to talk to
 anything newer.
 
 Go far enough back and you're going to have to deal with the older MFS
-filesystem. (The Mac 512k and 512ke don't support HFS out of the box, and the
-original Mac 128k can't use it at all.) Tools that deal with MFS are largely
+filesystem. The Mac 512k and 512ke don't support HFS out of the box, and the
+original Mac 128k can't use it at all. Tools that deal with MFS are largely
 extinct. Apple dropped support for it long enough ago that a lot of 
 otherwise-reasonable bridge machines can't handle it. On the other hand, MFS is
 simple and fairly well-documented. I doubt it would be very hard to write a
