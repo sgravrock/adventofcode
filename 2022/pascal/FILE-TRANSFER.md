@@ -56,10 +56,10 @@ Most .img files and some "Disk Copy images" on sites like macintoshrepository.or
 are raw images that can be written directly to a floppy in this manner. Some are
 a more complex Disk Copy format. More on that below. You can tell the difference
 using the `file` command on OS X. If it says something like 
-`Macintosh HFS data block size: 512...` and the file is no larger than a floppy
-disk, you can write it directly with `dd`. It doesn't matter if the image is
-1.4MB, 800k, or even 400k. You can write any of those to a 1.4MB floppy the same
-way, and the disk will be readable in a 1.4MB drive.
+`Macintosh HFS data block size: 512...` and the file is no larger than 1.5M, you 
+can write it directly with `dd`. It doesn't matter if the image is 1.5MB (the
+Finder rounds up), 800k, or even 400k. You can write any of those to a 1.4MB
+floppy the same way, and the disk will be readable in a 1.4MB drive.
 
 ## Harder: Dealing with missing Desktop files when your floppy drive can't write
 
