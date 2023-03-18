@@ -18,7 +18,7 @@ do {
 	checkRange(n);
 	n *= decryptionMultiplier;
 	checkRange(n);
-	np.mixOffset = n;
+	np.mixOffset = n % (list.sz - 1);
 	np = np.next;
 } while (np !== list.head);
 
