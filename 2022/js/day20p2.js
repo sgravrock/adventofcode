@@ -1,17 +1,23 @@
 const fs = require('fs');
 
+const decryptionKey = 811589153;
+
 const originalOrder = fs.readFileSync(0, {encoding: 'utf8'})
 	.trim()
 	.split('\n')
-	.map(line => ({n: parseInt(line, 10)}));
+	.map(line => ({n: parseInt(line, 10) * decryptionKey}));
 const list = toList(originalOrder);
-mix(originalOrder, list);
-printList(list);
+
+for (let i = 0; i < 10; i++) {
+	mix(originalOrder, list);
+}
+
+//printList(list);
 const a = find(list.head, 0);
-const b = advance(a, 1000);
-const c = advance(b, 1000);
-const d = advance(c, 1000);
-console.log(b.n, c.n, d.n);
+const b = advance(a, 1000 % list.sz);
+const c = advance(b, 1000 % list.sz);
+const d = advance(c, 1000 % list.sz);
+//console.log(b.n, c.n, d.n);
 console.log(b.n + c.n + d.n);
 
 
@@ -26,7 +32,10 @@ function toList(arr) {
 
 	arr[0].prev = arr[arr.length - 1];
 	arr[arr.length - 1].next = arr[0];
-	return {head: arr[0]};
+	return {
+		head: arr[0],
+		sz: arr.length
+	};
 }
 
 function toArr(list) {
@@ -42,14 +51,14 @@ function toArr(list) {
 }
 
 function mix(originalOrder, list) {
-	printList(list);
+	//printList(list);
 	for (const toMove of originalOrder) {
 		if (toMove.n !== 0) {
 			let newPrev = toMove.prev;
 			toMove.next.prev = newPrev;
 			newPrev.next = toMove.next;
 
-			let n = Math.abs(toMove.n);
+			let n = Math.abs(toMove.n) % (list.sz - 1);
 			let positive = toMove.n > 0;
 
 			if (list.head === toMove) {
