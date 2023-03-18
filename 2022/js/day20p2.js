@@ -5,10 +5,12 @@ const decryptionKey = 811589153;
 const originalOrder = fs.readFileSync(0, {encoding: 'utf8'})
 	.trim()
 	.split('\n')
-	.map(line => ({n: parseInt(line, 10) * decryptionKey}));
+	.map(line => ({n: parseInt(line, 10)}));
 const list = toList(originalOrder);
+checkRanges(list);
 
 for (let i = 0; i < 10; i++) {
+	console.log('mixing');
 	mix(originalOrder, list);
 }
 
@@ -18,7 +20,7 @@ const b = advance(a, 1000 % list.sz);
 const c = advance(b, 1000 % list.sz);
 const d = advance(c, 1000 % list.sz);
 //console.log(b.n, c.n, d.n);
-console.log(b.n + c.n + d.n);
+console.log((b.n + c.n + d.n) * decryptionKey);
 
 
 function toList(arr) {
@@ -52,13 +54,19 @@ function toArr(list) {
 
 function mix(originalOrder, list) {
 	//printList(list);
+	const decryptionMultiplier = decryptionKey % (list.sz - 1);
+
 	for (const toMove of originalOrder) {
+		//console.log("mixing", ++i);
 		if (toMove.n !== 0) {
 			let newPrev = toMove.prev;
 			toMove.next.prev = newPrev;
 			newPrev.next = toMove.next;
 
 			let n = Math.abs(toMove.n) % (list.sz - 1);
+			checkRange(n);
+			n *= decryptionMultiplier;
+			checkRange(n);
 			let positive = toMove.n > 0;
 
 			if (list.head === toMove) {
@@ -100,4 +108,19 @@ function advance(start, nMoves) {
 
 function printList(list) {
 	console.log(toArr(list).map(node => node.n).join(', '));
+}
+
+function checkRanges(list) {
+	let np = list.head;
+
+	do {
+		checkRange(np.n);
+		np = np.next;
+	} while (np !== list.head);
+}
+
+function checkRange(n) {
+	if (n > 2147483647 || n < -2147483648) {
+		throw new Error(`Value won't fit in a Pascal longint: ${n}`);
+	}
 }
