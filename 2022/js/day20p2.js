@@ -9,6 +9,19 @@ const originalOrder = fs.readFileSync(0, {encoding: 'utf8'})
 const list = toList(originalOrder);
 checkRanges(list);
 
+const decryptionMultiplier = decryptionKey % (list.sz - 1);
+console.log('decryptionMultiplier:', decryptionMultiplier);
+let np = list.head;
+let once = false;
+do {
+	let n = Math.abs(np.n) % (list.sz - 1);
+	checkRange(n);
+	n *= decryptionMultiplier;
+	checkRange(n);
+	np.mixOffset = n;
+	np = np.next;
+} while (np !== list.head);
+
 for (let i = 0; i < 10; i++) {
 	console.log('mixing');
 	mix(originalOrder, list);
@@ -54,7 +67,6 @@ function toArr(list) {
 
 function mix(originalOrder, list) {
 	//printList(list);
-	const decryptionMultiplier = decryptionKey % (list.sz - 1);
 
 	for (const toMove of originalOrder) {
 		//console.log("mixing", ++i);
@@ -63,17 +75,13 @@ function mix(originalOrder, list) {
 			toMove.next.prev = newPrev;
 			newPrev.next = toMove.next;
 
-			let n = Math.abs(toMove.n) % (list.sz - 1);
-			checkRange(n);
-			n *= decryptionMultiplier;
-			checkRange(n);
 			let positive = toMove.n > 0;
 
 			if (list.head === toMove) {
 				list.head = toMove.next;
 			}
 
-			for (let i = 0; i < n; i++) {
+			for (let i = 0; i < toMove.mixOffset; i++) {
 				newPrev = positive ? newPrev.next : newPrev.prev;
 			}
 
