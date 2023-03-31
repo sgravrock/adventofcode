@@ -21,6 +21,7 @@ interface
 	procedure HandleOneEvent (maxSleepTicks: integer);
 	procedure PostSimulationEventLoop;
 
+
 implementation
 
 	const
@@ -37,30 +38,64 @@ implementation
 		window: WindowPtr;
 		sandCountStart: Point;
 		showingSandCount: boolean;
+		offscreenPort: GrafPtr; { Used to quickly redraw the window }
+
+	function CreateOffscreenGrafPort: GrafPtr;
+		var
+			savedPort, newPort: GrafPtr;
+	begin
+{ Save the current GrafPort so we can restore it before returning }
+		GetPort(savedPort);
+
+{ Offscreen GrafPorts are not well documented (Apple expected you to }
+{ get them from windows) but this appears to work. See Inside Macintosh }
+{ Vol 1 p.163-164 for the initial state of the port. }
+		newPort := GrafPtr(NewPtr(sizeof(GrafPort)));
+		OpenPort(newPort);
+
+{ OpenPort initializes portBits to an exact copy of screenBits, meaning }
+{ that portBits.baseAddr is the address of the actual bit image for the }
+{ screen. We need to change that before drawing. }
+		with newPort^.portBits do
+			baseAddr := NewPtr(rowBytes * (bounds.bottom - bounds.top));
+
+{ It's not obvious how to correctly change the size or origin of an offscreen }
+{ GrafPort, so we won't. The created port is a bit bigger than our window }
+{ so we can act as if the have the same coordinate system and everything }
+{ will work out ok. }
+
+{ Zero the bitmap so we don't draw random junk onto the screen. }
+{ EraseRect is *vastly* faster than a Pascal for loop. }
+		EraseRect(newPort^.portRect);
+
+{ Copy font settings from the window }
+		TextFont(savedPort^.txFont);
+		TextFace(savedPort^.txFace);
+		TextMode(savedPort^.txMode);
+		TextSize(savedPort^.txSize);
+
+{ Restore the original port and return the new one. }
+		SetPort(savedPort);
+		CreateOffscreenGrafPort := newPort;
+	end;
 
 
 	procedure InitUI;
 	begin
 		window := GetNewWindow(windowResId, nil, WindowPtr(-1));
+		if window = nil then
+			halt;
 		ShowWindow(window);
 		SetPort(window);
 		winWidth := window^.portRect.right - window^.portRect.left;
 		winHeight := window^.portRect.bottom - window^.portRect.top;
 		hCenter := winWidth div 2;
 		showingSandCount := false;
+		offscreenPort := CreateOffscreenGrafPort;
+		if offscreenPort = nil then
+			halt;
 	end;
 
-	procedure DrawCaveCeiling;
-		var
-			r: Rect;
-			origin: integer;
-	begin
-		origin := 500 - hCenter;
-		SetRect(r, 0, caveTopOffset - ceilingHeight, origin, caveTopOffset);
-		PaintRect(r);
-		SetRect(r, origin + 1, caveTopOffset - ceilingHeight, winWidth, caveTopOffset);
-		PaintRect(r);
-	end;
 
 	procedure ShowWaitCursor;
 		var
@@ -70,22 +105,57 @@ implementation
 		SetCursor(theCursor^^);
 	end;
 
+
+	procedure DrawCaveCeiling;
+		var
+			r: Rect;
+			origin, ceilTop, ceilBottom: integer;
+	begin
+		origin := 500 - hCenter;
+		ceilTop := caveTopOffset - ceilingHeight;
+		ceilBottom := caveTopOffset;
+
+		SetPort(offscreenPort);
+		SetRect(r, 0, ceilTop, origin, ceilBottom);
+		PaintRect(r);
+		SetRect(r, origin + 1, ceilTop, winWidth, ceilBottom);
+		PaintRect(r);
+		SetPort(window);
+
+		SetRect(r, 0, ceilTop, winWidth, ceilBottom);
+		CopyBits(offscreenPort^.portBits, window^.portBits, r, r, srcCopy, nil);
+	end;
+
+
 	procedure DrawCaveFloor (caveFloorY: integer);
 		var
 			r: Rect;
 	begin
 		SetRect(r, 0, caveFloorY + caveTopOffset, winWidth, winHeight);
+		SetPort(offscreenPort);
+		PaintRect(r);
+		SetPort(window);
 		PaintRect(r);
 	end;
 
+
 	procedure DrawLedge (startX, endX, y: integer);
 	begin
+		SetPort(offscreenPort);
+		MoveTo(startX - hCenter, y + caveTopOffset);
+		LineTo(endX - hCenter, y + caveTopOffset);
+		SetPort(window);
 		MoveTo(startX - hCenter, y + caveTopOffset);
 		LineTo(endX - hCenter, y + caveTopOffset);
 	end;
 
+
 	procedure DrawWall (x, startY, endY: integer);
 	begin
+		SetPort(offscreenPort);
+		MoveTo(x - hCenter, startY + caveTopOffset);
+		LineTo(x - hCenter, endY + caveTopOffset);
+		SetPort(window);
 		MoveTo(x - hCenter, startY + caveTopOffset);
 		LineTo(x - hCenter, endY + caveTopOffset);
 	end;
@@ -96,21 +166,48 @@ implementation
 			pxRect: Rect;
 	begin
 		SetRect(pxRect, cx - hCenter, cy + caveTopOffset, cx - hCenter + 1, cy + 1 + caveTopOffset);
+		SetPort(offscreenPort);
+		PaintRect(pxRect);
+		SetPort(window)
 		PaintRect(pxRect);
 	end;
+
 
 	procedure EraseStatusLine;
 		var
 			r: Rect;
 	begin
 		SetRect(r, 0, 0, winWidth, topPadding + statusLineHeight);
+		SetPort(offscreenPort);
 		EraseRect(r);
+		SetPort(window);
+		EraseRect(r);
+	end;
+
+
+	procedure CopyStatusLine;
+		var
+			r: Rect;
+	begin
+		SetRect(r, 0, 0, winWidth, caveTopOffset);
+		CopyBits(offscreenPort^.portBits, window^.portBits, r, r, srcCopy, nil);
+	end;
+
+{ Update the status line without changing ports }
+	procedure ShowStatusInternal (status: string);
+	begin
+		EraseStatusLine;
+		MoveTo(statusLineLeftPadding, topPadding);
+		DrawString(status);
+		showingSandCount := false;
 	end;
 
 	procedure ShowSandCount (n: integer);
 		var
 			r: Rect;
 	begin
+		SetPort(offscreenPort);
+
 		if showingSandCount then
 			begin
 { erase previous number, but leave the rest to minize fickering }
@@ -120,20 +217,23 @@ implementation
 			end
 		else
 			begin
-				ShowStatus('Grains of sand at rest so far: ');
+				ShowStatusInternal('Grains of sand at rest so far: ');
 				GetPen(sandCountStart);
 				showingSandCount := true;
 			end;
 
 		DrawString(StringOf(n : 1));
+		SetPort(window);
+
+		CopyStatusLine;
 	end;
 
 	procedure ShowStatus (status: string);
 	begin
-		EraseStatusLine;
-		MoveTo(statusLineLeftPadding, topPadding);
-		DrawString(status);
-		showingSandCount := false;
+		SetPort(offscreenPort);
+		ShowStatusInternal(status);
+		SetPort(window);
+		CopyStatusLine;
 	end;
 
 	procedure ShowError (msg: string);
@@ -142,6 +242,19 @@ implementation
 	begin
 		ParamText(msg, '', '', '');
 		ignored := StopAlert(alertResId, nil);
+	end;
+
+
+	procedure DoUpdate;
+		var
+			srcRect: Rect;
+	begin
+		with window^.portRect do
+			SetRect(srcRect, 0, 0, right - left, bottom - top);
+
+		BeginUpdate(window);
+		CopyBits(offscreenPort^.portBits, window^.portBits, srcRect, window^.portRect, srcCopy, nil);
+		EndUpdate(window);
 	end;
 
 
@@ -161,6 +274,7 @@ implementation
 				end;
 		end;
 	end;
+
 
 	procedure HandleOneEvent (maxSleepTicks: integer);
 		var
@@ -190,9 +304,11 @@ implementation
 					end;
 				mouseDown: 
 					DoMouseDown(myEvent);
+				updateEvt: 
+					DoUpdate;
 				otherwise
 					begin
-{ TODO: window drag, window resize, update, maybe more }
+{ TODO: window drag, window resize, maybe more }
 					end;
 			end;
 	end;
