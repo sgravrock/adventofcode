@@ -39,6 +39,7 @@ implementation
 		sandCountStart: Point;
 		showingSandCount: boolean;
 		offscreenPort: GrafPtr; { Used to quickly redraw the window }
+		dragRect: Rect; { boundary for dragging the window }
 
 	function CreateOffscreenGrafPort: GrafPtr;
 		var
@@ -91,9 +92,13 @@ implementation
 		winHeight := window^.portRect.bottom - window^.portRect.top;
 		hCenter := winWidth div 2;
 		showingSandCount := false;
+
 		offscreenPort := CreateOffscreenGrafPort;
 		if offscreenPort = nil then
 			halt;
+
+		with screenBits.bounds do
+			SetRect(dragRect, 4, 24, right - 4, bottom - 4);
 	end;
 
 
@@ -168,20 +173,8 @@ implementation
 		SetRect(pxRect, cx - hCenter, cy + caveTopOffset, cx - hCenter + 1, cy + 1 + caveTopOffset);
 		SetPort(offscreenPort);
 		PaintRect(pxRect);
-		SetPort(window)
-		PaintRect(pxRect);
-	end;
-
-
-	procedure EraseStatusLine;
-		var
-			r: Rect;
-	begin
-		SetRect(r, 0, 0, winWidth, topPadding + statusLineHeight);
-		SetPort(offscreenPort);
-		EraseRect(r);
 		SetPort(window);
-		EraseRect(r);
+		PaintRect(pxRect);
 	end;
 
 
@@ -195,8 +188,12 @@ implementation
 
 { Update the status line without changing ports }
 	procedure ShowStatusInternal (status: string);
+		var
+			r: Rect;
 	begin
-		EraseStatusLine;
+{ Erase whatever's currently in the status line }
+		SetRect(r, 0, 0, winWidth, topPadding + statusLineHeight);
+		EraseRect(r);
 		MoveTo(statusLineLeftPadding, topPadding);
 		DrawString(status);
 		showingSandCount := false;
@@ -223,8 +220,8 @@ implementation
 			end;
 
 		DrawString(StringOf(n : 1));
-		SetPort(window);
 
+		SetPort(window);
 		CopyStatusLine;
 	end;
 
@@ -265,9 +262,11 @@ implementation
 	begin
 		part := FindWindow(event.where, thisWindow);
 		case part of
-			inGoAway: { handle mouse down in close box }
+			inGoAway: { window close box }
 				if TrackGoAway(thisWindow, event.where) then
 					gShouldQuit := true;
+			inDrag: { window title bar }
+				DragWindow(thisWindow, event.where, dragRect);
 			otherwise
 				begin
 { do nothing }
@@ -308,7 +307,7 @@ implementation
 					DoUpdate;
 				otherwise
 					begin
-{ TODO: window drag, window resize, maybe more }
+{ Other events aren't implemented. }
 					end;
 			end;
 	end;
