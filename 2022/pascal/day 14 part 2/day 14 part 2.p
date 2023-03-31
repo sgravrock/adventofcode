@@ -224,7 +224,7 @@ begin
 
 			if not gShouldQuit then
 				begin
-					ShowStatus(StringOf('Result: ', result : 1, ' grains of sand at rest. Cmd-q to exit.'));
+					ShowStatus(StringOf('Result: ', result : 1, ' grains of sand at rest.'));
 					SysBeep(10);
 					PostSimulationEventLoop;
 				end;

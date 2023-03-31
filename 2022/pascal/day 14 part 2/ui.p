@@ -167,8 +167,6 @@ implementation
 			myEvent: EventRecord;
 			keyChar: char;
 	begin
-		SystemTask;
-
 { WaitNextEvent is documented in Macintosh Toolbox Essentials (Apple). }
 { It does not seem to be mentioned in any volume of the original Inside }
 { Macintosh series. It appears to have been introduced with MultiFinder, }
@@ -200,9 +198,6 @@ implementation
 	end;
 
 	procedure PostSimulationEventLoop;
-		var
-			myEvent: EventRecord;
-			keyChar: char;
 	begin
 		while not gShouldQuit do
 { We've nothing else to do so be maximally nice to background processes }
