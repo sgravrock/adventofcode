@@ -1,20 +1,8 @@
 program day1p1;
 
-{ Prompts for a file and opens it using Pascal I/O, which is significantly more }
-{ convenient for line- or number-at-a-time reading than Mac Toolbox I/O }
-	function OpenInputFile (var f: Text): boolean;
-		var
-			path: string[255];
-	begin
-		path := OldFileName;
+	uses
+		FileUtils;
 
-		if path = '' then
-			OpenInputFile := false
-		else
-			begin
-				reset(f, path);
-			end;
-	end;
 	const
 		enableDebugLogging = false;
 

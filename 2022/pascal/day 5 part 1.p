@@ -1,5 +1,8 @@
 program day4p2;
 
+	uses
+		FileUtils;
+
 	type
 		CrateStack = record
 				crates: array[1..255] of char;
@@ -13,21 +16,6 @@ program day4p2;
 	const
 		enableDebugging = false; { enables interactive visual debugging }
 
-{ Prompts for a file and opens it using Pascal I/O, which is significantly more }
-{ convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
-	function OpenInputFile (var f: Text): boolean;
-		var
-			path: string[255];
-	begin
-		path := OldFileName;
-
-		if path = '' then
-			OpenInputFile := false
-		else
-			begin
-				reset(f, path);
-			end;
-	end;
 
 	function IsDigit (c: char): boolean;
 		var

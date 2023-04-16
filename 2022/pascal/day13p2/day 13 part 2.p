@@ -1,12 +1,12 @@
 program day13p2;
 
-{ Note: This needs 256KB zone (heap) size. (Run -> Run Options in THINK Pascal.}
+{ Note: This needs 240KB zone (heap) size. (Run -> Run Options in THINK Pascal.}
 
 { Note: Set enableDebugOutput in config.p to true for debugging, }
 { or false to make this run "fast". }
 
 	uses
-		Config, IO, Packets, Sorting, Tests;
+		Config, SysFileUtils, Packets, Sorting, Tests;
 
 	type
 		PacketArr = array[1..maxNumPackets] of ListPtr;

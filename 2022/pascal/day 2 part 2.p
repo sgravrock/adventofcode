@@ -1,5 +1,8 @@
 program day2p2;
 
+	uses
+		FileUtils;
+
 	const
 		rockScore = 1;
 		paperScore = 2;
@@ -10,23 +13,6 @@ program day2p2;
 		lose = 'X';
 		draw = 'Y';
 		win = 'Z';
-
-
-{ Prompts for a file and opens it using Pascal I/O, which is significantly more }
-{ convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
-	function OpenInputFile (var f: Text): boolean;
-		var
-			path: string[255];
-	begin
-		path := OldFileName;
-
-		if path = '' then
-			OpenInputFile := false
-		else
-			begin
-				reset(f, path);
-			end;
-	end;
 
 	function ScoreForMove (opponentMove, desiredOutcome: char): integer;
 		var

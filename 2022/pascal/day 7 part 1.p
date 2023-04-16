@@ -1,5 +1,8 @@
 program day7p1;
 
+	uses
+		FileUtils;
+
 	type
 		DirStack = record
 				dirs: array[1..10] of LongInt;
@@ -9,21 +12,6 @@ program day7p1;
 	const
 		maxSmallDirSize = 100000;
 
-{ Prompts for a file and opens it using Pascal I/O, which is significantly more }
-{ convenient for line- or char-at-a-time reading than Mac Toolbox I/O }
-	function OpenInputFile (var f: Text): boolean;
-		var
-			path: string[255];
-	begin
-		path := OldFileName;
-
-		if path = '' then
-			OpenInputFile := false
-		else
-			begin
-				reset(f, path);
-			end;
-	end;
 
 	procedure Pushd (var stack: DirStack);
 	begin

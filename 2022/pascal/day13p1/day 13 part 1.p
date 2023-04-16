@@ -4,7 +4,7 @@ program day13p1;
 { or false to make this run "fast". }
 
 	uses
-		Config, IO, Packets, Tests;
+		Config, SysFileUtils, Packets, Tests;
 
 	function FindNext (var haystack: InputBuffer; needle: char; startIx, endIx: integer): integer;
 		var
