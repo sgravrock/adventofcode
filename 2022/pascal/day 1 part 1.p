@@ -15,6 +15,8 @@ program day1p1;
 				reset(f, path);
 			end;
 	end;
+	const
+		enableDebugLogging = false;
 
 { Reads the next line. If it represents an integer, stores the }
 { integer in result and returns true. Returns false if a blank }
@@ -62,7 +64,8 @@ program day1p1;
 				latest := ReadElf(f);
 				if latest > most then
 					most := latest;
-				writeln('latest: ', latest, '     running max: ', most);
+				if enableDebugLogging then
+					writeln('latest: ', latest, '     running max: ', most);
 			end;
 		FindElfWithMostCalories := most;
 	end;
@@ -72,10 +75,14 @@ program day1p1;
 		result: LongInt;
 
 begin
+	ShowText;
 	if OpenInputFile(inputFile) then
 		begin
 			result := FindElfWithMostCalories(inputFile);
 			writeln('Result: ', result);
+			writeln('Press Return to exit');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

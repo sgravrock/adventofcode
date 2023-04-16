@@ -92,10 +92,14 @@ program day1p2;
 		result: LongInt;
 
 begin
+	ShowText;
 	if OpenInputFile(inputFile) then
 		begin
 			result := FindElvesWithMostCalories(inputFile);
 			writeln('Result: ', result);
+			SysBeep(10);
+			writeln('Press return');
+			readln;
 		end
 	else
 		writeln('Did not open input file');

@@ -1,5 +1,3 @@
-{ Note: Needs a larger than default zone size (128K isn't enough, 256 is) }
-{ TODO is this still true? }
 program day9p1;
 	uses
 		FileUtils, Rope, RopeTests, BigBitSet;
@@ -94,6 +92,9 @@ begin
 	if OpenInputFile(inputFile) then
 		begin
 			result := Travel(inputFile);
+			writeln('Press enter');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

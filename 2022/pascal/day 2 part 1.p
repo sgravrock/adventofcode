@@ -87,10 +87,14 @@ program day2p1;
 		result: integer;
 
 begin
+	ShowText;
 	if OpenInputFile(inputFile) then
 		begin
 			result := TotalScore(inputFile);
 			writeln('Result: ', result);
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

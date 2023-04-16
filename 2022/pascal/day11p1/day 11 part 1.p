@@ -211,7 +211,10 @@ begin
 		begin
 			ReadMonkeys(inputFile, monkeys);
 			result := MonkeyBusiness(monkeys);
-			writeln('Monkey business: ', result); { TODO: 55221 is too low, 56168 is too high, 56165 is also wrong }
+			writeln('Monkey business: ', result);
+			writeln('Press Return to exit');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

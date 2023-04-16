@@ -3,6 +3,9 @@ program day10p1;
 	uses
 		FileUtils;
 
+	const
+		enableDebugLogging = false;
+
 	type
 		CPU = record
 				clock: integer;
@@ -18,9 +21,11 @@ program day10p1;
 		if (machine.clock <> 0) and ((machine.clock - 20) mod 40 = 0) then
 			begin
 				ss := machine.x * machine.clock;
-				write('at cycle ', machine.clock : 1, ': x=', machine.x : 1, ' ss= ', ss : 1, ', tss ', machine.tss : 1, ' -> ');
+				if enableDebugLogging then
+					write('at cycle ', machine.clock : 1, ': x=', machine.x : 1, ' ss= ', ss : 1, ', tss ', machine.tss : 1, ' -> ');
 				machine.tss := machine.tss + machine.x * machine.clock;
-				writeln(machine.tss);
+				if enableDebugLogging then
+					writeln(machine.tss);
 			end;
 	end;
 
@@ -70,6 +75,9 @@ begin
 	if OpenInputFile(inputFile) then
 		begin
 			RunProgram(inputFile);
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

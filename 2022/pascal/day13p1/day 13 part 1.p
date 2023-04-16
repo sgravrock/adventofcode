@@ -82,6 +82,9 @@ begin
 					writeln('about to find pairs');
 					Solve(bufp^);
 					writeln('done');
+					writeln('Press return');
+					SysBeep(10);
+					readln;
 				end
 			else
 				writeln('read failed');

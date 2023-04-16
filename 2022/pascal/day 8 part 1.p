@@ -147,9 +147,11 @@ begin
 		begin
 			ReadGrid(inputFile, grid);
 			PopulateVisibility(grid, visibility);
-{PrintVisibility(visibility, grid.sz);}
 			result := NumVisible(visibility, grid.sz);
 			writeln(result : 1, ' visible trees');
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

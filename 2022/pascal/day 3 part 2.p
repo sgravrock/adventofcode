@@ -92,10 +92,14 @@ program day3p2;
 		result: integer;
 
 begin
+	ShowText;
 	if OpenInputFile(inputFile) then
 		begin
 			result := TotalPriorities(inputFile);
 			writeln('Total priorities: ', result);
+			writeln('Press enter');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

@@ -189,8 +189,10 @@ begin
 			ReadGrid(inputFile, grid);
 			writeln('grid size: ', grid.sz);
 			result := HighestScenicScore(grid);
-{ 31754 is too low }
 			writeln('Highest score: ', result);
+			writeln('Press enter');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

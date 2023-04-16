@@ -84,6 +84,9 @@ begin
 	if OpenInputFile(inputFile) then
 		begin
 			Solve(inputFile);
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

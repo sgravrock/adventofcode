@@ -95,6 +95,9 @@ begin
 		begin
 			result := CountSmallDirs(inputFile);
 			writeln('Result: ', result : 1);
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

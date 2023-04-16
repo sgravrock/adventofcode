@@ -140,6 +140,9 @@ begin
 					writeln('about to solve');
 					Solve(packets, nPackets);
 					writeln('done');
+					writeln('Press return');
+					SysBeep(10);
+					readln;
 				end
 			else
 				writeln('read failed');

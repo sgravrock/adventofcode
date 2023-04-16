@@ -339,6 +339,9 @@ begin
 			ReadGrid(inputFile, g);
 			result := Solve(g);
 			writeln(result);
+			writeln('Press return');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');

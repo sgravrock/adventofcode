@@ -209,6 +209,9 @@ begin
 	if OpenInputFile(inputFile) then
 		begin
 			FindTopCrates(inputFile);
+			writeln('Press enter');
+			SysBeep(10);
+			readln;
 		end
 	else
 		writeln('Did not open input file');
