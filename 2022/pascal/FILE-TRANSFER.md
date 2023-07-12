@@ -248,21 +248,11 @@ The other hurdle is that Stuffit Expander reliably crashes when you try to open
 an archive from within it, at least on my computer. The workaround is to drag
 the archive onto the Stuffit Expander icon in the finder.
 
-### Untested: Possible easier ways to deal with Disk Copy images
+### : An easier way to deal with Disk Copy images
 
-[This description of the Disk Copy 4.2 image format](https://web.archive.org/web/20201028142058/https://wiki.68kmla.org/DiskCopy_4.2_format_specification)
-says that the data fork of the image file is an 84 byte header, followed by
-(presumably raw) image data, followed by a variable amount of tag data.
-Stripping the header and tag data will probably result in something that can
-be written directly to a floppy with dd, assuming that the image is small
-enough. I haven't actually tried writing such an image to floppy and reading it
-on the Mac yet. But the `file` command thinks the stripped image is a filesystem
-image, which is encouraging.
-
-The same page suggests that CiderPress knows about Disk Copy 4.2 images. So it
-should be possible to use it to copy files to a raw HFS image. That might be the
-easiest way to deal with Disk Copy images that are too big to fit on a floppy,
-at least with the set of computers that I have.
+It turns out that the Disk Copy 4.2 image format is [not very complicated](https://web.archive.org/web/20201028142058/https://wiki.68kmla.org/DiskCopy_4.2_format_specification),
+and it's easy to write [a small program to convert Disk Copy 4.2 images to raw disk images](ttps://github.com/sgravrock/adventofcode/blob/master/2022/pascal/undiskcopy.c).
+The resulting images can be written to floppy with dd.
 
 ## Things that would have been easier (Or: Do as I say, not as I do)
 
