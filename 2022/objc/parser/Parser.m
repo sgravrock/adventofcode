@@ -55,8 +55,17 @@
     invocation.selector = initSelector;
     
     for (NSInteger i = 0; i < self.regex.groupNames.count; i++ ) {
+        const char *type = [sig getArgumentTypeAtIndex:i + 2];
         NSString *value = [match valueForGroup:self.regex.groupNames[i]];
-        [invocation setArgument:&value atIndex:i + 2];
+        
+        if (strcmp(type, "i") == 0) {
+            // TODO: error handling
+            int n;
+            sscanf([value UTF8String], "%d", &n);
+            [invocation setArgument:&n atIndex:i + 2];
+        } else {
+            [invocation setArgument:&value atIndex:i + 2];
+        }
     }
     
     // TODO: do we need to retain and/or release this?
