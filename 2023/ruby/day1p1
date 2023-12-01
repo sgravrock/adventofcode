@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+puts DATA.read.split("\n")
+	.map(&:chars)
+	.map { |chars| chars.filter { |c| c >= "0" && c <= "9" } }
+	.map { |digits| (digits.first + digits.last).to_i }
+	.sum
+
+
+__END__
+1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet
