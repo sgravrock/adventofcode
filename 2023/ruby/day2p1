@@ -12,15 +12,11 @@ Game = Data.define(:id, :sets) do
 
 		true
 	end
-
-	def total(color)
-		sets.map { |s| s[color] || 0 }.sum
-	end
 end
 
 def parse_game(line)
 	# This is Unix^H^H^H^HPerl! I know this!
-	line.match /^Game ([\d]+): (.*)$/ or raise "Invalid game: #{game}"
+	line.match /^Game ([\d]+): (.*)$/ or raise "Invalid game: #{line}"
 	id = $1.to_i
 	sets = $2.split("; ")
 		.map { |ss|
@@ -32,10 +28,6 @@ def parse_game(line)
 				.to_h
 		}
 	Game.new(id, sets)
-end
-
-def parse_input(input)
-	input.split("\n").map { |line| parse_game(line) }
 end
 
 recipe = {"red" => 12, "green" => 13, "blue" => 14}

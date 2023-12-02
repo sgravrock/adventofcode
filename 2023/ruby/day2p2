@@ -33,10 +33,6 @@ def parse_game(line)
 	Game.new(id, sets)
 end
 
-def parse_input(input)
-	input.split("\n").map { |line| parse_game(line) }
-end
-
 recipe = {"red" => 12, "green" => 13, "blue" => 14}
 result = DATA.read.split("\n")
 	.map { |line| parse_game(line).power }
