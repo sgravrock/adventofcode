@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+
+Game = Data.define(:id, :sets) do
+	def min_cubes
+		maxs = ["red", "green", "blue"]
+			.map { |color|
+				m = sets
+					.map { |s| s[color] || 0 }
+					.max
+				[color, m]
+			}
+			.to_h
+	end
+
+	def power
+		min_cubes.values.inject '*'
+	end
+end
+
+def parse_game(line)
+	# This is Unix^H^H^H^HPerl! I know this!
+	line.match /^Game ([\d]+): (.*)$/ or raise "Invalid game: #{line}"
+	id = $1.to_i
+	sets = $2.split("; ")
+		.map { |ss|
+			ss.split(", ")
+				.map { |el|
+					el.match /^([\d]+) ([\w]+)$/ or raise "Invalid el: #{el}"
+					[$2, $1.to_i]
+				}
+				.to_h
+		}
+	Game.new(id, sets)
+end
+
+def parse_input(input)
+	input.split("\n").map { |line| parse_game(line) }
+end
+
+recipe = {"red" => 12, "green" => 13, "blue" => 14}
+result = DATA.read.split("\n")
+	.map { |line| parse_game(line).power }
+	.sum
+puts result
+
+
+__END__
+Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
