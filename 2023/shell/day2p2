@@ -1,0 +1,24 @@
+#!/bin/bash
+
+cmax() {
+	color=$1
+	line="$2"
+	echo "$line" | sed 's/[:;,]/\n/g' | grep $color | awk '{print $1}' | sort -rn | head -1
+}
+
+power() {
+	line="$1"
+	red=$(cmax red "$line")
+	green=$(cmax green "$line")
+	blue=$(cmax blue "$line")
+	echo $(($red * $green * $blue))
+}
+
+(
+	echo 0
+	while read line; do
+		power "$line"
+		echo +
+	done
+	echo p
+) | dc 
