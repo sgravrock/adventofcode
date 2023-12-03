@@ -1,14 +1,16 @@
 program day3p1;
 
 	uses
-		FileUtils;
+		MicroSysFileUtils;
 
-{ Run time on Mac Classic, run standalone, w/full puzzle input: ~32 seconds }
+{ Run time on Mac Classic, run standalone, w/full puzzle input: ~7 seconds }
 
 { Reading the entire file in is extravagantly wasteful vs using a constant-space }
 { approach. But this program was writtin on & for a machine with 4 megabytes }
 { of RAM. Why buy luxuries if you aren't going to let yourself benefit from them? }
 	const
+{ Adjust BufSize for your puzzle input. Must be >= file size in bytes and <= 32k }
+		BufSize = 19740;
 		MaxNumLines = 140; { Adjust this if your puzzle input is > 140 lines long }
 		MaxLineLength = 140;
 		EnableDebugging = false; { True for debug info, at great cost in speed }
@@ -24,6 +26,9 @@ program day3p1;
 				len: integer;
 				lines: array[1..MaxNumLines] of SingleLine;
 			end;
+{ TODO: do we actually need to unpack into LinesArr,}
+{ or could this be used directly? }
+		EntireFile = packed array[1..bufsize] of char;
 
 
 { Call InitCursor to undo this }
@@ -36,18 +41,42 @@ program day3p1;
 	end;
 
 
-	procedure ReadFile (var inputFile: text; var dest: LinesArr);
+	procedure ReadFile (filePath: integer; var dest: LinesArr);
 		var
-			s: string;
-			i: integer;
+			readResult: FileError;
+			bufp: ^EntireFile;
+			fileSz: longint;
+			k: integer;
+			linep: ^SingleLine;
 	begin
-		dest.len := 0;
-		while not eof(inputFile) do
+		new(bufp);
+		fileSz := BufSize;
+		readResult := ReadEntireFile(filePath, Ptr(bufp), fileSz);
+		if readResult <> FileErrorOk then
 			begin
-				readln(inputFile, s);
-				dest.len := dest.len + 1;
-				dest.lines[dest.len].len := length(s);
-				dest.lines[dest.len].chars := s;
+				writeln('Error reading file');
+				writeln('Press return to exit');
+				readln;
+				halt;
+			end;
+
+		dest.len := 1;
+		linep := @dest.lines[1];
+		linep^.len := 0;
+
+		for k := 1 to fileSz do
+			begin
+				if ord(bufp^[k]) = 13 then { carriage return }
+					begin
+						dest.len := dest.len + 1;
+						linep := @dest.lines[dest.len];
+						linep^.len := 0;
+					end
+				else
+					begin
+						linep^.len := linep^.len + 1;
+						linep^.chars[linep^.len] := bufp^[k];
+					end;
 			end;
 	end;
 
@@ -192,24 +221,30 @@ program day3p1;
 	end;
 
 	var
-		inputFile: text;
+		openResult: FileError;
+		filePath: integer; { welcome to the Mac operating system }
 		lines: LinesArr;
-		result: longint;
+		answer: longint;
 
 begin
+	openResult := OpenInputFile(filePath);
 
-	if OpenInputFile(inputFile) then
+	if openResult <> FileErrorOk then
 		begin
-			ShowText;
-			ShowWaitCursor;
-			ReadFile(inputFile, lines);
-			writeln('Done reading. Starting to solve.');
-			result := Solve(lines);
-			writeln(result);
+			writeln('Error opening input file');
 			writeln('Press return to exit');
-			SysBeep(10);
-			InitCursor;
 			readln;
+			halt;
 		end;
 
+	ShowText;
+	ShowWaitCursor;
+	ReadFile(filePath, lines);
+	writeln('Done reading. Starting to solve.');
+	answer := Solve(lines);
+	writeln(answer);
+	writeln('Press return to exit');
+	SysBeep(10);
+	InitCursor;
+	readln;
 end.
