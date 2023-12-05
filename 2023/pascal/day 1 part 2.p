@@ -1,6 +1,6 @@
 program day1p2;
 
-{ Run time on Mac Classic, run standalone, w/full puzzle input: ~34 seconds }
+{ Run time on Mac Classic, run standalone, w/full puzzle input: ~6 seconds }
 
 	uses
 		MicroSysFileUtils;
@@ -60,28 +60,46 @@ program day1p2;
 				end;
 		end;
 	begin
+		NumberStartingAt := -1;
+
 		if (input[i] >= '0') and (input[i] <= '9') then
 			NumberStartingAt := ord(input[i]) - ord('0')
-		else if IsStartOf('one') then
-			NumberStartingAt := 1
-		else if IsStartOf('two') then
-			NumberStartingAt := 2
-		else if IsStartOf('three') then
-			NumberStartingAt := 3
-		else if IsStartOf('four') then
-			NumberStartingAt := 4
-		else if IsStartOf('five') then
-			NumberStartingAt := 5
-		else if IsStartOf('six') then
-			NumberStartingAt := 6
-		else if IsStartOf('seven') then
-			NumberStartingAt := 7
-		else if IsStartOf('eight') then
-			NumberStartingAt := 8
-		else if IsStartOf('nine') then
-			NumberStartingAt := 9
-		else
-			NumberStartingAt := -1;
+		else if input[i] = 'o' then
+			begin
+				if IsStartOf('one') then
+					NumberStartingAt := 1;
+			end
+		else if input[i] = 't' then
+			begin
+				if IsStartOf('two') then
+					NumberStartingAt := 2
+				else if IsStartOf('three') then
+					NumberStartingAt := 3;
+			end
+		else if input[i] = 'f' then
+			begin
+				if IsStartOf('four') then
+					NumberStartingAt := 4
+				else if IsStartOf('five') then
+					NumberStartingAt := 5;
+			end
+		else if input[i] = 's' then
+			begin
+				if IsStartOf('six') then
+					NumberStartingAt := 6
+				else if IsStartOf('seven') then
+					NumberStartingAt := 7;
+			end
+		else if input[i] = 'e' then
+			begin
+				if IsStartOf('eight') then
+					NumberStartingAt := 8;
+			end
+		else if input[i] = 'n' then
+			begin
+				if IsStartOf('nine') then
+					NumberStartingAt := 9;
+			end
 	end;
 
 
