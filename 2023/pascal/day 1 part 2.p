@@ -7,7 +7,6 @@ program day1p2;
 
 	const
 		MaxObjectSize = 32767;
-		EnableDebugging = false;
 
 	type
 { Extravagantly wasteful. But why spend the extra dollars for 4MB RAM and not use it? }
@@ -103,8 +102,6 @@ program day1p2;
 						c := NumberStartingAt(input, inputLen, i);
 						i := i + 1;
 					end;
-				if EnableDebugging then
-					writeln('first digit: ', c);
 
 { Find end of line }
 				while input[i] <> chr(13) do
@@ -118,13 +115,9 @@ program day1p2;
 						n := NumberStartingAt(input, inputLen, i);
 						i := i - 1;
 					end;
-				if EnableDebugging then
-					writeln('second digit: ', n);
 				c := c * 10 + n;
 
 				result := result + c;
-				if EnableDebugging then
-					writeln('using ', c, ', result is now ', result);
 				i := endln + 1;
 			end;
 
