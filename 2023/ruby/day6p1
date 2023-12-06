@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+def ways_to_win(time, best_dist)
+	(1..(time - 1))
+		.map { |hold| (time - hold) * hold }
+		.filter { |dist| dist > best_dist }
+		.length
+end
+
+
+lines = DATA.read.split("\n")
+times = lines[0].sub('Time:', '').split(' ').map(&:to_i)
+dists = lines[1].sub('Distance:', '').split(' ').map(&:to_i)
+
+result = (0..(times.length - 1))
+	.map { |i| ways_to_win(times[i], dists[i]) }
+	.reduce(&:*)
+
+puts result
+
+__END__
+Time:      7  15   30
+Distance:  9  40  200
