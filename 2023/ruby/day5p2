@@ -1,64 +1,23 @@
 #!/usr/bin/env ruby
 
-# Perf: 6 hours 2 minutes on Apple M1, 27MB RAM
+# Perf: 3 hours 27 minutes on Apple M1, 27MB RAM
 # Might want a bit of optimization
 
-MapEntry = Data.define(:dest_range, :source_range) do
-	def applies_to?(source_num)
-		source_range.include?(source_num)
+MapEntry = Data.define(:dest_start, :source_start, :source_end)
+
+def parse_map(chunk)
+	header = chunk.shift
+	unless header.match(/to-.* map:$/) then
+		raise "Expected a line ending in map: but got \"#{header}\""
 	end
 
-	def apply_to(source_num)
-		dest_range.first + source_num - source_range.first
-	end
-end
-
-class IdentityMapEntry
-	def applies_to?(source_num)
-		true
-	end
-
-	def apply_to(source_num)
-		source_num
-	end
-end
-
-
-class ThingToThingMap
-	attr_reader :name, :entries
-
-	class << self
-		def parse(chunk)
-			header = chunk.shift
-			unless header.match(/to-(.*) map:$/) then
-				raise "Expected a line ending in map: but got \"#{header}\""
-			end
-
-			name = $1
-			entries = chunk.map { |line|
-				nums = line.split(' ').map(&:to_i)
-				ds = nums[0]
-				ss = nums[1]
-				rl = nums[2]
-				MapEntry.new(ds..(ds+rl-1), ss..(ss+rl-1))
-			}
-			entries.push(IdentityMapEntry.new)
-			ThingToThingMap.new(name, entries)
-		end
-	end
-
-	def initialize(name, entries)
-		@name = name
-		@entries = entries
-	end
-
-	def advance(loc)
-		entries.each do |e|
-			if e.applies_to?(loc) then
-				return e.apply_to(loc)
-			end
-		end
-	end
+	chunk.map { |line|
+		nums = line.split(' ').map(&:to_i)
+		ds = nums[0]
+		ss = nums[1]
+		rl = nums[2]
+		MapEntry.new(ds, ss, ss+rl-1)
+	}
 end
 
 def chunks(lines)
@@ -92,7 +51,7 @@ lines = DATA.read.split("\n")
 seed_ranges = parse_seed_ranges(lines.shift)
 lines.shift
 puts "Seed ranges: #{seed_ranges}"
-maps = chunks(lines).map { |chunk| ThingToThingMap.parse(chunk) }
+maps = chunks(lines).map { |chunk| parse_map(chunk) }
 
 best = nil
 i = 0
@@ -101,8 +60,13 @@ seed_ranges.each do |seed_range|
 	seed_range.each do |loc|
 		i += 1
 
-		maps.each do |m|
-			loc = m.advance(loc)
+		maps.each do |entries|
+			entries.each do |e|
+				if loc >= e.source_start and loc <= e.source_end then
+					loc = e.dest_start + loc - e.source_start
+					break;
+				end
+			end
 		end
 
 		if best.nil? or loc < best then
@@ -110,7 +74,7 @@ seed_ranges.each do |seed_range|
 			best = loc
 		end
 
-		if i % 100000 == 0 then
+		if i % 1000000 == 0 then
 			puts "Processed #{i} seeds, this one ended up at #{loc}"
 		end
 	end
