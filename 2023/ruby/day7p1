@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+def cardval(card)
+	['2','3','4','5','6','7','8','9','T','J','Q','K','A'].index(card)
+end
+
+Hand = Data.define(:cards, :bid) do
+	def <=>(other)
+		tsc = type_strength <=> other.type_strength
+
+		if tsc != 0
+			tsc
+		else
+			(0..4)
+				.map { |i| cardval(cards[i]) <=> cardval(other.cards[i]) }
+				.filter { |cmp| cmp != 0 }
+				.first
+		end
+	end
+
+	def type_strength
+		counts = Hash.new(0)
+		cards.each do |c|
+			counts[cardval(c)] += 1
+		end
+		count_values = counts.values.sort.reverse
+
+		if count_values[0] == 5
+			7
+		elsif count_values[0] == 4
+			6
+		elsif count_values[0] == 3
+			if count_values[1] == 2
+				5
+			else
+				4
+			end
+		elsif count_values[0] == 2
+			if count_values[1] == 2
+				3
+			else
+				2
+			end
+		else
+			1
+		end
+	end
+end
+
+hands = DATA.read.split("\n")
+	.map { |line|
+		words = line.split(' ')
+		cards = words[0].chars
+		bid = words[1].to_i
+		Hand.new(cards, bid)
+	}
+	.sort
+
+result = hands
+	.each_with_index
+	.map { |hand, i|
+		rank = i + 1
+		hand.bid * rank
+	} 
+	.sum
+
+puts result
+
+__END__
+32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483
