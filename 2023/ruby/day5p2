@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Perf: 10 hours 57 minutes on Apple M1, 27MB RAM
+# Perf: 6 hours 2 minutes on Apple M1, 27MB RAM
 # Might want a bit of optimization
 
 MapEntry = Data.define(:dest_range, :source_range) do
@@ -53,10 +53,11 @@ class ThingToThingMap
 	end
 
 	def advance(loc)
-		entries
-			.filter { |e| e.applies_to?(loc) }
-			.first
-			.apply_to(loc)
+		entries.each do |e|
+			if e.applies_to?(loc) then
+				return e.apply_to(loc)
+			end
+		end
 	end
 end
 
@@ -97,15 +98,20 @@ best = nil
 i = 0
 
 seed_ranges.each do |seed_range|
-	seed_range.each do |inital|
+	seed_range.each do |loc|
 		i += 1
-		final = maps.reduce(inital) { |memo, m| m.advance(memo) }
-		if best.nil? or final < best then
-			puts "New candidate: #{final}"
-			best = final
+
+		maps.each do |m|
+			loc = m.advance(loc)
 		end
+
+		if best.nil? or loc < best then
+			puts "New candidate: #{loc}"
+			best = loc
+		end
+
 		if i % 100000 == 0 then
-			puts "Processed #{i} seeds, this one ended up at #{final}"
+			puts "Processed #{i} seeds, this one ended up at #{loc}"
 		end
 	end
 end

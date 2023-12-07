@@ -1,10 +1,19 @@
 #!/usr/bin/env ruby
 
 def ways_to_win(time, best_dist)
-	(1..(time - 1))
-		.map { |hold| (time - hold) * hold }
-		.filter { |dist| dist > best_dist }
-		.length
+	n = 0
+
+	for hold in 1..(time - 1) do
+		dist = (time - hold) * hold
+
+		if dist > best_dist then
+			n += 1
+		elsif n > 0 then
+			return n
+		end
+	end
+
+	n
 end
 
 
