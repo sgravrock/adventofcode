@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+
+
+lines = DATA.read.split("\n")
+lrs = lines.shift.chars
+lines.shift
+nodes = lines.map { |line|
+	unless line.match /^([A-Z]{3}) = \(([A-Z]{3}), ([A-Z]{3})\)$/
+		raise "Invalid: $line"
+	end
+	[$1, [$2, $3]]
+}.to_h
+
+pos = "AAA"
+i = 0
+
+while pos != "ZZZ" do
+	if lrs[i % lrs.length] == "L" then
+		pos = nodes[pos][0]
+	else
+		pos = nodes[pos][1]
+	end
+
+	i += 1
+end
+
+puts i
+
+
+__END__
+RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)
