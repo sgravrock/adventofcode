@@ -9,7 +9,7 @@ WINNING_HANDS = [
 	[1, 4],
 	[5]
 ]
-CARD_VALS = ['2','3','4','5','6','7','8','9','T','J','Q','K','A']
+CARD_VALS = %w[J 2 3 4 5 6 7 8 9 T Q K A]
 	.each_with_index
 	.to_h
 
@@ -19,7 +19,16 @@ Hand = Data.define(:cards, :bid) do
 	end
 
 	def type_strength
-		WINNING_HANDS.index(cards.tally.values.sort)
+		non_jokers = cards.reject { |c| c == 'J' }
+
+		if non_jokers.empty? then
+			tallies = [5]
+		else
+			tallies = non_jokers.tally.values.sort
+			tallies[tallies.count - 1] += 5 - non_jokers.count
+		end
+
+		WINNING_HANDS.index(tallies)
 	end
 end
 
