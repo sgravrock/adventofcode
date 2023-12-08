@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+
+def len(nodes, lrs, start)
+	pos = start
+	i = 0
+
+	while !pos.end_with?("Z") do
+		if lrs[i % lrs.length] == "L" then
+			pos = nodes[pos][0]
+		else
+			pos = nodes[pos][1]
+		end
+	
+		i += 1
+	end
+
+	i
+end
+
+lines = DATA.read.split("\n")
+lrs = lines.shift.chars
+lines.shift
+nodes = lines.map { |line|
+	unless line.match /^([A-Z0-9]{3}) = \(([A-Z0-9]{3}), ([A-Z0-9]{3})\)$/
+		raise "Invalid: #{line}"
+	end
+	[$1, [$2, $3]]
+}.to_h
+
+
+starts = nodes.keys.filter { |k| k.end_with?("A") }
+lens = starts.map { |k| len(nodes, lrs, k) }
+result = lens.reduce(1, :lcm)
+puts result
+
+
+__END__
+LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)
