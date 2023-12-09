@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+def next_value(history)
+	histories = [history]
+
+	while histories.last.any? { |v| v != 0 } do
+		last = histories.last
+		nh = (0..last.length - 1)
+			.each_cons(2)
+			.map { |(i, j)| last[j] - last[i] }
+		histories.push(nh)
+	end
+
+	histories.last.push(0)
+
+	histories.reverse.each_cons(2).each do |(later, earlier)|
+		earlier.unshift(earlier.first - later.first)
+	end
+
+	histories[0].first
+end
+
+
+histories = DATA.read.split("\n")
+	.map { |line|
+		line.split(' ').map(&:to_i)
+	}
+result = histories.map { |h| next_value(h) }
+	.sum
+puts result
+
+__END__
+0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45
