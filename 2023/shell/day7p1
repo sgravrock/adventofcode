@@ -21,7 +21,7 @@ cardScore() {
 
 
 typeRank() {
-      cardPerLine |
+   cardPerLine |
       sort | uniq -c |          # e.g. A 3 if there are 3 aces
       awk '{print $1}' |        # just the count
       sort -rn |
