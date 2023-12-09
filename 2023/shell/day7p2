@@ -1,0 +1,80 @@
+#!/bin/bash -e
+
+cardPerLine() {
+   sed -e 's/\(.\)/\1\n/g' | grep '.'
+}
+
+joinLines() {
+   tr -d '\n'
+}
+
+cardScore() {
+   awk '
+      /A/     { print 14 }
+      /K/     { print 13 }
+      /Q/     { print 12 }
+      /T/     { print 10 }
+      /[2-9]/ { printf "%02i\n", $1 } # pad to 2 digits
+      /J/     { print "01" }
+      '
+}
+
+
+typeRank() {
+   sed 's/JJJJJ/AAAAA/' |       # special case: 5 jokers are 5 of a kind
+      cardPerLine |
+      grep -v J |               # remove jokers
+      sort | uniq -c |          # e.g. A 3 if there are 3 aces
+      awk '{print $1}' |        # just the count
+      sort -rn |
+      joinLines |
+      awk '
+         /^.$/       { print 7 }   # 5 of a kind, possibly via 1-5 jokers
+         /^41$/      { print 6 }   # 4 of a kind
+         /^[31]1$/   { print 6 }   # 4 of a kind via 1-2 jokers
+         /^21$/      { print 6 }   # 4 of a kind via 3 jokers
+         /^32$/      { print 5 }   # full house
+         /^22$/      { print 5 }   # full house via 1 joker
+         /^311$/     { print 4 }   # 3 of a kind
+         /^[21]11$/  { print 4 }   # 3 of a kind via 1-2 jokers
+         /^221$/     { print 3 }   # 2 pairs
+         /^2111$/    { print 2 }   # 1 pair
+         /^1111$/    { print 2 }   # 1 pair via 1 joker
+         /11111/     { print 1 }   # high card
+         '
+}
+
+handScore() {
+   input=$(cat -)
+   cards=$(echo $input | awk '{print $1}')
+   bid=$(echo $input | awk '{print $2}')
+   tr=$(echo $cards | typeRank)
+   trlen=$(echo -n "$tr" | wc -c)
+
+   if [ $trlen -ne 1 ]; then
+      # typically means the awk expression in typeRank had <> 1 match
+      echo "Expected a 1 digit type rank for ${input} but got |${tr}| (length $trlen)" 1>&2
+      exit 1
+   fi
+
+   cardscores=$(echo $cards | cardPerLine | cardScore | joinLines)
+   echo "$tr$cardscores $cards $bid"
+}
+
+
+(
+  echo 0
+   
+   while read line; do
+      echo $line | handScore
+   done |
+      # Order hands from worst to best
+      sort -n  |
+         # Number the lines
+         nl |
+         # Multiply each rank by bid
+         awk '{print $1 " " $4 " * p" }' | dc |
+         sed 's/$/ +/'
+   
+   echo p
+) | dc
