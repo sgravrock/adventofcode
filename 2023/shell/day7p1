@@ -1,65 +1,65 @@
 #!/bin/bash -e
 
 cardPerLine() {
-	sed -e 's/\(.\)/\1\n/g' | grep '.'
+   sed -e 's/\(.\)/\1\n/g' | grep '.'
 }
 
 joinLines() {
-	tr -d '\n'
+   tr -d '\n'
 }
 
 cardScore() {
-	awk '
-		/A/     { print 14 }
-		/K/     { print 13 }
-		/Q/     { print 12 }
-		/J/     { print 11 }
-		/T/     { print 10 }
-		/[0-9]/ { printf "%02i\n", $1 } # pad to 2 digits
-		'
+   awk '
+      /A/     { print 14 }
+      /K/     { print 13 }
+      /Q/     { print 12 }
+      /J/     { print 11 }
+      /T/     { print 10 }
+      /[0-9]/ { printf "%02i\n", $1 } # pad to 2 digits
+      '
 }
 
 
 typeRank() {
-		cardPerLine |
-		sort | uniq -c |          # e.g. A 3 if there are 3 aces
-		awk '{print $1}' |        # just the count
-		sort -rn |
-		joinLines |
-		awk '
-			/5/ { print 7 }        # 5 of a kind
-			/41/ { print 6 }       # 4 of a kind
-			/32/ { print 5 }       # full house
-			/311/ { print 4 }      # 3 of a kind
-			/221/ { print 3 }      # 2 pairs
-			/2111/ { print 2 }     # 1 pair
-			/11111/ { print 1 }    # high card
-			'
+      cardPerLine |
+      sort | uniq -c |          # e.g. A 3 if there are 3 aces
+      awk '{print $1}' |        # just the count
+      sort -rn |
+      joinLines |
+      awk '
+         /5/     { print 7 }    # 5 of a kind
+         /41/    { print 6 }    # 4 of a kind
+         /32/    { print 5 }    # full house
+         /311/   { print 4 }    # 3 of a kind
+         /221/   { print 3 }    # 2 pairs
+         /2111/  { print 2 }    # 1 pair
+         /11111/ { print 1 }    # high card
+         '
 }
 
 handScore() {
-	input=$(cat -)
-	cards=$(echo $input | awk '{print $1}')
-	bid=$(echo $input | awk '{print $2}')
-	tr=$(echo $cards | typeRank)
-	cardscores=$(echo $cards | cardPerLine | cardScore | joinLines)
-	echo "$tr$cardscores $cards $bid"
+   input=$(cat -)
+   cards=$(echo $input | awk '{print $1}')
+   bid=$(echo $input | awk '{print $2}')
+   tr=$(echo $cards | typeRank)
+   cardscores=$(echo $cards | cardPerLine | cardScore | joinLines)
+   echo "$tr$cardscores $cards $bid"
 }
 
 
 (
-	echo 0
-	
-	while read line; do
-		echo $line | handScore
-	done |
-		# Order hands from worst to best
-		sort -n  |
-			# Number the lines
-			nl |
-			# Multiply each rank by bid
-			awk '{print $1 " " $4 " * p" }' | dc |
-			sed 's/$/ +/'
-	
-	echo p
+   echo 0
+   
+   while read line; do
+      echo $line | handScore
+   done |
+      # Order hands from worst to best
+      sort -n  |
+         # Number the lines
+         nl |
+         # Multiply each rank by bid
+         awk '{print $1 " " $4 " * p" }' | dc |
+         sed 's/$/ +/'
+   
+   echo p
 ) | dc
