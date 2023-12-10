@@ -3,21 +3,10 @@
 require './microtest'
 
 Coord = Data.define(:x, :y) do
-	def north
-		Coord.new(x, y - 1)
-	end
-
-	def south
-		Coord.new(x, y + 1)
-	end
-
-	def east
-		Coord.new(x + 1, y)
-	end
-
-	def west
-		Coord.new(x - 1, y)
-	end
+	def north = Coord.new(x, y - 1)
+	def south = Coord.new(x, y + 1)
+	def east = Coord.new(x + 1, y)
+	def west = Coord.new(x - 1, y)
 end
 
 CHAR_TO_DIRS = {
