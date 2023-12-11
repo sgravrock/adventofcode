@@ -1,0 +1,325 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+Coord = Data.define(:x, :y) do
+	def north = Coord.new(x, y - 1)
+	def south = Coord.new(x, y + 1)
+	def east = Coord.new(x + 1, y)
+	def west = Coord.new(x - 1, y)
+
+	def to_s = "<x=#{x} y=#{y}>"
+end
+
+CHAR_TO_DIRS = {
+	'|' => [:north, :south],
+	'-' => [:east, :west],
+	'7' => [:south, :west],
+	'F' => [:south, :east],
+	'L' => [:north, :east],
+	'J' => [:north, :west],
+}
+CHAR_TO_DIRS.default = []
+
+def parse_grid(input)
+	input.split("\n").map { |line| line.chars }
+end
+
+def find_start(grid)
+	grid.each_with_index do |row, y|
+		row.each_with_index do |cell, x|
+			if cell == 'S' then
+				return Coord.new(x, y)
+			end
+		end
+	end
+end
+
+def at(grid, coord)
+	grid[coord.y][coord.x]
+end
+
+def replace_start(grid, start)
+	n = CHAR_TO_DIRS[at(grid, start.north)].include?(:south)
+	s = CHAR_TO_DIRS[at(grid, start.south)].include?(:north)
+	e = CHAR_TO_DIRS[at(grid, start.east)].include?(:west)
+	w = CHAR_TO_DIRS[at(grid, start.west)].include?(:east)
+
+	grid[start.y][start.x] = case [n,s,e,w]
+		in [true, true, false, false]
+			'|'
+		in [false, false, true, true]
+			'-'
+		in [true, false, true, false]
+			'L'
+		in [true, false, false, true]
+			'J'
+		in [false, true, true, false]
+			'F'
+		in [false, true, false, true]
+			'7'
+		else
+			raise "Failed to replace start"
+		end
+end
+
+def cycle_including(grid, start)
+	# Preconditions: start is part of a simple cycle containing no sub-cycles,
+	# branches, or dead ends.
+
+	pos = start
+	prev = nil
+	visited = Set.new
+
+	until pos == start && !visited.empty?
+		visited.add(pos)
+		nextpos = CHAR_TO_DIRS[at(grid, pos)]
+			.map { |dir| pos.public_send(dir) }
+			.filter { |candidate| candidate != prev }
+			.first
+		prev = pos
+		pos = nextpos
+	end
+
+	visited
+end
+
+def cells_contained_by(grid, cycle)
+	result = Set.new
+
+	grid.each_with_index do |row, y|
+		inside = false
+		row.each_with_index do |cell, x|
+			coord = Coord.new(x, y);
+
+			if cycle.include?(coord) then
+				if cell == '|' || cell == 'L' || cell == 'J' then
+					inside = !inside
+				end
+			elsif inside then
+				result.add(coord)
+			end
+		end
+	end
+
+	result
+end
+
+
+class Tests < Microtest::Test
+	def test_replace_start_f
+		input = <<~END
+			....
+			.S-.
+			.|..
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal 'F', grid[1][1]
+	end
+
+	def test_replace_start_7
+		input = <<~END
+			...
+			-S.
+			.|.
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal '7', grid[1][1]
+	end
+
+	def test_replace_start_L
+		input = <<~END
+			.|.
+			.S-
+			...
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal 'L', grid[1][1]
+	end
+
+	def test_replace_start_J
+		input = <<~END
+			.|.
+			-S.
+			...
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal 'J', grid[1][1]
+	end
+
+	def test_replace_start_horiz
+		input = <<~END
+			...
+			LS7
+			...
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal '-', grid[1][1]
+	end
+
+	def test_replace_start_vert
+		input = <<~END
+			.7.
+			.S.
+			.|.
+		END
+		grid = parse_grid(input)
+		replace_start(grid, Coord.new(1, 1))
+		assert_equal '|', grid[1][1]
+	end
+
+	def simple_sample
+		input = <<~END
+			.....
+			.F-7.
+			.|.|.
+			.L-J.
+			.....
+		END
+		parse_grid(input)
+	end
+
+	def cycle_for_simple_sample
+		Set.new([
+			Coord.new(1, 1),
+			Coord.new(1, 2),
+			Coord.new(1, 3),
+			Coord.new(2, 1),
+			Coord.new(2, 3),
+			Coord.new(3, 1),
+			Coord.new(3, 2),
+			Coord.new(3, 3),
+		])
+	end
+
+	def test_cycle_including
+		assert_equal cycle_for_simple_sample,
+			cycle_including(simple_sample, Coord.new(1, 1))
+	end
+
+	def test_cells_contained_by_simple
+		expected = Set.new([Coord.new(2, 2)])
+		actual = cells_contained_by(simple_sample, cycle_for_simple_sample)
+		assert_equal expected, actual
+	end
+
+	def test_cells_contained_by_sample2
+		input = <<~END
+			...........
+			.F-------7.
+			.|F-----7|.
+			.||OOOOO||.
+			.||OOOOO||.
+			.|L-7OF-J|.
+			.|II|O|II|.
+			.L--JOL--J.
+			.....O.....
+		END
+		grid = parse_grid(input)
+		cycle = cycle_including(grid, Coord.new(1, 1))
+		expected = Set.new([
+			Coord.new(2, 6),
+			Coord.new(3, 6),
+			Coord.new(7, 6),
+			Coord.new(8, 6),
+		])
+		assert_equal expected, cells_contained_by(grid, cycle)
+	end
+
+	def test_cells_contained_by_vertical_squeeze
+		input = <<~END
+			..........
+			.F------7.
+			.|F----7|.
+			.||OOOO||.
+			.||OOOO||.
+			.|L-7F-J|.
+			.|II||II|.
+			.L--JL--J.
+			..........
+		END
+		grid = parse_grid(input)
+		cycle = cycle_including(grid, Coord.new(1, 1))
+		expected = Set.new([
+			Coord.new(2, 6),
+			Coord.new(3, 6),
+			Coord.new(6, 6),
+			Coord.new(7, 6),
+		])
+		assert_equal expected, cells_contained_by(grid, cycle)
+	end
+
+	def test_cells_contained_by_horizontal_squeeze
+		input = <<~END
+			...........
+			.F-------7.
+			.|F----7I|.
+			.||OOOOL-J.
+			.||OOOOF-7.
+			.|L----JI|.
+			.L-------J.
+			...........
+		END
+		grid = parse_grid(input)
+		cycle = cycle_including(grid, Coord.new(1, 1))
+		expected = Set.new([
+			Coord.new(8, 2),
+			Coord.new(8, 5),
+		])
+		assert_equal expected, cells_contained_by(grid, cycle)
+	end
+
+	def test_cells_contained_by_complex
+		input = <<~END
+			.F----7F7F7F7F-7....
+			.|F--7||||||||FJ....
+			.||.FJ||||||||L7....
+			FJL7L7LJLJ||LJ.L-7..
+			L--J.L7...LJS7F-7L7.
+			....F-J..F7FJ|L7L7L7
+			....L7.F7||L7|.L7L7|
+			.....|FJLJ|FJ|F7|.LJ
+			....FJL-7.||.||||...
+			....L---J.LJ.LJLJ...
+		END
+		grid = parse_grid(input)
+		start = find_start(grid)
+		replace_start(grid, start)
+		cycle = cycle_including(grid, start)
+		assert_equal 8, cells_contained_by(grid, cycle).count
+	end
+
+	def test_cells_contained_by_complexer
+		input = <<~END
+			FF7FSF7F7F7F7F7F---7
+			L|LJ||||||||||||F--J
+			FL-7LJLJ||||||LJL-77
+			F--JF--7||LJLJ7F7FJ-
+			L---JF-JLJ.||-FJLJJ7
+			|F|F-JF---7F7-L7L|7|
+			|FFJF7L7F-JF7|JL---7
+			7-L-JL7||F7|L7F-7F7|
+			L.L7LFJ|||||FJL7||LJ
+			L7JLJL-JLJLJL--JLJ.L
+		END
+		grid = parse_grid(input)
+		start = find_start(grid)
+		replace_start(grid, start)
+		cycle = cycle_including(grid, start)
+		assert_equal 10, cells_contained_by(grid, cycle).count
+	end
+end
+
+Microtest.run(Tests.new)
+
+grid = parse_grid(ARGF.read)
+start = find_start(grid)
+replace_start(grid, start)
+cycle = cycle_including(grid, start)
+result = cells_contained_by(grid, cycle)
+puts result.length
