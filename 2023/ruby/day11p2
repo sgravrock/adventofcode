@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+GAP_SIZE = 1000000
+
+def galaxies(grid)
+	grid.each_with_index
+		.filter { |row, _| row != :gap }
+		.flat_map { |row, y| 
+			row.each_with_index.map { |cell, x| [x, y, cell] }
+		}
+		.filter { |_, _, cell| cell == '#' }
+end
+
+def galaxy_pairs(grid)
+	gs = galaxies(grid)
+	r = []
+
+	(0..gs.length - 1).each do |i|
+		(i + 1..gs.length - 1).each do |j|
+			r.push([gs[i], gs[j]])
+		end
+	end
+
+	r
+end
+
+def empty_col?(grid, x)
+	grid.all? { |row| row[x] == '.' }
+end
+
+def empty_row?(grid, y)
+	grid[y].all?('.')
+end
+
+
+def manhattan(grid, a, b)
+	dist = 0
+	xr = [a[0], b[0]].sort
+	yr = [a[1], b[1]].sort
+
+	(xr[0]+1..xr[1]).each do |x|
+		dist += if empty_col?(grid, x) then
+			GAP_SIZE
+		else
+			1
+		end
+	end
+
+	(yr[0]+1..yr[1]).each do |y|
+		dist += if empty_row?(grid, y) then
+			GAP_SIZE
+		else
+			1
+		end
+	end
+
+	dist
+end
+
+
+grid = ARGF.read.split("\n").map(&:chars)
+puts galaxy_pairs(grid).map {|a, b| manhattan(grid, a, b) }.sum
+
