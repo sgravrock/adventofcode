@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+def num_arrangements(cells, groups, i)
+	while i < cells.length && cells[i] != '?' do
+		i += 1 
+	end
+
+	if cells[i] == '?' then
+		cells[i] = '#'
+		a = num_arrangements(cells, groups, i + 1)
+		cells[i] = '.'
+		b = num_arrangements(cells, groups, i + 1)
+		cells[i] = '?'
+		a + b
+	elsif valid?(cells, groups) then
+		1
+	else
+		0
+	end
+end
+
+def valid?(cells, groups)
+	cells.scan(/#+/).map(&:length) == groups
+end
+
+rows = ARGF.read.split("\n")
+	.map { |line|
+		chunks = line.split(" ");
+		[chunks[0], chunks[1].split(',').map(&:to_i)]
+	}
+
+puts rows
+  	.map { |cells, groups| num_arrangements(cells, groups, 0) }
+	.sum
