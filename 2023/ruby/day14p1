@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+def tilt(grid)
+	(0..grid[0].length - 1).each do |x|
+		destY = nil
+
+		(0..grid.length - 1).each do |y|
+			if grid[y][x] == 'O' && !destY.nil? then
+				grid[destY][x] = 'O'
+				grid[y][x] = '.'
+				destY += 1
+			elsif grid[y][x] == '.' && destY.nil? then
+				destY = y
+			elsif grid[y][x] == '#' then
+				destY = nil
+			end
+		end
+	end
+end
+
+def total_load(grid)
+	grid
+		.reverse
+		.each_with_index
+		.map { |row, y|
+			nrocks = row.filter { |c| c == 'O' }.length
+			nrocks * (y + 1)
+		}
+		.sum
+end
+
+grid = ARGF.read.split("\n").map(&:chars)
+tilt(grid)
+puts total_load(grid)
