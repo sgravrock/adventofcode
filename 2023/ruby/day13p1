@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+
+def vreflect(grid)
+	maybe_reflection = (0..grid[0].length - 2)
+		.filter { |rx| vreflect_at?(grid, rx) }
+		.first
+	to_lines(maybe_reflection)
+end
+
+def hreflect(grid)
+	maybe_reflection = (0..grid.length - 2)
+		.filter { | ry| hreflect_at?(grid, ry) }
+		.first
+	to_lines(maybe_reflection)
+end
+
+def to_lines(maybe_reflection)
+	if maybe_reflection.nil?
+		0
+	else
+		maybe_reflection + 1
+	end
+end
+
+def vreflect_at?(grid, rx)
+	xrange = 0..grid[0].length - 1
+	minX = rx
+	maxX = rx + 1
+
+	while xrange.include?(minX) && xrange.include?(maxX) do
+		grid.each do |row|
+			if row[minX] != row[maxX] then
+				return false
+			end
+		end
+	
+		minX -= 1
+		maxX += 1
+	end
+
+	true
+end
+
+def hreflect_at?(grid, ry)
+	yrange = 0..grid.length - 1
+	minY = ry
+	maxY = ry + 1
+
+	while yrange.include?(minY) && yrange.include?(maxY) do
+		if grid[minY] != grid[maxY] then
+			return false
+		end
+	
+		minY -= 1
+		maxY += 1
+	end
+
+	true
+end
+
+
+grids = ARGF.read.split("\n\n")
+	.map { | gi| gi.split("\n").map(&:chars) }
+
+total = grids.each_with_index
+	.map { |grid, i|
+		v = vreflect(grid)
+		h = hreflect(grid)
+		v + 100 * h
+	}
+	.sum
+puts total
