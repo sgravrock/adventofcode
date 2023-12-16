@@ -7,6 +7,12 @@ Coord = Data.define(:x, :y) do
 	def west = Coord.new(x - 1, y)
 end
 
+Beam = Data.define(:coord, :direction) do
+	def advance(new_direction)
+		Beam.new(coord.public_send(new_direction), new_direction)
+	end
+end
+
 class Cell
 	attr_reader :type
 
@@ -28,14 +34,39 @@ class Cell
 	end
 end
 
-Beam = Data.define(:coord, :direction) do
-	def advance(new_direction)
-		Beam.new(coord.public_send(new_direction), new_direction)
+class Grid
+	class << self
+		def parse(input)
+			rows = input.split("\n")
+				.map { |line|
+					line.chars.map { |c| Cell.new(c) }
+				}
+			Grid.new(rows)
+		end
+	end
+
+	def initialize(rows)
+		@rows = rows
+	end
+
+	def at(coord)
+		@rows[coord.y][coord.x]
+	end
+
+	def in_bounds?(c)
+		c.y >= 0 && c.y < @rows.length && c.x >= 0 && c.x < @rows[0].length
+	end
+
+	def num_energized
+		@rows
+			.flat_map { |row| row }
+			.count { |cell| cell.energized? }
 	end
 end
 
+
 def advance(beam, grid)
-	t = grid[beam.coord.y][beam.coord.x].type
+	t = grid.at(beam.coord).type
 
 	case [t, beam.direction]
 	in ['/', :north]
@@ -68,38 +99,22 @@ def advance(beam, grid)
 	nds.map { |nd| beam.advance(nd) }
 end
 
-def in_bounds?(beam, grid)
-	c = beam.coord
-	c.y >= 0 && c.y < grid.length && c.x >= 0 && c.x < grid[0].length
-end
 
-def num_energized(grid)
-	grid
-		.flat_map { |row| row }
-		.count { |cell| cell.energized? }
-end
-
-grid = ARGF.read
-	.split("\n")
-	.map { |line|
-		line.chars.map { |c| Cell.new(c) }
-	}
-
+grid = Grid.parse(ARGF.read)
 beams = [Beam.new(Coord.new(0, 0), :east)]
 
 while not beams.empty? do
 	beams.each do |b|
-		grid[b.coord.y][b.coord.x].energize(b.direction)
+		grid.at(b.coord).energize(b.direction)
 	end
 
 	beams = beams
 		.flat_map { |b| advance(b, grid) }
 		.filter { |b|
-			in_bounds?(b, grid) &&
+			grid.in_bounds?(b.coord) && 
 				# Avoid infinite loops
-				!grid[b.coord.y][b.coord.x].energized_in?(b.direction)
+				!grid.at(b.coord).energized_in?(b.direction)
 		}
-		.filter { |b| in_bounds?(b, grid) }
 end
 
-puts num_energized(grid)
+puts grid.num_energized
