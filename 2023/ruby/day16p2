@@ -43,36 +43,6 @@ class Grid
 end
 
 
-class EnergizeableGrid
-	def initialize(grid)
-		@grid = grid
-		# Maps from coordinate to directions energized in
-		@energized = Hash.new { |h, k|
-			h[k] = Set.new
-		}
-	end
-
-	def at(coord) = @grid.at(coord)
-	def in_bounds?(c) = @grid.in_bounds?(c)
-
-	def energize(beam)
-		@energized[beam.coord].add(beam.direction)
-	end
-
-	def energized?(coord)
-		@energized.include?(coord)
-	end
-
-	def energized_by?(beam)
-		@energized[beam.coord].include?(beam.direction)
-	end
-
-	def num_energized
-		@energized.count
-	end
-end
-
-
 class InitialBeams
 	include Enumerable
 
@@ -132,28 +102,33 @@ def advance(beam, grid)
 end
 
 def num_energized_from(grid, starting_beam)
-	beams = [starting_beam]
+	visited_beams = Set.new
+	# visited coords is redundant since it can be derived from visited_beams,
+	# but tracking it separately saves ~20% runtime
+	visited_coords = Set.new
+	frontier = [starting_beam]
 
-	while not beams.empty? do
-		beams.each do |b|
-			grid.energize(b)
+	while !frontier.empty? do
+		frontier.each do |beam|
+			visited_beams.add(beam)
+			visited_coords.add(beam.coord)
 		end
 
-		beams = beams
+		frontier = frontier
 			.flat_map { |b| advance(b, grid) }
 			.filter { |b|
 				grid.in_bounds?(b.coord) && 
 					# Avoid infinite loops
-					!grid.energized_by?(b)
+					!visited_beams.include?(b)
 			}
 	end
 
-	grid.num_energized
+	visited_coords.count
 end
 
 def solve(grid)
 	InitialBeams.new(grid)
-		.map { |start| num_energized_from(EnergizeableGrid.new(grid), start) }
+		.map { |start| num_energized_from(grid, start) }
 		.max
 end
 
