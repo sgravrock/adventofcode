@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+# Steps are also abused to represent lenses.
+Step = Data.define(:label, :operator, :focal_length, :hash)
+
+def parse_step(s)
+	if s.end_with?('-')
+		op = '-'
+		label = s.sub('-', '')
+		focal_length = nil
+	else
+		chunks = s.split('=')
+		if chunks.length != 2
+			raise 'Parse error'
+		end
+		op = '='
+		label = chunks[0]
+		focal_length = chunks[1].to_i
+	end
+
+	Step.new(label, op, focal_length, hash(label))
+end
+
+def hash(s)
+	s.chars
+		.map(&:ord)
+		.reduce(0) { |memo, b| ((memo + b) * 17) % 256 }
+end
+
+def solve(steps)
+	boxes = Array.new(256) { [] }
+	
+	steps.each do |s|
+		b = boxes[s.hash]
+
+		if s.operator == '-'
+			b.delete_if { |l| l.label == s.label }
+		else
+			i = b.index { |l| l.label == s.label }
+			unless i.nil? # 🧌
+				b[i] = s
+			else
+				b.push(s)
+			end
+		end
+	end
+
+	boxes.each_with_index
+		.flat_map { |box, i|
+			box.each_with_index
+				.map { |lens, j| (i + 1) * (j + 1) * lens.focal_length }
+		}
+		.sum
+end
+
+
+steps = ARGF.read
+	.gsub("\n", '')
+	.split(',')
+	.map { |s| parse_step(s) }
+puts solve(steps)
