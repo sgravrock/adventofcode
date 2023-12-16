@@ -25,6 +25,14 @@ class Grid
 		@rows = rows
 	end
 
+	def height
+		@rows.length
+	end
+
+	def width
+		@rows[0].length
+	end
+
 	def at(coord)
 		@rows[coord.y][coord.x]
 	end
@@ -65,6 +73,30 @@ class EnergizeableGrid
 end
 
 
+class InitialBeams
+	include Enumerable
+
+	def initialize(grid)
+		@grid = grid
+	end
+
+	def each
+		maxX = @grid.width - 1
+		maxY = @grid.height - 1
+
+		(0..maxX).each do |x|
+			yield Beam.new(Coord.new(x, 0), :south)
+			yield Beam.new(Coord.new(x, maxY), :north)
+		end
+
+		(0..maxY).each do |y|
+			yield Beam.new(Coord.new(y, 0), :east)
+			yield Beam.new(Coord.new(y, maxX), :west)
+		end
+	end
+end
+
+
 def advance(beam, grid)
 	t = grid.at(beam.coord)
 
@@ -99,22 +131,30 @@ def advance(beam, grid)
 	nds.map { |nd| beam.advance(nd) }
 end
 
+def num_energized_from(grid, starting_beam)
+	beams = [starting_beam]
 
-grid = EnergizeableGrid.new(Grid.parse(ARGF.read))
-beams = [Beam.new(Coord.new(0, 0), :east)]
+	while not beams.empty? do
+		beams.each do |b|
+			grid.energize(b)
+		end
 
-while not beams.empty? do
-	beams.each do |b|
-		grid.energize(b)
+		beams = beams
+			.flat_map { |b| advance(b, grid) }
+			.filter { |b|
+				grid.in_bounds?(b.coord) && 
+					# Avoid infinite loops
+					!grid.energized_by?(b)
+			}
 	end
 
-	beams = beams
-		.flat_map { |b| advance(b, grid) }
-		.filter { |b|
-			grid.in_bounds?(b.coord) && 
-				# Avoid infinite loops
-				!grid.energized_by?(b)
-		}
+	grid.num_energized
 end
 
-puts grid.num_energized
+def solve(grid)
+	InitialBeams.new(grid)
+		.map { |start| num_energized_from(EnergizeableGrid.new(grid), start) }
+		.max
+end
+
+puts solve(Grid.parse(ARGF.read))
