@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+def hash(s)
+	s.chars
+		.map(&:ord)
+		.reduce(0) { |memo, b| ((memo + b) * 17) % 256 }
+end
+
+
+result = ARGF.read
+	.gsub("\n", '')
+	.split(',')
+	.map { |step| hash(step) }
+	.sum
+puts result
