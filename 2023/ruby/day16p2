@@ -13,40 +13,20 @@ Beam = Data.define(:coord, :direction) do
 	end
 end
 
-class Cell
-	attr_reader :type
-
-	def initialize(type)
-		@type = type
-		@energized_dirs = Set.new
-	end
-
-	def energize(dir)
-		@energized_dirs.add(dir)
-	end
-
-	def energized?
-		not @energized_dirs.empty?
-	end
-
-	def energized_in?(dir)
-		@energized_dirs.include?(dir)
-	end
-end
-
 class Grid
 	class << self
 		def parse(input)
-			rows = input.split("\n")
-				.map { |line|
-					line.chars.map { |c| Cell.new(c) }
-				}
+			rows = input.split("\n").map { |line| line.chars }
 			Grid.new(rows)
 		end
 	end
 
 	def initialize(rows)
 		@rows = rows
+		# Maps from coordinate to directions energized in
+		@energized = Hash.new { |h, k|
+			h[k] = Set.new
+		}
 	end
 
 	def at(coord)
@@ -57,16 +37,26 @@ class Grid
 		c.y >= 0 && c.y < @rows.length && c.x >= 0 && c.x < @rows[0].length
 	end
 
+	def energize(beam)
+		@energized[beam.coord].add(beam.direction)
+	end
+
+	def energized?(coord)
+		@energized.include?(coord)
+	end
+
+	def energized_by?(beam)
+		@energized[beam.coord].include?(beam.direction)
+	end
+
 	def num_energized
-		@rows
-			.flat_map { |row| row }
-			.count { |cell| cell.energized? }
+		@energized.count
 	end
 end
 
 
 def advance(beam, grid)
-	t = grid.at(beam.coord).type
+	t = grid.at(beam.coord)
 
 	case [t, beam.direction]
 	in ['/', :north]
@@ -105,7 +95,7 @@ beams = [Beam.new(Coord.new(0, 0), :east)]
 
 while not beams.empty? do
 	beams.each do |b|
-		grid.at(b.coord).energize(b.direction)
+		grid.energize(b)
 	end
 
 	beams = beams
@@ -113,7 +103,7 @@ while not beams.empty? do
 		.filter { |b|
 			grid.in_bounds?(b.coord) && 
 				# Avoid infinite loops
-				!grid.at(b.coord).energized_in?(b.direction)
+				!grid.energized_by?(b)
 		}
 end
 
