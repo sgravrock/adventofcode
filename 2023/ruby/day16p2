@@ -1,0 +1,120 @@
+#!/usr/bin/env ruby
+
+Coord = Data.define(:x, :y) do
+	def north = Coord.new(x, y - 1)
+	def south = Coord.new(x, y + 1)
+	def east = Coord.new(x + 1, y)
+	def west = Coord.new(x - 1, y)
+end
+
+Beam = Data.define(:coord, :direction) do
+	def advance(new_direction)
+		Beam.new(coord.public_send(new_direction), new_direction)
+	end
+end
+
+class Cell
+	attr_reader :type
+
+	def initialize(type)
+		@type = type
+		@energized_dirs = Set.new
+	end
+
+	def energize(dir)
+		@energized_dirs.add(dir)
+	end
+
+	def energized?
+		not @energized_dirs.empty?
+	end
+
+	def energized_in?(dir)
+		@energized_dirs.include?(dir)
+	end
+end
+
+class Grid
+	class << self
+		def parse(input)
+			rows = input.split("\n")
+				.map { |line|
+					line.chars.map { |c| Cell.new(c) }
+				}
+			Grid.new(rows)
+		end
+	end
+
+	def initialize(rows)
+		@rows = rows
+	end
+
+	def at(coord)
+		@rows[coord.y][coord.x]
+	end
+
+	def in_bounds?(c)
+		c.y >= 0 && c.y < @rows.length && c.x >= 0 && c.x < @rows[0].length
+	end
+
+	def num_energized
+		@rows
+			.flat_map { |row| row }
+			.count { |cell| cell.energized? }
+	end
+end
+
+
+def advance(beam, grid)
+	t = grid.at(beam.coord).type
+
+	case [t, beam.direction]
+	in ['/', :north]
+		nds = [:east]
+	in ['/', :south]
+		# Not in sample
+		nds = [:west]
+	in ['/', :east]
+		nds = [:north]
+	in ['/', :west]
+		# Not in sample
+		nds = [:south]
+	in ['\\', :north]
+		nds = [:west]
+	in ['\\', :south]
+		# Not in sample
+		nds = [:east]
+	in ['\\', :east]
+		nds = [:south]
+	in ['\\', :west]
+		nds = [:north]
+	in ['-', :north | :south]
+		nds = [:east, :west]
+	in ['|', :east | :west]
+		nds = [:north, :south]
+	else # ., - with east/west, or | with north/south
+		nds = [beam.direction]
+	end
+
+	nds.map { |nd| beam.advance(nd) }
+end
+
+
+grid = Grid.parse(ARGF.read)
+beams = [Beam.new(Coord.new(0, 0), :east)]
+
+while not beams.empty? do
+	beams.each do |b|
+		grid.at(b.coord).energize(b.direction)
+	end
+
+	beams = beams
+		.flat_map { |b| advance(b, grid) }
+		.filter { |b|
+			grid.in_bounds?(b.coord) && 
+				# Avoid infinite loops
+				!grid.at(b.coord).energized_in?(b.direction)
+		}
+end
+
+puts grid.num_energized
