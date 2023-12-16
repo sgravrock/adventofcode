@@ -1,0 +1,154 @@
+#!/usr/bin/env ruby
+
+def dump(grid)
+	puts
+	grid.each do |row|
+		s = row
+			.map  { |cell|
+				if cell.energized? then
+					'#'
+				else
+					cell.type
+				end
+			}
+			.join('')
+		puts s
+	end
+end
+
+Coord = Data.define(:x, :y) do
+	def north = Coord.new(x, y - 1)
+	def south = Coord.new(x, y + 1)
+	def east = Coord.new(x + 1, y)
+	def west = Coord.new(x - 1, y)
+end
+
+class Cell
+	attr_reader :type
+
+	def initialize(type)
+		@type = type
+		@energized_dirs = Set.new
+	end
+
+	def energize(dir)
+		@energized_dirs.add(dir)
+	end
+
+	def energized?
+		not @energized_dirs.empty?
+	end
+
+	def energized_in?(dir)
+		@energized_dirs.include?(dir)
+	end
+end
+
+Beam = Data.define(:coord, :direction) do
+	def advance(new_direction)
+		Beam.new(coord.public_send(new_direction), new_direction)
+	end
+end
+
+def advance(beam, grid)
+	t = grid[beam.coord.y][beam.coord.x].type
+	dbg = beam.coord.y == 7 && beam.coord.x == 4
+
+	if dbg then
+		puts
+		puts "t=#{t} dir=#{beam.direction}"
+	end
+	 puts "at #{beam.coord}"
+
+	case [t, beam.direction]
+	in ['/', :north]
+		nds = [:east]
+	in ['/', :south]
+		# Not in sample
+		nds = [:west]
+	in ['/', :east]
+		nds = [:north]
+	in ['/', :west]
+		# Not in sample
+		nds = [:south]
+	in ['\\', :north]
+		nds = [:west]
+	in ['\\', :south]
+		# Not in sample
+		nds = [:east]
+	in ['\\', :east]
+		nds = [:south]
+	in ['\\', :west]
+		nds = [:north]
+	in ['-', :north | :south]
+		nds = [:east, :west]
+	in ['|', :east | :west]
+		nds = [:north, :south]
+	else # ., - with east/west, or | with north/south
+		if dbg then
+			puts "default"
+		end
+		nds = [beam.direction]
+	end
+
+	if dbg then
+		puts "going #{nds}"
+	end
+
+	nds.map { |nd| beam.advance(nd) }
+end
+
+def in_bounds?(beam, grid)
+	c = beam.coord
+	c.y >= 0 && c.y < grid.length && c.x >= 0 && c.x < grid[0].length
+end
+
+def num_energized(grid)
+	grid
+		.flat_map { |row| row }
+		.count { |cell| cell.energized? }
+end
+
+grid = ARGF.read
+	.split("\n")
+	.map { |line|
+		line.chars.map { |c| Cell.new(c) }
+	}
+grid.each do |row|
+	s = row
+		.map  { |cell|
+			if cell.energized? then
+				'#'
+			else
+				cell.type
+			end
+		}
+		.join('')
+	puts s
+end
+
+beams = [Beam.new(Coord.new(0, 0), :east)]
+
+while not beams.empty? do
+	beams.each do |b|
+		raise "out of range: #{b.coord}" unless in_bounds?(b, grid)
+		raise "oh no: #{b.coord}" if grid[b.coord.y][b.coord.x].nil?
+		grid[b.coord.y][b.coord.x].energize(b.direction)
+	end
+
+	dump(grid)
+
+	beams = beams
+		.flat_map { |b| advance(b, grid) }
+		.filter { |b|
+			in_bounds?(b, grid) &&
+				# Avoid infinite loops
+				!grid[b.coord.y][b.coord.x].energized_in?(b.direction)
+		}
+		.filter { |b| in_bounds?(b, grid) }
+end
+
+puts
+
+
+puts num_energized(grid)
