@@ -23,10 +23,6 @@ class Grid
 
 	def initialize(rows)
 		@rows = rows
-		# Maps from coordinate to directions energized in
-		@energized = Hash.new { |h, k|
-			h[k] = Set.new
-		}
 	end
 
 	def at(coord)
@@ -36,6 +32,20 @@ class Grid
 	def in_bounds?(c)
 		c.y >= 0 && c.y < @rows.length && c.x >= 0 && c.x < @rows[0].length
 	end
+end
+
+
+class EnergizeableGrid
+	def initialize(grid)
+		@grid = grid
+		# Maps from coordinate to directions energized in
+		@energized = Hash.new { |h, k|
+			h[k] = Set.new
+		}
+	end
+
+	def at(coord) = @grid.at(coord)
+	def in_bounds?(c) = @grid.in_bounds?(c)
 
 	def energize(beam)
 		@energized[beam.coord].add(beam.direction)
@@ -90,7 +100,7 @@ def advance(beam, grid)
 end
 
 
-grid = Grid.parse(ARGF.read)
+grid = EnergizeableGrid.new(Grid.parse(ARGF.read))
 beams = [Beam.new(Coord.new(0, 0), :east)]
 
 while not beams.empty? do
