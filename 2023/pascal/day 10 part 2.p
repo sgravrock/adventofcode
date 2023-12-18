@@ -1,6 +1,6 @@
 program day10p1;
 
-{ Run time: ~4s on Mac Classic with full puzzle input }
+{ Run time: ~3s on Mac Classic with full puzzle input }
 
 	uses
 		MicroSysFileUtils;
@@ -20,9 +20,6 @@ program day10p1;
 				bytes: Buffer;
 { lineLength is width + 1 (to account for the carriage return) }
 				width, height, lineLength: integer;
-			end;
-		Coord = record
-				x, y: integer;
 			end;
 
 
@@ -80,35 +77,33 @@ program day10p1;
 	end;
 
 
-	function FindStart (var g: Grid): Coord;
+	function FindStart (var g: Grid): integer;
 		var
-			x, y: integer;
-			c: Coord;
+			i, maxI: integer;
 	begin
-		for y := 0 to g.height do
-			for x := 0 to g.width do
-				if g.bytes[y * g.lineLength + x] = 'S' then
-					begin
-						c.x := x;
-						c.y := y;
-						FindStart := c;
-						exit(FindStart);
-					end;
+		maxI := g.lineLength * g.height - 1;
+
+		for i := 0 to maxI do
+			if g.bytes[i] = 'S' then
+				begin
+					FindStart := i;
+					exit(FindStart);
+				end;
 
 		die('Could not find start');
 	end;
 
 
-	procedure ReplaceStart (var g: Grid; start: Coord);
+	procedure ReplaceStart (var g: Grid; start: integer);
 		var
 			n, s, e, w, c: char;
 			pipeN, pipeS, pipeE, pipeW: boolean;
 	begin
 { Assumption: start is not along the edge }
-		n := g.bytes[start.y - 1 * g.lineLength + start.x];
-		s := g.bytes[start.y + 1 * g.lineLength + start.x];
-		e := g.bytes[start.y * g.lineLength + start.x + 1];
-		w := g.bytes[start.y * g.lineLength + start.x - 1];
+		n := g.bytes[start - g.lineLength];
+		s := g.bytes[start + g.lineLength];
+		e := g.bytes[start + 1];
+		w := g.bytes[start - 1];
 		pipeN := (n = 'F') or (n = '7') or (n = '|');
 		pipeS := (s = 'L') or (s = 'J') or (s = '|');
 		pipeE := (e = '7') or (e = 'J') or (e = '-');
@@ -129,15 +124,15 @@ program day10p1;
 		else
 			die('Could not replace start');
 
-		g.bytes[start.y * g.lineLength + start.x] := c;
+		g.bytes[start] := c;
 	end;
 
 
 { Finds cells that are part of the cycle at start and replaces north-facing pipes with ! }
 { and all others with * }
-	procedure MarkCycle (var g: grid; start: Coord);
+	procedure MarkCycle (var g: grid; start: integer);
 		var
-			pos, prev, tmp: Coord;
+			pos, prev, tmp: integer;
 			any: boolean;
 			cameFrom: Direction;
 			c: char;
@@ -145,20 +140,20 @@ program day10p1;
 		any := false;
 		pos := start;
 
-		while not (any and (pos.x = start.x) and (pos.y = start.y)) do
+		while (not any) or (pos <> start) do
 			begin
-				c := g.bytes[pos.y * g.lineLength + pos.x];
+				c := g.bytes[pos];
 
 				if any then
 					begin
-						if pos.y = prev.y - 1 then
-							cameFrom := south
-						else if pos.y = prev.y + 1 then
-							cameFrom := north
-						else if pos.x = prev.x - 1 then
+						if prev = pos - 1 then
+							cameFrom := west
+						else if prev = pos + 1 then
 							cameFrom := east
+						else if prev < pos then
+							cameFrom := north
 						else
-							cameFrom := west;
+							cameFrom := south;
 					end
 				else
 					begin
@@ -177,18 +172,18 @@ program day10p1;
 				tmp := pos;
 
 				if (c = 'J') or (c = 'L') or (c = '|') then
-					g.bytes[pos.y * g.lineLength + pos.x] := '!'
+					g.bytes[pos] := '!'
 				else
-					g.bytes[pos.y * g.lineLength + pos.x] := '*';
+					g.bytes[pos] := '*';
 
 				if ((c = 'J') and (cameFrom = west)) or ((c = 'L') and (cameFrom = east)) or ((c = '|') and (cameFrom = south)) then
-					pos.y := pos.y - 1
+					pos := pos - g.lineLength
 				else if ((c = '7') and (cameFrom = west)) or ((c = 'F') and (cameFrom = east)) or ((c = '|') and (cameFrom = north)) then
-					pos.y := pos.y + 1
+					pos := pos + g.lineLength
 				else if ((c = 'J') and (cameFrom = north)) or ((c = '7') and (cameFrom = south)) or ((c = '-') and (cameFrom = east)) then
-					pos.x := pos.x - 1
+					pos := pos - 1
 				else if ((c = 'L') and (cameFrom = north)) or ((c = 'F') and (cameFrom = south)) or ((c = '-') and (cameFrom = west)) then
-					pos.x := pos.x + 1
+					pos := pos + 1
 				else
 					die('Cannot move');
 
@@ -199,29 +194,30 @@ program day10p1;
 
 	function Solve (var g: Grid): integer;
 		var
-			start: Coord;
-			x, y, numInside: integer;
+			start, i, maxI, numInside: integer;
 			isInside: boolean;
 			c: char;
 	begin
 		start := FindStart(g);
-		writeln('start is at x=', start.x : 1, ' y=', start.y : 1);
+		writeln('start is at x=', (start mod g.lineLength) : 1, ' y=', (start div g.lineLength) : 1);
 		ReplaceStart(g, start);
-		writeln('replaced start with ', g.bytes[start.y * g.lineLength + start.x]);
+		writeln('replaced start with ', g.bytes[start]);
 		MarkCycle(g, start);
 		writeln('Done marking cycle. Counting inside spaces.');
 
-		for y := 0 to g.height - 1 do
+		maxI := g.lineLength * g.height - 1;
+		isInside := false;
+
+		for i := 0 to maxI do
 			begin
-				isInside := false;
-				for x := 0 to g.width - 1 do
-					begin
-						c := g.bytes[y * g.lineLength + x];
-						if c = '!' then
-							isInside := not isInside
-						else if isInside and (c <> '*') then
-							numInside := numInside + 1;
-					end;
+				c := g.bytes[i];
+
+				if c = chr(13) then
+					isInside := false
+				else if c = '!' then
+					isInside := not isInside
+				else if isInside and (c <> '*') then
+					numInside := numInside + 1;
 			end;
 
 		Solve := numInside;
