@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+
+Step = Data.define(:direction, :length, :color)
+Coord = Data.define(:x, :y) do
+	def U = Coord.new(x, y - 1)
+	def D = Coord.new(x, y + 1)
+	def R = Coord.new(x + 1, y)
+	def L = Coord.new(x - 1, y)
+end
+
+def parse_step(line)
+	line =~ /^([UDRL]) ([\d]+) \(#([\dabcdef]+\))$/ or raise "Can't parse #{line}"
+	Step.new($1, $2.to_i, $3)
+end
+
+class Grid
+	attr_reader :perimeter_trench, :xrange, :yrange
+
+	def initialize(perimeter_trench)
+		@perimeter_trench = perimeter_trench
+		xmin = perimeter_trench.map { |c| c.x }.min
+		xmax = perimeter_trench.map { |c| c.x }.max
+		@xrange = xmin..xmax
+		ymin = perimeter_trench.map { |c| c.y }.min
+		ymax = perimeter_trench.map { |c| c.y }.max
+		@yrange = ymin..ymax
+	end
+	
+	def in_bounds?(coord)
+		xrange.include?(coord.x) && yrange.include?(coord.y)
+	end
+end
+
+def dig_perimeter(steps)
+	dug = Set.new
+	pos = Coord.new(-1, 0)
+	
+	steps.each do |step|
+		step.length.times do ||
+			pos = pos.public_send(step.direction)
+			dug.add(pos)
+		end
+	end
+
+	Grid.new(dug)
+end
+
+def fill(grid)
+	norths = north_facing_edges(grid.perimeter_trench)
+	# We really only need to track the number of filled cells,
+	# but this helps with debugging.
+	filled = grid.perimeter_trench.clone
+
+	grid.yrange.each do |y|
+		inside = false
+
+		grid.xrange.each do |x|
+			if norths.include?(Coord.new(x, y)) then
+				inside = !inside
+			elsif inside then
+				filled.add(Coord.new(x, y))
+			end
+		end
+	end
+
+	grid.yrange.each do |y|
+		grid.xrange.each do |x|
+			if filled.include?(Coord.new(x, y)) then
+				print '#'
+			else
+				print '.'
+			end
+		end
+		puts
+	end
+
+	filled.size
+end
+
+def north_facing_edges(perimeter)
+	Set.new(perimeter.filter { |pos| perimeter.include?(pos.U) })
+end
+
+
+steps = ARGF.read.split("\n").map { |line| parse_step(line) }
+grid = dig_perimeter(steps)
+puts fill(grid)
