@@ -1,6 +1,6 @@
 program day10p1;
 
-{ Run time: ~7s on Mac Classic with full puzzle input }
+{ Run time: ~4s on Mac Classic with full puzzle input }
 
 	uses
 		MicroSysFileUtils;
@@ -80,19 +80,6 @@ program day10p1;
 	end;
 
 
-{ TODO: Might end up inlining this for perf's sake }
-	function At (var g: Grid; x, y: integer): char;
-	begin
-		At := g.bytes[y * g.lineLength + x];
-	end;
-
-{ TODO: inline this for consistency if At gets inlined }
-	procedure SetAt (var g: Grid; x, y: integer; c: char);
-	begin
-		g.bytes[y * g.lineLength + x] := c;
-	end;
-
-
 	function FindStart (var g: Grid): Coord;
 		var
 			x, y: integer;
@@ -100,7 +87,7 @@ program day10p1;
 	begin
 		for y := 0 to g.height do
 			for x := 0 to g.width do
-				if At(g, x, y) = 'S' then
+				if g.bytes[y * g.lineLength + x] = 'S' then
 					begin
 						c.x := x;
 						c.y := y;
@@ -118,10 +105,10 @@ program day10p1;
 			pipeN, pipeS, pipeE, pipeW: boolean;
 	begin
 { Assumption: start is not along the edge }
-		n := At(g, start.x, start.y - 1);
-		s := At(g, start.x, start.y + 1);
-		e := At(g, start.x + 1, start.y);
-		w := At(g, start.x - 1, start.y);
+		n := g.bytes[start.y - 1 * g.lineLength + start.x];
+		s := g.bytes[start.y + 1 * g.lineLength + start.x];
+		e := g.bytes[start.y * g.lineLength + start.x + 1];
+		w := g.bytes[start.y * g.lineLength + start.x - 1];
 		pipeN := (n = 'F') or (n = '7') or (n = '|');
 		pipeS := (s = 'L') or (s = 'J') or (s = '|');
 		pipeE := (e = '7') or (e = 'J') or (e = '-');
@@ -142,7 +129,7 @@ program day10p1;
 		else
 			die('Could not replace start');
 
-		SetAt(g, start.x, start.y, c);
+		g.bytes[start.y * g.lineLength + start.x] := c;
 	end;
 
 
@@ -160,7 +147,7 @@ program day10p1;
 
 		while not (any and (pos.x = start.x) and (pos.y = start.y)) do
 			begin
-				c := At(g, pos.x, pos.y);
+				c := g.bytes[pos.y * g.lineLength + pos.x];
 
 				if any then
 					begin
@@ -190,9 +177,9 @@ program day10p1;
 				tmp := pos;
 
 				if (c = 'J') or (c = 'L') or (c = '|') then
-					SetAt(g, pos.x, pos.y, '!')
+					g.bytes[pos.y * g.lineLength + pos.x] := '!'
 				else
-					SetAt(g, pos.x, pos.y, '*');
+					g.bytes[pos.y * g.lineLength + pos.x] := '*';
 
 				if ((c = 'J') and (cameFrom = west)) or ((c = 'L') and (cameFrom = east)) or ((c = '|') and (cameFrom = south)) then
 					pos.y := pos.y - 1
@@ -220,7 +207,7 @@ program day10p1;
 		start := FindStart(g);
 		writeln('start is at x=', start.x : 1, ' y=', start.y : 1);
 		ReplaceStart(g, start);
-		writeln('replaced start with ', At(g, start.x, start.y));
+		writeln('replaced start with ', g.bytes[start.y * g.lineLength + start.x]);
 		MarkCycle(g, start);
 		writeln('Done marking cycle. Counting inside spaces.');
 
@@ -229,7 +216,7 @@ program day10p1;
 				isInside := false;
 				for x := 0 to g.width - 1 do
 					begin
-						c := At(g, x, y);
+						c := g.bytes[y * g.lineLength + x];
 						if c = '!' then
 							isInside := not isInside
 						else if isInside and (c <> '*') then
