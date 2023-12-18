@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-Step = Data.define(:direction, :length, :color)
+Step = Data.define(:direction, :length)
 Coord = Data.define(:x, :y) do
 	def U = Coord.new(x, y - 1)
 	def D = Coord.new(x, y + 1)
@@ -9,26 +9,8 @@ Coord = Data.define(:x, :y) do
 end
 
 def parse_step(line)
-	line =~ /^([UDRL]) ([\d]+) \(#([\dabcdef]+\))$/ or raise "Can't parse #{line}"
-	Step.new($1, $2.to_i, $3)
-end
-
-class Grid
-	attr_reader :perimeter_trench, :xrange, :yrange
-
-	def initialize(perimeter_trench)
-		@perimeter_trench = perimeter_trench
-		xmin = perimeter_trench.map { |c| c.x }.min
-		xmax = perimeter_trench.map { |c| c.x }.max
-		@xrange = xmin..xmax
-		ymin = perimeter_trench.map { |c| c.y }.min
-		ymax = perimeter_trench.map { |c| c.y }.max
-		@yrange = ymin..ymax
-	end
-	
-	def in_bounds?(coord)
-		xrange.include?(coord.x) && yrange.include?(coord.y)
-	end
+	line =~ /^([UDRL]) ([\d]+)/ or raise "Can't parse #{line}"
+	Step.new($1, $2.to_i)
 end
 
 def dig_perimeter(steps)
@@ -42,39 +24,27 @@ def dig_perimeter(steps)
 		end
 	end
 
-	Grid.new(dug)
+	dug
 end
 
-def fill(grid)
-	norths = north_facing_edges(grid.perimeter_trench)
-	# We really only need to track the number of filled cells,
-	# but this helps with debugging.
-	filled = grid.perimeter_trench.clone
+def fill(dug)
+	norths = north_facing_edges(dug)
+	xmin = dug.map { |c| c.x }.min
+	xmax = dug.map { |c| c.x }.max
+	ymin = dug.map { |c| c.y }.min
+	ymax = dug.map { |c| c.y }.max
 
-	grid.yrange.each do |y|
+	(ymin..ymax).each do |y|
 		inside = false
 
-		grid.xrange.each do |x|
+		(xmin..xmax).each do |x|
 			if norths.include?(Coord.new(x, y)) then
 				inside = !inside
 			elsif inside then
-				filled.add(Coord.new(x, y))
+				dug.add(Coord.new(x, y))
 			end
 		end
 	end
-
-	grid.yrange.each do |y|
-		grid.xrange.each do |x|
-			if filled.include?(Coord.new(x, y)) then
-				print '#'
-			else
-				print '.'
-			end
-		end
-		puts
-	end
-
-	filled.size
 end
 
 def north_facing_edges(perimeter)
@@ -83,5 +53,6 @@ end
 
 
 steps = ARGF.read.split("\n").map { |line| parse_step(line) }
-grid = dig_perimeter(steps)
-puts fill(grid)
+dug = dig_perimeter(steps)
+fill(dug)
+puts dug.size
