@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+
+Rule = Data.define(:target_name, :operator, :attribute, :constant)
+
+def parse(input)
+	workflows_s, parts_s = input.split("\n\n")
+
+	workflows = workflows_s.split("\n")
+		.map { |line|
+			line =~ /^([a-z]+){([^}]+)}$/ or die "Can't parse workflow: #{line}"
+			name = $1
+			rules = $2.split(",")
+				.map { |rule_s|
+					if rule_s =~ /^([xmas])([<>])([\d]+):([a-z]+|A|R)$/ then
+						Rule.new($4, $2, $1, $3.to_i)
+					elsif rule_s =~ /^[a-z]+|A|R$/ then
+						Rule.new(rule_s, nil, nil, nil)
+					else
+						raise "Can't parse rule: #{rule_s}"
+					end
+				}
+			[name, rules]
+		}
+		.to_h
+
+	parts = parts_s.split("\n")
+		.map { |line|
+			line.gsub(/[{}]/, "").split(",")
+				.map { |attr|
+					attr =~ /^([xmas])=([\d]+)$/ or raise "Can't parse attr: #{attr}"
+					[$1, $2.to_i]
+				}
+				.to_h
+		}
+
+	[workflows, parts]
+end
+
+def accept?(part, workflows)
+	wf_name = 'in'
+
+	while wf_name != 'A' && wf_name != 'R' do
+		wf_name = workflows[wf_name]
+			.filter { |rule| rule_matches?(rule, part) }
+			.map { |rule| rule.target_name }
+			.first
+	end
+
+	wf_name == 'A'
+end
+
+def rule_matches?(rule, part)
+	if rule.operator.nil? then
+		true
+	elsif rule.operator == '<' then
+		part[rule.attribute] < rule.constant
+	else
+		part[rule.attribute] > rule.constant
+	end
+end
+
+workflows, parts = parse(ARGF.read)
+result = parts
+	.filter { |p| accept?(p, workflows) }
+	.flat_map { |p| p.values }
+	.sum
+pp result
