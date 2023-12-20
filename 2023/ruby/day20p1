@@ -1,0 +1,207 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+class Broadcaster
+	def accept(high, input)
+		high
+	end
+
+	def inspect
+		"<Broadcaster>"
+	end
+end
+
+class FlipFlop
+	attr_reader :on
+
+	def initialize
+		@on = false
+	end
+
+	def accept(high, input)
+		if high then
+			nil
+		else
+			@on = !@on
+		end
+	end
+
+	def inspect
+		"<FlipFlop on=#{@on}>"
+	end
+end
+
+class Conjunction
+	attr_reader :memory
+
+	def initialize(inputs)
+		@memory = {}
+
+		inputs.each do |name|
+			@memory[name] = false
+		end
+	end
+
+	def accept(high, input)
+		@memory[input] = high
+		result = @memory.values.uniq != [true]
+		#TODO remove once debugged
+#		puts "    #{self.inspect} got #{high} for #{input}, emitting #{result}"
+		result
+	end
+
+	def inspect
+		"<Conjunction mem=#{@memory}>"
+	end
+end
+
+
+Node = Data.define(:module, :dests)
+
+def parse_input(input)
+	nodes = {}
+
+	nodes = input.split("\n")
+		.map { |line|
+			line =~ /^([%&]?)([a-z]+) -> (.*)$/ or raise "Can't parse #{line}"
+			sigil = $1
+			name = $2
+			dests = $3.split(', ')
+
+			mod = if sigil == '%' then
+				FlipFlop.new
+			elsif sigil == '&' then
+				:placeholder
+			else
+				Broadcaster.new
+			end
+
+			[name, Node.new(mod, dests)]
+		}
+		.to_h
+
+	conjunctions = nodes.filter { |_, node| node.module == :placeholder }
+	conjunctions.each do |conj_name, conj|
+		inputs = nodes.each_entry
+			.filter { |other_name, node| node.dests.include?(conj_name) }
+			.map { |other_name, _| other_name }
+		nodes[conj_name] = Node.new(Conjunction.new(inputs), conj.dests)
+	end
+
+	nodes
+end
+
+def push_the_button(nodes)
+	pulses = [['button', 'broadcaster', false]]
+	n_high = 0
+	n_low = 0
+
+	while !pulses.empty?
+		src_name, dest_name, high = pulses.shift
+
+		if high then
+			n_high += 1
+		else
+			n_low += 1
+		end
+
+		# TODO remove once debugged
+		highlow = if high then
+			"high"
+		else
+			"low"
+		end
+		puts "#{src_name} -#{highlow}-> #{dest_name}"
+
+		if dest_name != 'output' then
+			dest_node = nodes[dest_name]
+	
+			# Not covered in the puzzle description: the destination might
+			# not exist. In that case, we count the pulse (already done above)
+			# but otherwise ignore it.
+			unless dest_node.nil?
+				emitted = dest_node.module.accept(high, src_name)
+				unless emitted.nil?
+					pulses += dest_node.dests.map { |nd| [dest_name, nd, emitted] }
+				end
+			end
+		end
+	end
+
+	[n_high, n_low]
+end
+
+
+class Tests < Microtest::Test
+	def test_flipflop
+		subject = FlipFlop.new # initially low
+		assert_equal(false, subject.on)
+
+		# Sending high when off does nothing
+		assert_equal(nil, subject.accept(true, 'arbitrary'))
+		assert_equal(false, subject.on)
+
+		# Sending low when off flips to on
+		assert_equal(true, subject.accept(false, 'arbitrary'))
+		assert_equal(true, subject.on)
+
+		# Sending high when on still does nothing
+		assert_equal(nil, subject.accept(true, 'arbitrary'))
+		assert_equal(true, subject.on)
+
+		# Sending low when on flips to off
+		assert_equal(false, subject.accept(false, 'arbitrary'))
+		assert_equal(false, subject.on)
+	end
+
+	def test_conjunction
+		subject = Conjunction.new(['a', 'b'])
+		assert_equal({'a' => false, 'b' => false}, subject.memory)
+
+		# Sending high from a updates the memory, but output is still high
+		assert_equal(true, subject.accept(true, 'a'))
+		assert_equal({'a' => true, 'b' => false}, subject.memory)
+
+		# After sending high from b, both memories are high so low is emitted
+		assert_equal(false, subject.accept(true, 'b'))
+		assert_equal({'a' => true, 'b' => true}, subject.memory)
+
+		# Sending low from a updates the memory and returns output to high
+		assert_equal(true, subject.accept(false, 'a'))
+		assert_equal({'a' => false, 'b' => true}, subject.memory)
+	end
+end
+
+Microtest.run(Tests.new)
+
+# TODO remove once debugged
+def sanity_check(nodes)
+	ok = true
+
+	nodes.each_value do |node|
+		node.dests.each do |dest|
+			unless nodes.include?(dest)
+				puts "missing: #{dest}"
+				ok = false
+			end
+		end
+	end
+
+	unless ok then
+		raise "fsck failed"
+	end
+end
+
+nodes = parse_input(ARGF.read)
+#sanity_check(nodes)
+n_high = 0
+n_low = 0
+
+1000.times do ||
+	h, l = push_the_button(nodes)
+	n_high += h
+	n_low += l
+end
+
+puts "h=#{n_high} l=#{n_low} result=#{n_high * n_low}"
