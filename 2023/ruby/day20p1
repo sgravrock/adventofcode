@@ -6,10 +6,6 @@ class Broadcaster
 	def accept(high, input)
 		high
 	end
-
-	def inspect
-		"<Broadcaster>"
-	end
 end
 
 class FlipFlop
@@ -26,10 +22,6 @@ class FlipFlop
 			@on = !@on
 		end
 	end
-
-	def inspect
-		"<FlipFlop on=#{@on}>"
-	end
 end
 
 class Conjunction
@@ -45,14 +37,7 @@ class Conjunction
 
 	def accept(high, input)
 		@memory[input] = high
-		result = @memory.values.uniq != [true]
-		#TODO remove once debugged
-#		puts "    #{self.inspect} got #{high} for #{input}, emitting #{result}"
-		result
-	end
-
-	def inspect
-		"<Conjunction mem=#{@memory}>"
+		@memory.values.uniq != [true]
 	end
 end
 
@@ -105,14 +90,6 @@ def push_the_button(nodes)
 		else
 			n_low += 1
 		end
-
-		# TODO remove once debugged
-		highlow = if high then
-			"high"
-		else
-			"low"
-		end
-		puts "#{src_name} -#{highlow}-> #{dest_name}"
 
 		if dest_name != 'output' then
 			dest_node = nodes[dest_name]
@@ -175,26 +152,7 @@ end
 
 Microtest.run(Tests.new)
 
-# TODO remove once debugged
-def sanity_check(nodes)
-	ok = true
-
-	nodes.each_value do |node|
-		node.dests.each do |dest|
-			unless nodes.include?(dest)
-				puts "missing: #{dest}"
-				ok = false
-			end
-		end
-	end
-
-	unless ok then
-		raise "fsck failed"
-	end
-end
-
 nodes = parse_input(ARGF.read)
-#sanity_check(nodes)
 n_high = 0
 n_low = 0
 
@@ -204,4 +162,4 @@ n_low = 0
 	n_low += l
 end
 
-puts "h=#{n_high} l=#{n_low} result=#{n_high * n_low}"
+puts n_high * n_low
