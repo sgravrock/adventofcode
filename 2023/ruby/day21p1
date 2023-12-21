@@ -31,41 +31,43 @@ def print_grid(grid)
 	end
 end
 
-def solve(grid, max_path_len)
-	reachable = Set.new
-	find_reachable(grid, find_start(grid), max_path_len, reachable)
+def solve(grid, path_len)
+	current_gen = Set.new([find_start(grid)])
+	height = grid.length
+	width = grid[0].length
+
+	until path_len == 0 do
+		prev_gen = current_gen
+		current_gen = Set.new
+		prev_gen.each do |src|
+			src.each_neighbor do |n|
+				unless current_gen.include?(n) then
+					row = grid[n.y]
+					cell = if row.nil? then
+						nil
+					else
+						row[n.x]
+					end
+	
+					if cell == 'S' || cell == '.' then
+						current_gen.add(n)
+					end
+				end
+			end
+		end
+
+		path_len -= 1
+	end
 
 	print_grid(grid) { |cell, coord|
-		if reachable.include?(coord) then
+		if current_gen.include?(coord) then
 			"O"
 		else
 			cell
 		end
 	}
 
-	reachable.size
-end
-
-# Recursively find all paths of length path_len,
-# adding their ends to result
-def find_reachable(grid, start, path_len, result)
-	cell = grid[start.y][start.x]
-	is_garden = cell == '.' || cell == 'S'
-
-	if path_len == 0 then
-		if is_garden then
-			result.add(start)
-		end
-	elsif is_garden then
-		height = grid.length
-		width = grid[0].length
-
-		start.each_neighbor do |n|
-			if n.y >= 0 && n.y < height && n.x >= 0 && n.x < width then
-				find_reachable(grid, n, path_len - 1, result)
-			end
-		end
-	end
+	current_gen.size
 end
 
 unless ARGV.length == 2 then
