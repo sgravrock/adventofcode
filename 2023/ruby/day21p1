@@ -1,78 +1,41 @@
 #!/usr/bin/env ruby
 
 Coord = Data.define(:x, :y) do
-	def north = Coord.new(x, y - 1)
-	def south = Coord.new(x, y + 1)
-	def east = Coord.new(x + 1, y)
-	def west = Coord.new(x - 1, y)
-
-	def neighbors
-		[north, south, east, west]
+	def each_neighbor
+		yield Coord.new(x, y - 1)
+		yield Coord.new(x, y + 1)
+		yield Coord.new(x + 1, y)
+		yield Coord.new(x - 1, y)
 	end
 end
 
-# A grid backed by the input string
-# Why? Because I'm bored with nested arrays.
-class Grid
-	attr_reader :width, :height
-
-	def initialize(s)
-		@s = s
-		@width = s.index("\n")
-		@chars_per_row = @width + 1
-		@height = s.length / @chars_per_row
-	end
-
-	def [](coord)
-		if in_bounds?(coord) then
-			@s[coord.y * @chars_per_row + coord.x]
-		else
-			nil
-		end
-	end
-
-	def in_bounds?(coord)
-		coord.x >= 0 && coord.x < @width && coord.y >= 0 && coord.y < @height
-	end
-
-	def find_start
-		i = @s.index("S")
-		Coord.new(i / @chars_per_row, i % @chars_per_row)
-	end
-
-	def print_as
-		each_row do |y|
-			each_column do |x|
-				coord = Coord.new(x, y)
-				print(yield self[coord], coord)
+def find_start(grid)
+	(0..grid.length - 1).each do |y|
+		(0..grid[y].length - 1).each do |x|
+			if grid[y][x] == 'S' then
+				return Coord.new(x, y)
 			end
-			puts
 		end
 	end
 
-	def each_row
-		return enum_for(__method__) unless block_given?
-
-		(0..@height - 1).each do |y|
-			yield y
-		end
-	end
-
-	def each_column
-		return enum_for(__method__) unless block_given?
-
-		(0..@width - 1).each do |x|
-			yield x
-		end
-	end
+	raise "Start not found"
 end
 
+def print_grid(grid)
+	(0..grid.length - 1).each do |y|
+		(0..grid[y].length - 1).each do |x|
+			coord = Coord.new(x, y)
+			print(yield grid[y][x], coord)
+		end
+		puts
+	end
+end
 
 def solve(grid, max_path_len)
 	reachable = Set.new
-	find_reachable(grid, grid.find_start, max_path_len, reachable)
+	find_reachable(grid, find_start(grid), max_path_len, reachable)
 
-	grid.print_as { |cell, coord|
+	print_grid(grid) { |cell, coord|
 		if reachable.include?(coord) then
 			"O"
 		else
@@ -86,7 +49,7 @@ end
 # Recursively find all paths of length path_len,
 # adding their ends to result
 def find_reachable(grid, start, path_len, result)
-	cell = grid[start]
+	cell = grid[start.y][start.x]
 	is_garden = cell == '.' || cell == 'S'
 
 	if path_len == 0 then
@@ -94,8 +57,11 @@ def find_reachable(grid, start, path_len, result)
 			result.add(start)
 		end
 	elsif is_garden then
-		start.neighbors.each do |n|
-			if grid.in_bounds?(n) then
+		height = grid.length
+		width = grid[0].length
+
+		start.each_neighbor do |n|
+			if n.y >= 0 && n.y < height && n.x >= 0 && n.x < width then
 				find_reachable(grid, n, path_len - 1, result)
 			end
 		end
@@ -107,5 +73,5 @@ unless ARGV.length == 2 then
 	exit(1)
 end
 
-grid = Grid.new(File.read(ARGV[0]))
+grid = File.read(ARGV[0]).split("\n").map(&:chars)
 puts solve(grid, ARGV[1].to_i)
