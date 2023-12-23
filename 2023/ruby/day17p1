@@ -1,0 +1,338 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+# E.g. a cell at x=1 y=3 reached by two north steps is:
+# Node.new(1, 3, :north, 2)
+Node = Data.define(:x, :y, :limit_dir, :limit_length) do
+	def dist_available(dir)
+		if dir == limit_dir then
+			limit_length
+		elsif opposites?(dir, limit_dir) then
+			# No backtracking allowed
+			0
+		else
+			3
+		end
+	end
+
+	# TODO consider collapsing dist_available, opposites, and advance into this
+	def neighbors(grid_xrange, grid_yrange)
+		[:north, :south, :east, :west].filter_map { |dir|
+			avail = dist_available(dir)
+			if avail > 0 then
+				destX, destY = advance(x, y, dir)
+				if grid_xrange.include?(destX) && grid_yrange.include?(destY) then
+					Node.new(destX, destY, dir, avail - 1)
+				end
+			end
+		}
+	end
+end
+
+def opposites?(dir_a, dir_b)
+	dir_b == case dir_a
+		when :north
+			:south
+		when :south
+			:north
+		when :east
+			:west
+		when :west
+			:east
+		else
+			raise "Bad direction: #{dir_a}"
+		end
+end
+
+def advance(x, y, dir)
+	case dir
+	when :north
+		[x, y - 1]
+	when :south
+		[x, y + 1]
+	when :east
+		[x + 1, y]
+	when :west
+		[x - 1, y]
+	else
+		raise "Bad direction #{dir}"
+	end
+end
+
+def solve(grid)
+	nodes, start_node = build_nodes(grid)
+	puts "Built #{nodes.size} nodes"
+	edges = build_edges(grid, nodes, start_node)
+	n_edges = edges.entries
+		.map { |_, v| v.length }
+		.sum
+	puts "Found #{n_edges} edges"
+	dijkstra(grid, nodes, edges, start_node, grid[0].length - 1, grid.length - 1)
+end
+
+def build_nodes(grid)
+	yrange = 0...grid.length
+	xrange = 0...grid[0].length
+
+	nodes = Set.new
+
+	yrange.each do |y|
+		xrange.each do |x|
+			[:north, :south, :east, :west].each do |dir|
+				(1..3).each do |len|
+					nodes.add(Node.new(x, y, dir, len))
+				end
+			end
+		end
+	end
+
+	# Adding invalid nodes and then filtering them out looks inefficient
+	# but it greatly simplifies the code, and it's essentially free even
+	# with the full puzzle input.
+	nodes.delete_if { |node|
+		case node.limit_dir
+		when :north
+			!yrange.include?(node.y - node.limit_length)
+		when :south
+			!yrange.include?(node.y + node.limit_length)
+		when :east
+			!xrange.include?(node.x + node.limit_length)
+		when :west
+			!xrange.include?(node.x - node.limit_length)
+		end
+	}
+
+	# Special case: the start was reached with no move,
+	# so full distance is available in all directions.
+	nodes.delete_if { |n| n.x == 0 && n.y == 0 }
+	start_node = Node.new(0, 0, nil, nil)
+	nodes.add(start_node)
+
+	[nodes, start_node]
+end
+
+def build_edges(grid, nodes, start)
+	yrange = 0...grid.length
+	xrange = 0...grid[0].length
+	edges = Hash.new
+	frontier = [start]
+
+	until frontier.empty? do
+		current = frontier.shift
+		unless edges.include?(current) then
+			neighbors = current.neighbors(xrange, yrange)
+			edges[current] = neighbors
+			frontier += neighbors
+		end
+	end
+
+	edges
+end
+
+# Dijkstra's Shortest Path algorithm specialized for:
+# * Nodes partially (but not completely) identified by x and y coordinates
+# * Multiple goal nodes w/same coordinates
+# * All edges reaching nodes with the same coordinates have the same cost
+def dijkstra(costs, nodes, edges, start_node, goal_x, goal_y)
+	frontier = Hash.new
+	frontier[start_node] = 0
+	visited = Set.new
+
+	puts "starting to dijkstra to x=#{goal_x} y=#{goal_y}"
+
+	until frontier.empty? do
+		current, current_cost = frontier.min_by { |_, cost| cost }
+		frontier.delete(current)
+		visited.add(current)
+
+		if current.x == goal_x && current.y == goal_y then
+			return current_cost
+		end
+
+		edges[current].each do |neighbor|
+			unless visited.include?(neighbor) then
+				cost = current_cost + costs[neighbor.y][neighbor.x]
+				if !frontier.include?(neighbor) || cost < frontier[neighbor] then
+					frontier[neighbor] = cost
+				end
+			end
+		end
+	end
+
+	raise "Did not reach any goal node"
+end
+
+
+class Tests < Microtest::Test
+	def test_build_nodes_wide
+		grid = [[0,1,2,3,4]]
+		expected = Set.new([
+			Node.new(0, 0, nil, nil),
+
+			Node.new(1, 0, :west, 1),
+			Node.new(1, 0, :east, 1),
+			Node.new(1, 0, :east, 2),
+			Node.new(1, 0, :east, 3),
+
+			Node.new(2, 0, :west, 2),
+			Node.new(2, 0, :west, 1),
+			Node.new(2, 0, :east, 1),
+			Node.new(2, 0, :east, 2),
+
+			Node.new(3, 0, :west, 3),
+			Node.new(3, 0, :west, 2),
+			Node.new(3, 0, :west, 1),
+			Node.new(3, 0, :east, 1),
+
+			Node.new(4, 0, :west, 1),
+			Node.new(4, 0, :west, 2),
+			Node.new(4, 0, :west, 3),
+		])
+		actual, start_node = build_nodes(grid)
+		assert_equal(expected, actual)
+	end
+
+	def test_build_nodes_tall
+		grid = [
+			[0],
+			[1],
+			[2],
+			[3],
+			[4],
+		]
+		expected = Set.new([
+			Node.new(0, 0, nil, nil),
+
+			Node.new(0, 1, :north, 1),
+			Node.new(0, 1, :south, 1),
+			Node.new(0, 1, :south, 2),
+			Node.new(0, 1, :south, 3),
+
+			Node.new(0, 2, :north, 2),
+			Node.new(0, 2, :north, 1),
+			Node.new(0, 2, :south, 1),
+			Node.new(0, 2, :south, 2),
+
+			Node.new(0, 3, :north, 3),
+			Node.new(0, 3, :north, 2),
+			Node.new(0, 3, :north, 1),
+			Node.new(0, 3, :south, 1),
+
+			Node.new(0, 4, :north, 1),
+			Node.new(0, 4, :north, 2),
+			Node.new(0, 4, :north, 3),
+		])
+		actual, start_node = build_nodes(grid)
+		assert_equal(expected, actual)
+	end
+
+	def test_build_edges_trivial_h
+		grid = [[0, 0, 0]]
+		nodes, start = build_nodes(grid)
+		actual = build_edges(grid, nodes, start)
+
+		middle_from_start = Node.new(1, 0, :east, 2)
+		end_from_middle = Node.new(2, 0, :east, 1)
+
+		expected_srcs = Set.new([
+			start,
+			middle_from_start,
+			end_from_middle
+		])
+		assert_equal(expected_srcs, Set.new(actual.keys), "source nodes")
+
+		assert_equal([middle_from_start], actual[start], "start")
+
+		middle_to_east = Node.new(1, 0, :east, 2)
+		assert_equal([Node.new(2, 0, :east, 1)], actual[middle_to_east],
+			"middle to east")
+
+		middle_to_west = Node.new(1, 0, :west, 2)
+		assert_equal(nil, actual[middle_to_west], "middle to west")
+
+		# Can't backtrack from here
+		assert_equal([], actual[end_from_middle], "end from middle")
+	end
+
+	def test_build_edges_trivial_v
+		grid = [
+			[0],
+			[0],
+			[0]
+		]
+		nodes, start = build_nodes(grid)
+		actual = build_edges(grid, nodes, start)
+
+		middle_from_start = Node.new(0, 1, :south, 2)
+		end_from_middle = Node.new(0, 2, :south, 1)
+
+		expected_srcs = Set.new([
+			start,
+			middle_from_start,
+			end_from_middle
+		])
+		assert_equal(expected_srcs, Set.new(actual.keys), "source nodes")
+
+		assert_equal([middle_from_start], actual[start], "start")
+
+		middle_to_south = Node.new(0, 1, :south, 2)
+		assert_equal([Node.new(0, 2, :south, 1)], actual[middle_to_south],
+			"middle to south")
+
+		middle_to_north = Node.new(0, 1, :north, 2)
+		assert_equal(nil, actual[middle_to_north], "middle to north")
+
+		# Can't backtrack from here
+		assert_equal([], actual[end_from_middle], "end from middle")
+	end
+
+	def test_build_edges_2d
+		grid = [
+			[0, 0],
+			[0, 0]
+		]
+		nodes, start = build_nodes(grid)
+		actual = build_edges(grid, nodes, start)
+
+		tr_from_start = Node.new(1, 0, :east, 2)
+		br_from_tr = Node.new(1, 1, :south, 2)
+		bl_from_start = Node.new(0, 1, :south, 2)
+		bl_from_br = Node.new(0, 1, :west, 2)
+		br_from_bl = Node.new(1, 1, :east, 2)
+		tr_from_br = Node.new(1, 0, :north, 2)
+		start_from_tr = Node.new(0, 0, :west, 2)
+		start_from_bl = Node.new(0, 0, :north, 2)
+		expected = Hash.new
+
+		# In a 2x2 grid we always have to turn, so this
+		# doesn't need to account for straight line distance.
+		expected[start] = Set.new([tr_from_start, bl_from_start])
+		expected[tr_from_start] = Set.new([br_from_tr])
+		expected[br_from_tr] = Set.new([bl_from_br])
+		expected[bl_from_start] = Set.new([br_from_bl])
+		expected[bl_from_br] = Set.new([start_from_bl])
+		expected[br_from_bl] = Set.new([tr_from_br])
+		expected[tr_from_br] = Set.new([start_from_tr])
+		expected[start_from_tr] = Set.new([bl_from_start])
+		expected[start_from_bl] = Set.new([tr_from_start])
+
+
+		assert_equal(Set.new(expected.keys), Set.new(actual.keys), "source nodes")
+		assert_equal(expected[start], Set.new(actual[start]), "start")
+		assert_equal(expected[tr_from_start], Set.new(actual[tr_from_start]), "tr_from_start")
+		assert_equal(expected[br_from_tr], Set.new(actual[br_from_tr]), "br_from_tr")
+		assert_equal(expected[bl_from_start], Set.new(actual[bl_from_start]), "bl_from_start")
+		assert_equal(expected[bl_from_br], Set.new(actual[bl_from_br]), "bl_from_br")
+		assert_equal(expected[br_from_bl], Set.new(actual[br_from_bl]), "br_from_bl")
+		assert_equal(expected[tr_from_br], Set.new(actual[tr_from_br]), "tr_from_br")
+		assert_equal(expected[start_from_tr], Set.new(actual[start_from_tr]), "start_from_tr")
+		assert_equal(expected[start_from_bl], Set.new(actual[start_from_bl]), "start_from_bl")
+	end
+end
+
+Microtest.run(Tests.new)
+
+grid = ARGF.read.split("\n").map { |line| line.chars.map(&:to_i) }
+result = solve(grid)
+puts "Result: #{result}"

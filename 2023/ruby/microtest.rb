@@ -32,6 +32,14 @@ module Microtest
 		else
 			puts "All #{n_tests} tests passed."
 		end
+
+		any_excluded = tests.methods
+			.any? {|symbol| symbol.to_s.start_with? 'xtest_' }
+
+		if any_excluded then
+			raise "Exiting because excluded tests (xtest_) were found"
+			exit 2
+		end
 	end
 
 	class Test
@@ -58,14 +66,22 @@ module Microtest
 		end
 
 		# TODO refactor, use fail()
-		def assert_equal(expected, actual)
+		def assert_equal(expected, actual, context=nil)
 			if expected != actual
-				if state.ok
+				if state.ok then
 					state.ok = false
-					puts "#{state.name} failed:"
+					print "#{state.name} failed:"
+					print " #{context}: " unless context.nil?
+					puts
+				elsif !context.nil? then
+					puts "#{context}:"
 				end
 
-				if contains_newline(actual) || contains_newline(expected)
+				if actual.is_a?(Set) && expected.is_a?(Set) then
+					print_set_mismatch(expected, actual)
+				elsif actual.is_a?(Hash) && expected.is_a?(Hash) then
+					print_hash_mismatch(expected, actual)
+				elsif contains_newline(actual) || contains_newline(expected)
 					puts "   Expected\n#{actual.inspect}\n   to equal\n#{expected.inspect}"
 				else
 					puts "   Expected #{actual.inspect} to equal #{expected.inspect}"
@@ -74,6 +90,51 @@ module Microtest
 		end
 
 		private
+
+		def print_hash_mismatch(expected, actual)
+			missing = expected.filter { |k, _| !actual.include?(k) }
+			extra = actual.filter { |k, _| !expected.include?(k) }
+			mismatches = expected.keys.filter { |k|
+				actual.include?(k) && actual[k] != expected[k]
+			}
+
+			unless missing.empty? then
+				puts "   Expected hash to include:"
+				missing.each do |k, v|
+					puts "      #{k.inspect} => #{v.inspect}"
+				end
+			end
+
+			unless extra.empty? then
+				puts "   Expected hash not to include:"
+				extra.each do |k, v|
+					puts "      #{k.inspect} => #{v.inspect}"
+				end
+			end
+
+			mismatches.each do |k|
+				puts "   For key #{k.inspect}, expected #{actual[k].inspect} to equal #{expected[k].inspect}"
+			end
+		end
+
+		def print_set_mismatch(expected, actual)
+			missing = expected - actual
+			extra = actual - expected
+
+			unless missing.empty? then
+				puts "   Expected set to include:"
+				missing.each do |el|
+					puts "      #{el.inspect}"
+				end
+			end
+
+			unless extra.empty? then
+				puts "   Expected set not to include:"
+				extra.each do |el|
+					puts "      #{el.inspect}"
+				end
+			end
+		end
 
 		def contains_newline(value)
 			value.respond_to?(:include?) && value.include?("\n")
