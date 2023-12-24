@@ -5,58 +5,49 @@ require './microtest'
 # E.g. a cell at x=1 y=3 reached by two north steps is:
 # Node.new(1, 3, :north, 2)
 Node = Data.define(:x, :y, :limit_dir, :limit_length) do
-	def dist_available(dir)
-		if dir == limit_dir then
-			limit_length
-		elsif opposites?(dir, limit_dir) then
-			# No backtracking allowed
-			0
-		else
-			3
-		end
-	end
-
-	# TODO consider collapsing dist_available, opposites, and advance into this
 	def neighbors(grid_xrange, grid_yrange)
 		[:north, :south, :east, :west].filter_map { |dir|
-			avail = dist_available(dir)
+			destX = x
+			destY = y
+			vertical = false
+
+			case dir
+			when :north
+				destY = y - 1
+				opposite = :south
+				vertical = true
+			when :south
+				destY = y + 1
+				opposite = :north
+				vertical = true
+			when :east
+				destX = x + 1
+				opposite = :west
+			when :west
+				destX = x - 1
+				opposite = :east
+			end
+
+			avail = if dir == limit_dir then
+				limit_length
+			elsif opposite == limit_dir then
+				0 # No backtracking allowed
+			else
+				3
+			end
+
 			if avail > 0 then
-				destX, destY = advance(x, y, dir)
-				if grid_xrange.include?(destX) && grid_yrange.include?(destY) then
+				in_range = if vertical then
+					grid_yrange.include?(destY)
+				else
+					grid_xrange.include?(destX)
+				end
+
+				if in_range then
 					Node.new(destX, destY, dir, avail - 1)
 				end
 			end
 		}
-	end
-end
-
-def opposites?(dir_a, dir_b)
-	dir_b == case dir_a
-		when :north
-			:south
-		when :south
-			:north
-		when :east
-			:west
-		when :west
-			:east
-		else
-			raise "Bad direction: #{dir_a}"
-		end
-end
-
-def advance(x, y, dir)
-	case dir
-	when :north
-		[x, y - 1]
-	when :south
-		[x, y + 1]
-	when :east
-		[x + 1, y]
-	when :west
-		[x - 1, y]
-	else
-		raise "Bad direction #{dir}"
 	end
 end
 
