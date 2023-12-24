@@ -1,0 +1,196 @@
+#!/usr/bin/env ruby
+
+require './microtest'
+
+NUM_ITERATIONS = 1000000000
+
+# An inheritance hierarchy of ThingDoers probably puts me on the naughty list.
+
+class Tilter
+	def tilt(grid)
+		cross_axis_range(grid).each do |ci|
+			dest = nil
+	
+			tilt_axis_range(grid).each do |ti|
+				cell = at(grid, ti, ci)
+
+				if cell == 'O' && !dest.nil? then
+					set_at(grid, dest, ci, 'O')
+					set_at(grid, ti, ci, '.')
+					dest += down
+				elsif cell == '.' && dest.nil? then
+					dest = ti
+				elsif cell == '#' then
+					dest = nil
+				end
+			end
+		end
+	end
+end
+
+class VerticalTilter < Tilter
+	def at(grid, tilt_ix, cross_ix)
+		grid[tilt_ix][cross_ix]
+	end
+
+	def set_at(grid, tilt_ix, cross_ix, value)
+		grid[tilt_ix][cross_ix] = value
+	end
+end
+
+class TiltNorther < VerticalTilter
+	def tilt_axis_range(grid)
+		0...grid.length
+	end
+
+	def cross_axis_range(grid)
+		0...grid[0].length
+	end
+
+	def down
+		1
+	end
+end
+
+class TiltSouther < VerticalTilter
+	def tilt_axis_range(grid)
+		ReverseRange.new(0, grid.length)
+	end
+
+	def cross_axis_range(grid)
+		0...grid[0].length 
+	end
+
+	def down
+		-1
+	end
+end
+
+class HorizontalTilter < Tilter
+	def at(grid, tilt_ix, cross_ix)
+		grid[cross_ix][tilt_ix]
+	end
+
+	def set_at(grid, tilt_ix, cross_ix, value)
+		grid[cross_ix][tilt_ix] = value
+	end
+end
+
+class TiltWester < HorizontalTilter
+	def tilt_axis_range(grid)
+		0...grid[0].length
+	end
+
+	def cross_axis_range(grid)
+		0...grid.length
+	end
+
+	def down
+		1
+	end
+end
+
+class TiltEaster < HorizontalTilter
+	def tilt_axis_range(grid)
+		ReverseRange.new(0, grid[0].length)
+	end
+
+	def cross_axis_range(grid)
+		0...grid.length
+	end
+
+	def down
+		-1
+	end
+end
+
+class ReverseRange
+	include Enumerable
+
+	def initialize(b, e)
+		@begin = e - 1
+		@end = b
+	end
+
+	def each
+		@begin.downto(@end) do |i|
+			yield i
+		end
+	end
+
+	def inspect
+		"<ReverseRange #{@begin}..#{@end}>"
+	end
+end
+
+
+def total_load(grid)
+	grid
+		.reverse
+		.each_with_index
+		.map { |row, y|
+			nrocks = row.filter { |c| c == 'O' }.length
+			nrocks * (y + 1)
+		}
+		.sum
+end
+
+
+class Tests < Microtest::Test
+	def test_reverse_range
+		subject = ReverseRange.new(0, 5)
+		expected = [4, 3, 2, 1, 0]
+		assert_equal(expected, subject.to_a)
+		
+		seen = []
+		subject.each do |n|
+			seen.push(n)
+		end
+
+		assert_equal(expected, seen)
+	end
+end
+
+Microtest.run(Tests.new)
+
+
+def solve(grid)
+	tilters = [TiltNorther.new, TiltWester.new, TiltSouther.new, TiltEaster.new]
+	cycle_len, cycle_prefix, grid = find_cycle(grid, tilters)
+	remainder = (NUM_ITERATIONS - cycle_prefix) % cycle_len
+
+	remainder.times do ||
+		tilters.each do |t|
+			t.tilt(grid)
+		end
+	end
+
+	total_load(grid)
+end
+
+def find_cycle(grid, tilters)
+	seen = Hash.new
+
+	# Should run for *far* fewer than NUM_ITERATIONS, for actual inputs
+	NUM_ITERATIONS.times do |i|
+		prev = grid
+		grid = grid.map { |row| row.clone }.to_a
+
+		tilters.each do |t|
+			t.tilt(grid)
+		end
+
+		seen_at = seen[grid]
+
+		if seen_at.nil? then
+			seen[grid] = i
+		else
+			return [i - seen_at, seen_at, prev]
+		end
+	end
+
+	raise "Didn't find a cycle"
+end
+
+grid = ARGF.read.split("\n").map(&:chars)
+puts solve(grid)
