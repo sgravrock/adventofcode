@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "serve": "serve"
+  },
+  "devDependencies": {
+    "jasmine-browser-runner": "^2.3.0",
+    "serve": "^14.2.1"
+  }
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<style>
+		td { font-family: monospace }
+	</style>
+</head>
+<body>
+	<label>Input: <textarea name="input"></textarea></label>
+	<button id="run-to-completion">Run to completion</button>
+	<button id="single-rock">Drop one rock</button>
+	<button id="single-step">Single step</button>
+	<table id="tetris">
+		<tr>
+			<td>+</td>
+			<td>-</td>
+			<td>-</td>
+			<td>-</td>
+			<td>-</td>
+			<td>-</td>
+			<td>-</td>
+			<td>-</td>
+			<td>+</td>
+		</tr>
+	</table>
+	<div id="status">
+		Status: <span id="overall-status">not started</span><br>
+		# rocks: <span id="num-rocks">0</span><br>
+		Height: <span id="height">0</span><br>
+		Next rock:<br>
+		<table id="next-rock"></table>
+	</div>
+	<script type="module" src="lib.mjs"></script>
+	<script type="module" src="boot.mjs"></script>
+</body>
+</html>
