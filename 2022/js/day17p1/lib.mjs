@@ -259,8 +259,23 @@ export class ArenaView {
 
 	update(arena) {
 		const height = arena.height;
+		// Reading the number of rows or cells forces layout if the DOM is dirty,
+		// so only do it before we start mutating.
+		const nRowsToAdd = height - this.tbody.rows.length;
+		const tableWidth = this.tbody.rows[0].cells.length;
+		const occupied = new Set();
 
-		while (this.tbody.rows.length < height) {
+		for (const rock of arena.rocks()) {
+			for (const a of rock.absoluteCells()) {
+				// Convert from arena coords to table coords
+				const tx = a.x + 1;
+				const ty = height - a.y - 1;
+				occupied.add(ty * tableWidth + tx);
+			}
+		}
+
+		// Add new rows if the table isn't as tall as the arena
+		for (let i = 0; i < nRowsToAdd; i++) {
 			const row = document.createElement('tr');
 
 			for (let x = 0; x < arena.width + 2; x++) {
@@ -272,25 +287,18 @@ export class ArenaView {
 			this.tbody.insertBefore(row, this.tbody.firstChild);
 		}
 
-		for (let y = 0; y < this.tbody.rows.length - 1; y++) {
-			for (let x = 1; x < this.tbody.rows[y].cells.length - 1; x++) {
-				this.tbody.rows[y].cells[x].textContent = '.';
+		// Update cell contents
+		for (let y = 0; y < height - 1; y++) {
+			for (let x = 1; x < tableWidth - 1; x++) {
+				const cell = this.tbody.rows[y].cells[x];
+
+				if (occupied.has(y * tableWidth + x)) {
+					cell.textContent = '#';
+				} else {
+					cell.textContent = '.';
+				}
 			}
 		}
-
-		for (const rock of arena.rocks()) {
-			for (const a of rock.absoluteCells()) {
-				const t = this.arenaToTable(a);
-				this.tbody.rows[t.y].cells[t.x].textContent = '#';
-			}
-		}
-	}
-
-	arenaToTable(arenaCoord) {
-		return {
-			x: arenaCoord.x + 1,
-			y: this.tbody.rows.length - arenaCoord.y - 1
-		};
 	}
 }
 
