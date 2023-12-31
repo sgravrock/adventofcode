@@ -36,33 +36,32 @@ const ROCK_SHAPES = [
 	],
 ];
 
-// Advances the simulation one frame at a time, yielding the status of the
-// top rock (either 'falling' or 'at rest') after each frame
+// Advances the simulation one frame at a time, yielding after each frame
 function* simulate(arena, jetPattern) {
 	let jetI = 0;
 
 	for (let rockI = 0; rockI < 2022; rockI++) {
 		arena.addRock(ROCK_SHAPES[rockI % ROCK_SHAPES.length]);
-		yield 'falling';
-		shiftTopRock(arena, jetPattern[jetI++ % jetPattern.length]);
-		yield 'falling';
+		yield;
+		shiftRock(arena, jetPattern[jetI++ % jetPattern.length]);
+		yield;
 
 		let falling = true;
 
 		while (falling) {
-			falling = arena.tryMoveTopRock(0, -1);
+			falling = arena.tryLowerFallingRock();
 
 			if (falling) {
-				yield 'falling';
-				shiftTopRock(arena, jetPattern[jetI++ % jetPattern.length]);
+				yield;
+				shiftRock(arena, jetPattern[jetI++ % jetPattern.length]);
 			}
 		}
 
-		yield 'at rest';
+		yield;
 	}
 
-	function shiftTopRock(arena, jet) {
-		arena.tryMoveTopRock(jet === '<' ? -1 : 1, 0);
+	function shiftRock(arena, jet) {
+		arena.tryShiftFallingRock(jet === '<' ? -1 : 1, 0);
 	}
 }
 
@@ -76,6 +75,7 @@ export class Arena {
 			// infinitely tall rocks).
 			new Rock([['#','#','#','#','#','#','#','#']], 0, 0)
 		];
+		this.fallingRock = null;
 	}
 	
 	rocks() {
@@ -83,7 +83,8 @@ export class Arena {
 	}
 
 	addRock(shape) {
-		this.objects.push(new Rock(shape, 2, this.height + 3));
+		this.fallingRock = new Rock(shape, 2, this.height + 3);
+		this.objects.push(this.fallingRock);
 	}
 
 	get height() {
@@ -94,28 +95,43 @@ export class Arena {
 		return topTop + 1;
 	}
 
-	tryMoveTopRock(dx, dy) {
-		const topRock = this.objects.last;
-
-		if (topRock.left + dx < 0 || topRock.right + dx > this.width) {
-			return false;
-		}
-
+	tryLowerFallingRock() {
+		const r = this.fallingRock;
 
 		// TODO immutable rocks might make this nicer
-		topRock.left += dx;
-		topRock.bottom += dy;
-
+		r.bottom--;
+	
 		for (const other of this.objects) {
-			if (other !== topRock && other.collidesWith(topRock)) {
+			if (other !== r && other.collidesWith(r)) {
 				// Undo the move
-				topRock.left -= dx;
-				topRock.bottom -= dy;
+				r.bottom++;
+
+				// Rock has come to rest
+				this.fallingRock = null;
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	tryShiftFallingRock(dx) {
+		const r = this.fallingRock;
+
+		if (r.left + dx < 0 || r.right + dx > this.width) {
+			return;
+		}
+
+		// TODO immutable rocks might make this nicer
+		r.left += dx;
+	
+		for (const other of this.objects) {
+			if (other !== r && other.collidesWith(r)) {
+				// Undo the move
+				r.left -= dx;
+				return;
+			}
+		}
 	}
 }
 
@@ -124,7 +140,6 @@ export class Rock {
 		this.shape = shape;
 		this.left = left;
 		this.bottom = bottom;
-		this.falling = false;
 	}
 
 	get top() {
@@ -214,11 +229,11 @@ class UI {
 	}
 
 	singleRock() {
-		let result = {};
+		let result;
 
-		while (!(result.done || result.value === 'at rest')) {
+		do {
 			result = this.steps.next();
-		}
+		} while (this.arena.fallingRock && !result.done);
 	}
 }
 
