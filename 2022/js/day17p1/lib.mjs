@@ -96,58 +96,67 @@ export class Arena {
 	}
 
 	tryLowerFallingRock() {
-		const r = this.fallingRock;
-
-		// TODO immutable rocks might make this nicer
-		r.bottom--;
-	
-		for (const other of this.objects) {
-			if (other !== r && other.collidesWith(r)) {
-				// Undo the move
-				r.bottom++;
-
-				// Rock has come to rest
-				this.fallingRock = null;
-				return false;
-			}
+		if (!this.#tryMoveFallingRock(0, -1)) {
+			// Rock has come to rest
+			this.fallingRock = null;
+			return false;
 		}
 
 		return true;
 	}
 
 	tryShiftFallingRock(dx) {
-		const r = this.fallingRock;
-
-		if (r.left + dx < 0 || r.right + dx > this.width) {
+		if (this.fallingRock.left + dx < 0
+				|| this.fallingRock.right + dx > this.width) {
 			return;
 		}
 
-		// TODO immutable rocks might make this nicer
-		r.left += dx;
-	
+		this.#tryMoveFallingRock(dx, 0);
+	}
+
+	#tryMoveFallingRock(dx, dy) {
+		const moved = this.fallingRock.moved(dx, dy);
+
 		for (const other of this.objects) {
-			if (other !== r && other.collidesWith(r)) {
-				// Undo the move
-				r.left -= dx;
-				return;
+			if (other !== this.fallingRock && other.collidesWith(moved)) {
+				return false;
 			}
 		}
+
+		this.objects[this.objects.indexOf(this.fallingRock)] = moved;
+		this.fallingRock = moved;
+		return true;
 	}
 }
 
 export class Rock {
+	#left;
+	#bottom;
+	
 	constructor(shape, left, bottom) {
 		this.shape = shape;
-		this.left = left;
-		this.bottom = bottom;
+		this.#left = left;
+		this.#bottom = bottom;
+	}
+
+	get left() {
+		return this.#left;
+	}
+
+	get bottom() {
+		return this.#bottom;
 	}
 
 	get top() {
-		return this.bottom + this.shape.length - 1;
+		return this.#bottom + this.shape.length - 1;
 	}
 
 	get right() {
-		return this.left + this.shape[0].length;
+		return this.#left + this.shape[0].length;
+	}
+
+	moved(dx, dy) {
+		return new Rock(this.shape, this.#left + dx, this.#bottom + dy);
 	}
 
 	collidesWith(other) {
