@@ -235,7 +235,7 @@ class UI {
 
 	runToCompletion() {
 		while (!this.steps.next().done) {}
-		return false;
+		return true;
 	}
 
 	singleStep() {
@@ -249,6 +249,8 @@ class UI {
 		do {
 			result = this.steps.next();
 		} while (this.arena.fallingRock && !result.done);
+
+		return result.done;
 	}
 }
 
