@@ -251,7 +251,7 @@ the archive onto the Stuffit Expander icon in the finder.
 ### : An easier way to deal with Disk Copy images
 
 It turns out that the Disk Copy 4.2 image format is [not very complicated](https://web.archive.org/web/20201028142058/https://wiki.68kmla.org/DiskCopy_4.2_format_specification),
-and it's easy to write [a small program to convert Disk Copy 4.2 images to raw disk images](ttps://github.com/sgravrock/adventofcode/blob/master/2022/pascal/undiskcopy.c).
+and it's easy to write [a small program to convert Disk Copy 4.2 images to raw disk images](https://github.com/sgravrock/undiskcopy).
 The resulting images can be written to floppy with dd.
 
 ## Things that would have been easier (Or: Do as I say, not as I do)
