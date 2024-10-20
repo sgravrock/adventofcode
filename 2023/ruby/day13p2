@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+
+Reflection = Data.define(:dir, :i)
+
+def vreflects(grid)
+	(0..grid[0].length - 2)
+		.filter { |rx| vreflect_at?(grid, rx) }
+		.map { |rx| Reflection.new('v', rx) }
+end
+
+def hreflects(grid)
+	(0..grid.length - 2)
+		.filter { | ry| hreflect_at?(grid, ry) }
+		.map { |ry| Reflection.new('h', ry) }
+end
+
+def vreflect_at?(grid, rx)
+	xrange = 0..grid[0].length - 1
+	minX = rx
+	maxX = rx + 1
+
+	while xrange.include?(minX) && xrange.include?(maxX) do
+		grid.each do |row|
+			if row[minX] != row[maxX] then
+				return false
+			end
+		end
+	
+		minX -= 1
+		maxX += 1
+	end
+
+	true
+end
+
+def hreflect_at?(grid, ry)
+	yrange = 0..grid.length - 1
+	minY = ry
+	maxY = ry + 1
+
+	while yrange.include?(minY) && yrange.include?(maxY) do
+		if grid[minY] != grid[maxY] then
+			return false
+		end
+	
+		minY -= 1
+		maxY += 1
+	end
+
+	true
+end
+
+def smudge(grid)
+	initial = Set.new(vreflects(grid) + hreflects(grid))
+	
+	grid.each_with_index do |row, y|
+		row.each_with_index do |cell, x|
+			row[x] = if cell == '.' then
+				'#'
+			else
+				'.'
+			end
+
+			current = Set.new(vreflects(grid) + hreflects(grid))
+			created = current - initial
+
+			if created.size == 1 then
+				s = created.first
+				if s.dir == 'h' then
+					return (s.i + 1) * 100
+				else
+					return s.i + 1
+				end
+			end
+
+			row[x] = cell
+		end
+	end
+
+	raise "Could not smudge"
+end
+
+
+grids = ARGF.read.split("\n\n")
+	.map { | gi| gi.split("\n").map(&:chars) }
+
+total = grids
+	.map { |grid| smudge(grid) }
+	.sum
+puts total
+
+
+# 5375 is too low
