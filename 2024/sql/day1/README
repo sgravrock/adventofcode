@@ -1,0 +1,6 @@
+To run:
+
+1. Prepare a DB by piping the puzzle input through setup:
+   $ ./setup < input | sqlite3 mydb.sqlite
+2. Run the solve script:
+   $ sqlite3 mydb.sqlite < part1.sql

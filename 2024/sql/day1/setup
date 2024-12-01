@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+
+echo "create table input (a integer not null, b integer not null);"
+awk '{print "insert into input values(" $1 ", " $2 ");" }'
