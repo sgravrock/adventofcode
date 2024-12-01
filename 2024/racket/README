@@ -1,0 +1,6 @@
+To run interactively, open the .rkt file in DrRacket and hit the run button.
+Paste the contents of the puzzle input file.
+
+To run from the command line:
+1. Add the Racket bin directory (e.g. /Applications/Racket v8.14/bin) to $PATH.
+2. racket day1p1.rkt < puzzle-input.txt
