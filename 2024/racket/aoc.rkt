@@ -1,6 +1,6 @@
 #lang racket
 
-(provide read-input count-if)
+(provide readlines read-input count-if each-pair all? any?)
 
 (define (read-input line-re captures->rec [port (current-input-port)])
   (map (lambda (line)
@@ -14,7 +14,7 @@
                                 (cdr m)))]
         [else #f]))
 
-(define (readlines port)
+(define (readlines [port (current-input-port)])
   (define lines (string-split (port->string port) "\n"))
   (filter non-empty-string? lines)) ; esp. to take care of trailing blank lines
 
@@ -25,3 +25,21 @@
                acc))
          0
          seq))
+
+(define (each-pair lst)
+  (cond [(empty? lst) '()]
+        [else (each-pair-sub (car lst) (cdr lst))]))
+
+(define (each-pair-sub prev lst)
+  (cond [(empty? lst) '()]
+        [else (cons (cons prev (car lst)) (each-pair-sub (car lst) (cdr lst)))]))
+
+(define (all? pred lst)
+  (cond [(empty? lst) #t] ; vacuously true
+        [(not (pred (car lst))) #f]
+        [else (all? pred (cdr lst))]))
+
+(define (any? pred lst)
+  (cond [(empty? lst) #f]
+        [(pred (car lst)) #t]
+        [else (any? pred (cdr lst))]))
