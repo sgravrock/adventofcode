@@ -12,9 +12,6 @@
                                           lists)))
 (define pairs (zip (car sorted-lists) (cadr sorted-lists)))
 (define diffs (map (lambda (pair)
-                     (define a (car pair))
-                     (define b (cadr pair))
-                     (cond [(< a b) (- b a)]
-                           [else (- a b)]))
+                     (abs (- (car pair) (cadr pair))))
                    pairs))
 (foldl + 0 diffs)
