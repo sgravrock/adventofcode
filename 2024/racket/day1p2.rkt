@@ -4,8 +4,7 @@
 (require "aoc.rkt")
 
 (define (similarity-score n right-list)
-  (define count (length (filter (lambda (x) (= n x)) right-list)))
-  (* n count))
+  (* n (count-if (lambda (x) (= n x)) right-list)))
 
 (define input (read-input #rx"^([0-9]+)   ([0-9]+)$"
                           (lambda (captures)
