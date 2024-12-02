@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+cat - << END
+create table report (id integer not null primary key);
+create table level (
+	report_id integer not null,
+	level_num integer not null,
+	value integer not null,
+	primary key (report_id, level_num),
+	foreign key (report_id) references report(id)
+);
+END
+awk '{
+	print "insert into report values(" NR ");"
+	for (i = 1; i <= NF; i++) print "insert into level values (" NR "," i "," $i ");"
+}'
+
