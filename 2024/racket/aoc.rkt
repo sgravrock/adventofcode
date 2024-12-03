@@ -1,6 +1,7 @@
 #lang racket
 
-(provide readlines read-input regexp-captures count-if each-pair all? any?)
+(provide readlines read-input regexp-captures regexp-match->captures count-if
+         each-pair all? any? first-by)
 
 (define (read-input line-re captures->rec [port (current-input-port)])
   (map (lambda (line)
@@ -9,10 +10,13 @@
 
 (define (regexp-captures needle haystack)
   (define m (regexp-match-positions needle haystack))
-  (cond [m (sequence->list (map (lambda(capture)
-                                  (substring haystack (car capture) (cdr capture)))
-                                (cdr m)))]
+  (cond [m (regexp-match->captures (cdr m) haystack)]
         [else #f]))
+
+(define (regexp-match->captures match input)
+  (sequence->list (map (lambda(capture)
+                         (substring input (car capture) (cdr capture)))
+                       match)))
 
 (define (readlines [port (current-input-port)])
   (define lines (string-split (port->string port) "\n"))
@@ -43,3 +47,16 @@
   (cond [(empty? lst) #f]
         [(pred (car lst)) #t]
         [else (any? pred (cdr lst))]))
+
+(define (first-by keyfunc lst)
+  (define decorated (map (lambda (x) (cons x (keyfunc x))) lst))
+  (car (first-by-cdr decorated)))
+
+(define (first-by-cdr lst)
+  (cond [(empty? lst) #f]
+        [(empty? (cdr lst)) (car lst)]
+        [else
+         (define entry (car lst))
+         (define tail-result (first-by-cdr (cdr lst)))
+         (cond [(< (cdr entry) (cdr tail-result)) entry]
+               [else tail-result])]))
