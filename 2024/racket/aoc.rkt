@@ -1,6 +1,6 @@
 #lang racket
 
-(provide readlines read-input count-if each-pair all? any?)
+(provide readlines read-input regexp-captures count-if each-pair all? any?)
 
 (define (read-input line-re captures->rec [port (current-input-port)])
   (map (lambda (line)
