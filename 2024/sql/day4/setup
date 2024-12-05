@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+cat - << END
+create table grid (
+	x integer not null,
+	y integer not null,
+	c char,
+	primary key (x, y)
+);
+
+create table deltas (dx int, dy int, primary key (dx, dy));
+
+insert into deltas values (1, 0);
+insert into deltas values (-1, 0);
+insert into deltas values (0, 1);
+insert into deltas values (0, -1);
+insert into deltas values (1, 1);
+insert into deltas values (1, -1);
+insert into deltas values (-1, -1);
+insert into deltas values (-1, 1);
+END
+awk -v FS="" -f setup.awk
