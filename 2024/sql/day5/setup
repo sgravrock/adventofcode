@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+cat - << END
+create table upd (id integer not null primary key);
+create table upd_page (
+	upd_id integer not null,
+	page_ix integer not null,
+	page_num integer not null,
+	primary key (upd_id, page_ix),
+	foreign key (upd_id) references upd (id)
+);
+create table rule (
+	pred integer not null,
+	succ integer not null,
+	primary key (pred, succ)
+);
+END
+
+sed 's/|/,/' | awk -F \, '
+BEGIN { section = "rules" }
+/^$/ { section = "updates" }
+/./ && section == "rules"  {
+	print "insert into rule values (" $1 ", " $2 ");"
+}
+/./ && section == "updates"  {
+	print "insert into upd values (" NR ");"
+
+	for (i = 1; i <= NF; i++)
+		print "insert into upd_page values (" NR ", " i " - 1, " $i ");"
+}
+'
