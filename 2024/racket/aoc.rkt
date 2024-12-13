@@ -1,7 +1,8 @@
 #lang racket
 
 (provide readlines read-input regexp-captures regexp-match->captures count-if
-         each-pair all? any? first-by)
+         each-pair all? any? first-by
+         coord coord-x coord-y coord-+x coord-+y parse-grid)
 
 (define (read-input line-re captures->rec [port (current-input-port)])
   (map (lambda (line)
@@ -21,6 +22,21 @@
 (define (readlines [port (current-input-port)])
   (define lines (string-split (port->string port) "\n"))
   (filter non-empty-string? lines)) ; esp. to take care of trailing blank lines
+
+(struct coord (x y) #:inspector #f)
+
+(define (coord-+x c dx)
+  (coord (+ (coord-x c) dx) (coord-y c)))
+
+(define (coord-+y c dy)
+  (coord (coord-x c) (+ (coord-y c) dy)))
+
+(define (parse-grid)
+  (define grid (hash))
+  (for ([(line y) (in-indexed (readlines))])
+    (for ([(c x) (in-indexed line)])
+      (set! grid (hash-set grid (coord x y) c))))
+  grid)
 
 (define (count-if pred seq)
   (foldl (lambda (el acc)
