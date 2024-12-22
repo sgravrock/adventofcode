@@ -12,23 +12,26 @@ def make_grid(size)
 	grid
 end
 
+def drop(grid, input, times)
+	i = 0
+
+	while i < input.length && i <= times do
+		grid[input[i]] = :corrupted
+		i += 1
+	end
+end
 
 def solve(grid_size, input)
 	origin = {x: 0, y: 0}
 	goal = {x: grid_size-1, y: grid_size-1}
-	i = 0
-	grid = make_grid(grid_size)
 
-	while true
-		grid[input[i]] = :corrupted
+	first_i = (0...input.length).bsearch { |i|
+		grid = make_grid(grid_size)
+		drop(grid, input, i)
+		!reachable?(grid, origin, goal)
+	}
 
-		unless reachable?(grid, origin, goal)
-			return "#{input[i][:x]},#{input[i][:y]}"
-			return input[i]
-		end
-
-		i += 1
-	end
+	"#{input[first_i][:x]},#{input[first_i][:y]}"
 end
 
 def reachable?(grid, origin, goal)
