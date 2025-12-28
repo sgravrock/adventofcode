@@ -27,7 +27,13 @@ require './microtest'
 #    rather than with repsect to the width of the row. For my puzzle input that
 #    works out to a constant factor reduction of about 16,120x for a typical
 #    row.
-# 3. Check the candidate regions in order from largest to smallest area. (A
+# 3. Assume that the winning rectangle is squareish rather than long and thin.
+#    This can be done by treating each row that isn't at least say 20% green/red
+#    as a hard barrier and only considering corner pairs that are both on the
+#    same side of all barriers. Even ignoring the top and bottom of the diamond
+#    and assuming the worst-case scenario of a single barrier exactly in the
+#    middle, the number of candidate rectangles is greatly reduced.
+# 4. Check the candidate regions in order from largest to smallest area. (A
 #    no-brainer, which would also be part of the approaches that didn't work.)
 #    The first (largest) region that wasn't rejected by the previous step and
 #    only contains red and green cells is the solution.
@@ -55,9 +61,18 @@ end
 
 def solve(reds)
 	perimeter = perimeter_from_reds(reds)
-	spans_by_row = find_included_spans(perimeter)	
-	candidate_corner_pairs = reds.combination(2)
+	spans_by_row = find_included_spans(perimeter)
+	
+	partition_y_ranges = partition_by_min_width(spans_by_row,
+		perimeter.yrange.size * 0.2)
+	partitions = partition_y_ranges.map { |yrange|
+		reds.filter { |c| yrange.include?(c.y) }
+	}
+	
+	candidate_corner_pairs = partitions
+		.flat_map { |corners| corners.combination(2).to_a }
 		.sort_by { |a, b| -1 * area(a, b) }
+			
 	best = candidate_corner_pairs
 		.find { |a, b| valid_rect?(a, b, spans_by_row) }
 	
@@ -127,6 +142,31 @@ def corner_type(tile, pred, succ)
 			"F"
 		end
 	end
+end
+
+
+def partition_by_min_width(spans_by_row, min_width)
+	partitions = []
+	current = nil
+	
+	spans_by_row.sort.each do |y, spans|
+		# Is this row a barrier?
+		if spans.none? { |s| s.size >= min_width }
+			unless current.nil?
+				current[1] = y - 1
+				current = nil
+			end
+		else
+			if current.nil?
+				current = [y, y]
+				partitions.push(current)
+			else
+				current[1] = y
+			end
+		end
+	end
+	
+	partitions.map { |s, e| s..e}
 end
 
 
@@ -322,6 +362,24 @@ class Tests < Microtest::Test
 			3 => [1..4, 7..9]
 		}
 		assert_equal(expected, find_included_spans(perimeter))
+	end
+	
+	def test_partition_by_min_width
+		# 012345678901234567890123456789012345678901234567890123456789
+		# |----------|  (12, just wide enough)
+		# |----------|  (12, just wide enough)
+		# |---------|   (widest span is 11, not quite enough)     |--|
+		# |-|           (not even close)
+		# |----------|  (12, just wide enough)
+		spans = {
+			0 => [1..12],
+			1 => [1..12],
+			2 => [1..11, 57..60],
+			3 => [1..3],
+			4 => [1..12]
+		}
+		expected = [0..1, 4..4]
+		assert_equal(expected, partition_by_min_width(spans, 12))
 	end
 	
 	def sample_input
