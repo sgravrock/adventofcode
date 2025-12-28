@@ -18,8 +18,8 @@ require './microtest'
 #   each rectangle.
 #
 # What worked:
-# 1. Find all vertical edges, i.e. red cells and cells between pairs of red
-#    cells that are adjacent in the input list and have the same X coordinate.
+# 1. Find all edges, i.e. red cells and cells between pairs of red cells that 
+#    are adjacent in the input list.
 # 2. Model the grid as an array of rows, with each row represented as an array
 #    of contiguous ranges that are inside. Those ranges can be determined from
 #    the vertical edges in each row. This allows for checking whether a point is
@@ -28,11 +28,12 @@ require './microtest'
 #    works out to a constant factor reduction of about 16,120x for a typical
 #    row.
 # 3. Assume that the winning rectangle is squareish rather than long and thin.
-#    This can be done by treating each row that isn't at least say 20% green/red
-#    as a hard barrier and only considering corner pairs that are both on the
-#    same side of all barriers. Even ignoring the top and bottom of the diamond
-#    and assuming the worst-case scenario of a single barrier exactly in the
-#    middle, the number of candidate rectangles is greatly reduced.
+#    This can be done by treating each row that doesn't have a single contiguous
+#    red/green span that's at least say 20% of the overall width as a hard
+#    barrier and only considering corner pairs that are both on the same side of
+#    all barriers. Even ignoring the top and bottom of the diamond and assuming
+#    the worst-case scenario of a single barrier exactly in the middle, the 
+#    number of candidate rectangles is greatly reduced.
 # 4. Check the candidate regions in order from largest to smallest area. (A
 #    no-brainer, which would also be part of the approaches that didn't work.)
 #    The first (largest) region that wasn't rejected by the previous step and
