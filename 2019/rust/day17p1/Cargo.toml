@@ -1,0 +1,15 @@
+[package]
+name = "day17p1"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "visualize"
+path = "src/visualize/main.rs"
+
+[[bin]]
+name = "solve"
+path = "src/solve/main.rs"
+
+[dependencies]
+text_io = "0.1.7"

@@ -1,0 +1,9 @@
+To solve the sample input:
+
+cargo run --bin solve < sample-input
+
+
+To solve the puzzle input:
+
+1. Place puzzle input in ../inputs/17.
+2. cargo run --bin visualize | cargo run --bin solve
